@@ -1,0 +1,25 @@
+{
+  "name": "asili",
+  "version": "0.5.0",
+  "description": "Swahili for \"Root\", Asili is your personal family genomic risk assistant that never owns your data.",
+  "main": "src/main.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/techninja/asili.git"
+  },
+  "keywords": [
+    "genomic",
+    "dna",
+    "research",
+    "asili"
+  ],
+  "author": "techninja (James Todd)",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/techninja/asili/issues"
+  },
+  "homepage": "https://github.com/techninja/asili#readme"
+}
