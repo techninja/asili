@@ -6,7 +6,7 @@ import gzip
 import os
 import json
 from io import StringIO
-from datetime import datetime
+from datetime import datetime, timezone
 from email.utils import parsedate_to_datetime
 
 # Output directory mapped in docker-compose
@@ -45,8 +45,8 @@ def needs_update(trait_name, config):
         print(f"  - {trait_name}: No local file found, will download")
         return True
     
-    # Get local file modification time
-    local_mtime = datetime.fromtimestamp(os.path.getmtime(output_path))
+    # Get local file modification time (make timezone-aware)
+    local_mtime = datetime.fromtimestamp(os.path.getmtime(output_path), tz=timezone.utc)
     print(f"  - {trait_name}: Local file modified {local_mtime}")
     
     # Get remote file modification time via HEAD request

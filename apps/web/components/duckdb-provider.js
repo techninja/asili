@@ -7,7 +7,6 @@ export class DuckDBProvider {
     }
 
     async init() {
-        // Use local bundles instead of CDN to avoid CORS issues
         const bundle = {
             mainModule: '/node_modules/@duckdb/duckdb-wasm/dist/duckdb-eh.wasm',
             mainWorker: '/node_modules/@duckdb/duckdb-wasm/dist/duckdb-browser-eh.worker.js',
@@ -15,7 +14,7 @@ export class DuckDBProvider {
         };
         
         const worker = new Worker(bundle.mainWorker);
-        const logger = new duckdb.ConsoleLogger();
+        const logger = new duckdb.VoidLogger(); // Disable logging
         
         this.db = new duckdb.AsyncDuckDB(logger, worker);
         await this.db.instantiate(bundle.mainModule, bundle.pthreadWorker);
@@ -30,30 +29,50 @@ export class DuckDBProvider {
         await this.query(`CREATE OR REPLACE TABLE ${tableName} AS SELECT * FROM '${url}'`);
     }
 
-    async importDNA(data, tableName = 'user_dna') {
-        // Store user DNA in IndexedDB-backed table
-        await this.query(`CREATE OR REPLACE TABLE ${tableName} (rsid VARCHAR, chromosome VARCHAR, position INTEGER, genotype VARCHAR)`);
-        
-        for (const row of data) {
-            await this.query(`INSERT INTO ${tableName} VALUES ('${row.rsid}', '${row.chromosome}', ${row.position}, '${row.genotype}')`);
-        }
-    }
-
-    async calculateRisk(traitUrl, userTable = 'user_dna') {
+    async calculateRisk(traitUrl, userDNA) {
+        console.log(`[${new Date().toISOString()}] Calculating risk with`, userDNA.length, 'user DNA variants');
         await this.loadParquet(traitUrl, 'trait_data');
         
-        const result = await this.query(`
-            SELECT 
-                SUM(td.effect_weight * 
-                    CASE 
-                        WHEN ud.genotype LIKE '%' || td.risk_allele || '%' THEN 1 
-                        ELSE 0 
-                    END
-                ) as risk_score
-            FROM trait_data td
-            JOIN ${userTable} ud ON td.rsid = ud.rsid
+        console.log(`[${new Date().toISOString()}] Getting trait data for matching positions...`);
+        const traitResult = await this.query(`
+            SELECT chr_name, chr_position, effect_allele, effect_weight 
+            FROM trait_data
         `);
+        const traitData = traitResult.toArray();
         
-        return result.toArray()[0].risk_score;
+        // Clean up trait table immediately
+        await this.query('DROP TABLE IF EXISTS trait_data');
+        
+        console.log(`[${new Date().toISOString()}] Calculating risk in JavaScript...`);
+        let riskScore = 0;
+        const userDNAMap = new Map();
+        
+        // Create lookup map for user DNA
+        userDNA.forEach(snp => {
+            const key = `${snp.chromosome}:${snp.position}`;
+            userDNAMap.set(key, snp.allele1 + snp.allele2);
+        });
+        
+        // Calculate risk for matching positions
+        traitData.forEach(trait => {
+            const key = `${trait.chr_name}:${trait.chr_position}`;
+            const genotype = userDNAMap.get(key);
+            if (genotype && genotype.includes(trait.effect_allele)) {
+                riskScore += trait.effect_weight;
+            }
+        });
+        
+        // Clear references for GC
+        userDNAMap.clear();
+        traitData.length = 0;
+        
+        // Force memory cleanup
+        await this.conn.close();
+        this.conn = await this.db.connect();
+        
+        if (window.gc) window.gc();
+        
+        console.log(`[${new Date().toISOString()}] Risk score calculated:`, riskScore);
+        return riskScore;
     }
 }

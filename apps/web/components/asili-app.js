@@ -1,4 +1,5 @@
 import { DuckDBProvider } from './duckdb-provider.js';
+import { GeneticDatabase } from './genetic-database.js';
 import { DNAUploader } from './dna-uploader.js';
 import { RiskDashboard } from './risk-dashboard.js';
 
@@ -7,10 +8,14 @@ class AsiliApp extends HTMLElement {
         super();
         this.attachShadow({ mode: 'open' });
         this.duckdb = new DuckDBProvider();
+        this.geneticDb = new GeneticDatabase();
     }
 
     async connectedCallback() {
-        await this.duckdb.init();
+        await Promise.all([
+            this.duckdb.init(),
+            this.geneticDb.init()
+        ]);
         this.render();
     }
 
@@ -34,8 +39,9 @@ class AsiliApp extends HTMLElement {
         const uploader = this.shadowRoot.querySelector('dna-uploader');
         const dashboard = this.shadowRoot.querySelector('risk-dashboard');
         
-        uploader.duckdb = this.duckdb;
+        uploader.geneticDb = this.geneticDb;
         dashboard.duckdb = this.duckdb;
+        dashboard.geneticDb = this.geneticDb;
     }
 }
 
