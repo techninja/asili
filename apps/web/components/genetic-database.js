@@ -23,7 +23,7 @@ export class GeneticDatabase {
 
   async init() {
     return new Promise((resolve, reject) => {
-      const request = indexedDB.open('AsiliDB', 1);
+      const request = indexedDB.open('AsiliDB', 3);
       
       request.onerror = () => reject(request.error);
       request.onsuccess = () => {
@@ -33,12 +33,22 @@ export class GeneticDatabase {
       
       request.onupgradeneeded = (event) => {
         const db = event.target.result;
+        const oldVersion = event.oldVersion;
         
-        const individualStore = db.createObjectStore('individuals', { keyPath: 'id' });
+        if (!db.objectStoreNames.contains('individuals')) {
+          const individualStore = db.createObjectStore('individuals', { keyPath: 'id' });
+        }
         
-        const snpStore = db.createObjectStore('snps', { keyPath: ['rsid', 'individualId'] });
-        snpStore.createIndex('individualId', 'individualId', { unique: false });
-        snpStore.createIndex('rsid', 'rsid', { unique: false });
+        if (!db.objectStoreNames.contains('snps')) {
+          const snpStore = db.createObjectStore('snps', { keyPath: ['rsid', 'individualId'] });
+          snpStore.createIndex('individualId', 'individualId', { unique: false });
+          snpStore.createIndex('rsid', 'rsid', { unique: false });
+        }
+        
+        if (!db.objectStoreNames.contains('risk_cache')) {
+          console.log('Creating risk_cache table');
+          const cacheStore = db.createObjectStore('risk_cache', { keyPath: ['traitFile', 'individualId'] });
+        }
       };
     });
   }
@@ -181,12 +191,14 @@ export class GeneticDatabase {
     const transaction = this.db.transaction(['snps'], 'readonly');
     const store = transaction.objectStore('snps');
     const results = [];
+    let scanned = 0;
 
     return new Promise((resolve) => {
       const request = store.index('individualId').openCursor(individualId);
       request.onsuccess = (event) => {
         const cursor = event.target.result;
         if (cursor) {
+          scanned++;
           const record = cursor.value;
           const key = `${record.chromosome}:${record.position}`;
           if (positions.has(key)) {
@@ -194,6 +206,7 @@ export class GeneticDatabase {
           }
           cursor.continue();
         } else {
+          console.log(`Scanned ${scanned} records, found ${results.length} matches`);
           resolve(results);
         }
       };
@@ -219,6 +232,35 @@ export class GeneticDatabase {
     return new Promise((resolve, reject) => {
       const request = store.getAll();
       request.onsuccess = () => resolve(request.result);
+      request.onerror = () => reject(request.error);
+    });
+  }
+
+  async getCachedRisk(traitFile, individualId) {
+    const transaction = this.db.transaction(['risk_cache'], 'readonly');
+    const store = transaction.objectStore('risk_cache');
+    
+    return new Promise((resolve, reject) => {
+      const request = store.get([traitFile, individualId]);
+      request.onsuccess = () => resolve(request.result);
+      request.onerror = () => reject(request.error);
+    });
+  }
+
+  async setCachedRisk(traitFile, individualId, riskData) {
+    const cacheEntry = {
+      traitFile,
+      individualId,
+      ...riskData,
+      calculatedAt: Date.now()
+    };
+    
+    const transaction = this.db.transaction(['risk_cache'], 'readwrite');
+    const store = transaction.objectStore('risk_cache');
+    
+    return new Promise((resolve, reject) => {
+      const request = store.put(cacheEntry);
+      request.onsuccess = () => resolve(cacheEntry);
       request.onerror = () => reject(request.error);
     });
   }

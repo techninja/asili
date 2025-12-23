@@ -18,94 +18,162 @@ export class RiskDashboard extends HTMLElement {
             const response = await fetch('http://localhost:4343/data/trait_catalog.json');
             const catalog = await response.json();
             this.availableTraits = catalog.traits;
-            this.updateTraitSelector();
+            this.renderTraitCards();
         } catch (error) {
             console.error('Failed to load trait catalog:', error);
         }
     }
 
-    updateTraitSelector() {
-        const selector = this.shadowRoot.getElementById('traitSelector');
-        if (!selector) return;
+    async renderTraitCards() {
+        if (!this.geneticDb) {
+            return;
+        }
         
-        selector.innerHTML = '<option value="">Select a trait to analyze...</option>';
+        const grid = this.shadowRoot.getElementById('traitsGrid');
+        const uploader = document.querySelector('dna-uploader');
+        const individualId = uploader?.selectedIndividual || 'default';
         
-        this.availableTraits.forEach(trait => {
-            const option = document.createElement('option');
-            option.value = trait.file;
-            option.textContent = `${trait.name} (${trait.variant_count?.toLocaleString()} variants)`;
-            selector.appendChild(option);
-        });
+        grid.innerHTML = '';
+        
+        for (const trait of this.availableTraits) {
+            const card = await this.createTraitCard(trait, individualId);
+            grid.appendChild(card);
+        }
+    }
+
+    async createTraitCard(trait, individualId) {
+        const card = document.createElement('div');
+        card.className = 'trait-card';
+        
+        // Get the actual individual ID if not provided
+        if (!individualId || individualId === 'default') {
+            const individuals = await this.geneticDb.getIndividuals();
+            individualId = individuals[0]?.id || 'default';
+        }
+        
+        // Check for cached result
+        console.log('Looking for cache:', trait.file, individualId);
+        const cached = await this.geneticDb.getCachedRisk(trait.file, individualId);
+        console.log('Found cached result:', cached);
+        
+        if (cached && trait.last_updated) {
+            const cacheDate = new Date(cached.calculatedAt);
+            const traitDate = new Date(trait.last_updated + 'Z'); // Force UTC parsing
+            console.log('Cache date:', cacheDate, 'Trait updated:', traitDate);
+            console.log('Trait is newer than cache:', traitDate > cacheDate);
+        }
+        
+        const hasNewerResearch = cached && trait.last_updated && new Date(cached.calculatedAt) < new Date(trait.last_updated + 'Z');
+        
+        card.innerHTML = `
+            <div class="trait-header">
+                <h3 class="trait-name">${trait.name}</h3>
+                <span class="trait-category">${trait.category}</span>
+            </div>
+            <div class="trait-stats">
+                ${trait.variant_count?.toLocaleString()} variants
+                ${hasNewerResearch ? '<br><span style="color: #007acc; font-size: 11px;">📊 New research available</span>' : ''}
+            </div>
+            ${cached ? this.renderCachedResult(cached) : this.renderAnalyzeButton(trait, individualId)}
+        `;
+        
+        return card;
+    }
+
+    renderCachedResult(cached) {
+        const level = cached.riskScore < 0.5 ? 'low' : cached.riskScore < 1.5 ? 'medium' : 'high';
+        const levelText = cached.riskScore < 0.5 ? 'Lower Risk' : cached.riskScore < 1.5 ? 'Average Risk' : 'Higher Risk';
+        
+        return `
+            <div class="risk-display">
+                <div class="risk-score">${cached.riskScore.toFixed(2)}x</div>
+                <div class="risk-level ${level}">${levelText}</div>
+            </div>
+            <div class="trait-stats">
+                ${cached.matchedVariants} matched variants<br>
+                Calculated ${new Date(cached.calculatedAt).toLocaleDateString()}
+            </div>
+        `;
+    }
+
+    renderAnalyzeButton(trait, individualId) {
+        return `
+            <div class="risk-display">
+                <button class="analyze-btn" onclick="this.getRootNode().host.analyzeRisk('${trait.file}', '${individualId}', this)">
+                    Calculate Risk
+                </button>
+            </div>
+        `;
     }
 
     render() {
         this.shadowRoot.innerHTML = `
             <style>
-                .dashboard { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 20px; margin-top: 20px; }
-                .risk-card {
+                .traits-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(350px, 1fr)); gap: 20px; margin-top: 20px; }
+                .trait-card {
                     border: 1px solid #ddd;
                     border-radius: 8px;
                     padding: 20px;
                     background: white;
                     box-shadow: 0 2px 4px rgba(0,0,0,0.1);
                 }
+                .trait-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 15px; }
+                .trait-name { font-size: 18px; font-weight: bold; margin: 0; }
+                .trait-category { font-size: 12px; color: #666; background: #f0f0f0; padding: 2px 6px; border-radius: 3px; }
+                .risk-display { text-align: center; margin: 15px 0; }
                 .risk-score { font-size: 2em; font-weight: bold; color: #007acc; }
-                .risk-level { padding: 4px 8px; border-radius: 4px; font-size: 12px; }
+                .risk-level { padding: 4px 8px; border-radius: 4px; font-size: 12px; margin-top: 5px; }
                 .low { background: #d4edda; color: #155724; }
                 .medium { background: #fff3cd; color: #856404; }
                 .high { background: #f8d7da; color: #721c24; }
-                .loading { text-align: center; color: #666; }
-                .trait-selector { margin: 20px 0; }
-                select { padding: 8px; font-size: 14px; width: 100%; max-width: 400px; }
-                button { padding: 8px 16px; margin-left: 10px; background: #007acc; color: white; border: none; border-radius: 4px; cursor: pointer; }
-                button:hover { background: #005a99; }
+                .trait-stats { font-size: 12px; color: #666; margin-top: 10px; }
+                .analyze-btn { width: 100%; padding: 10px; background: #007acc; color: white; border: none; border-radius: 4px; cursor: pointer; }
+                .analyze-btn:hover { background: #005a99; }
+                .analyze-btn:disabled { background: #ccc; cursor: not-allowed; }
+                .loading { color: #666; font-style: italic; }
             </style>
-            <div class="trait-selector">
-                <select id="traitSelector">
-                    <option value="">Loading traits...</option>
-                </select>
-                <button onclick="this.getRootNode().host.analyzeSelectedTrait()">Analyze Risk</button>
-            </div>
-            <div id="content">
-                <div class="loading">Select a trait and upload your DNA file to see risk assessments</div>
+            <div id="traitsGrid" class="traits-grid">
+                <div class="loading">Loading traits...</div>
             </div>
         `;
     }
 
-    async analyzeSelectedTrait() {
-        const selector = this.shadowRoot.getElementById('traitSelector');
-        const selectedFile = selector.value;
-        
-        if (!selectedFile || !this.duckdb || !this.geneticDb) {
-            alert('Please select a trait and upload your DNA file first');
+    async analyzeRisk(traitFile, individualId, buttonElement) {
+        if (!this.duckdb || !this.geneticDb) {
+            alert('Please upload your DNA file first');
             return;
         }
         
-        const content = this.shadowRoot.getElementById('content');
+        buttonElement.disabled = true;
+        buttonElement.textContent = 'Calculating...';
         
         try {
-            const trait = this.availableTraits.find(t => t.file === selectedFile);
-            const url = `http://localhost:4343/data/${selectedFile}`;
-            
-            // Step 1: Load trait data
-            content.innerHTML = '<div class="loading">Loading trait data...</div>';
-            await new Promise(resolve => setTimeout(resolve, 100)); // Allow UI update
-            
-            // Step 2: Get rsIDs from trait data
-            content.innerHTML = '<div class="loading">Analyzing trait variants...</div>';
+            const url = `http://localhost:4343/data/${traitFile}`;
             const userDNA = await this.getUserDNAForTrait(url);
+            const riskScore = await this.duckdb.calculateRisk(url, userDNA);
             
-            // Step 3: Calculate risk
-            content.innerHTML = `<div class="loading">Calculating risk from ${userDNA.length} matching variants...</div>`;
-            await new Promise(resolve => setTimeout(resolve, 100)); // Allow UI update
+            // Cache the result
+            const riskData = {
+                riskScore,
+                matchedVariants: userDNA.length,
+                traitLastUpdated: this.availableTraits.find(t => t.file === traitFile)?.last_updated
+            };
             
-            const score = await this.duckdb.calculateRisk(url, userDNA);
+            console.log('Caching result:', traitFile, individualId, riskData);
+            await this.geneticDb.setCachedRisk(traitFile, individualId, riskData);
             
-            const card = this.createRiskCard(trait.name, score);
-            content.innerHTML = '';
-            content.appendChild(card);
+            // Update the card
+            const card = buttonElement.closest('.trait-card');
+            const riskDisplay = card.querySelector('.risk-display');
+            riskDisplay.innerHTML = this.renderCachedResult({
+                ...riskData,
+                calculatedAt: Date.now()
+            });
+            
         } catch (error) {
-            content.innerHTML = `<div class="loading">Error calculating risk: ${error.message}</div>`;
+            buttonElement.textContent = 'Error - Retry';
+            buttonElement.disabled = false;
+            console.error('Risk calculation failed:', error);
         }
     }
     
@@ -128,8 +196,19 @@ export class RiskDashboard extends HTMLElement {
         
         // Get selected individual ID from uploader
         const uploader = document.querySelector('dna-uploader');
-        const individualId = uploader?.selectedIndividual || 'default';
+        let individualId = uploader?.selectedIndividual;
+        
+        // If no individual selected, use the first available one
+        if (!individualId) {
+            const individuals = await this.geneticDb.getIndividuals();
+            individualId = individuals[0]?.id || 'default';
+        }
+        
         console.log(`[${new Date().toISOString()}] Using individual ID:`, individualId);
+        
+        // Debug: Check total SNP count for this individual
+        const totalCount = await this.geneticDb.getCount(individualId);
+        console.log(`[${new Date().toISOString()}] Total SNPs for individual ${individualId}:`, totalCount);
         
         // Get matching SNPs from IndexedDB by chromosome:position
         console.log(`[${new Date().toISOString()}] Searching IndexedDB for matches...`);
@@ -139,26 +218,22 @@ export class RiskDashboard extends HTMLElement {
         return matches;
     }
     async loadRisks() {
-        // Legacy function - now using on-demand analysis
-        const content = this.shadowRoot.getElementById('content');
-        content.innerHTML = '<div class="loading">Select a trait above to analyze your risk</div>';
+        // Refresh trait cards when DNA is imported
+        if (this.availableTraits.length > 0) {
+            this.renderTraitCards();
+        }
+    }
+
+    // Called by parent app after geneticDb is set
+    onReady() {
+        if (this.availableTraits.length > 0) {
+            this.renderTraitCards();
+        }
     }
 
     createRiskCard(traitName, score) {
-        const card = document.createElement('div');
-        card.className = 'risk-card';
-        
-        const level = score < 0.5 ? 'low' : score < 1.5 ? 'medium' : 'high';
-        const levelText = score < 0.5 ? 'Lower Risk' : score < 1.5 ? 'Average Risk' : 'Higher Risk';
-        
-        card.innerHTML = `
-            <h3>${traitName}</h3>
-            <div class="risk-score">${score.toFixed(2)}x</div>
-            <div class="risk-level ${level}">${levelText}</div>
-            <p>Relative to population average</p>
-        `;
-        
-        return card;
+        // Legacy method - now handled by trait cards
+        return document.createElement('div');
     }
 }
 

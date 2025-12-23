@@ -42,6 +42,9 @@ class AsiliApp extends HTMLElement {
         uploader.geneticDb = this.geneticDb;
         dashboard.duckdb = this.duckdb;
         dashboard.geneticDb = this.geneticDb;
+        
+        // Trigger rendering after components are ready
+        setTimeout(() => dashboard.onReady?.(), 0);
     }
 }
 
