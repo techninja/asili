@@ -2,26 +2,20 @@ services:
   # 1. The Frontend Application
   webapp:
     build: 
-      context: ./webapp
+      context: ./apps/web
       dockerfile: Dockerfile
     volumes:
-      # Syncs your local folder to the container's /app folder
-      - ./webapp:/app
-      # Prevents the container's node_modules from being overwritten by your local (possibly empty) one
+      - ./apps/web:/app
       - /app/node_modules
     ports:
-      - "4242:3000"
-    environment:
-      - VITE_CDN_URL=http://localhost:8080
-      # ENSURES HOT RELOAD WORKS:
-      - CHOKIDAR_USEPOLLING=true 
+      - "4242:8080"
     depends_on:
       - cdn
 
   # 2. The Data Pipeline (ETL)
   pipeline:
     build: 
-      context: ./pipeline
+      context: ./packages/pipeline
       dockerfile: Dockerfile
     volumes:
       - ./data_out:/output

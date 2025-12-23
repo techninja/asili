@@ -1,0 +1,13 @@
+{
+  "name": "asili-webapp",
+  "version": "0.5.0",
+  "type": "module",
+  "scripts": {
+    "dev": "node server.js",
+    "build": "mkdir -p dist && cp -r node_modules/@duckdb dist/ && cp *.html components dist/",
+    "deploy": "aws s3 sync dist/ s3://asili-cdn"
+  },
+  "dependencies": {
+    "@duckdb/duckdb-wasm": "^1.33.1-dev5.0"
+  }
+}

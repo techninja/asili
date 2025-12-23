@@ -17,15 +17,15 @@
 
 Establish a clean directory structure to separate concerns.
 
-* `apps/web`: React Frontend (Vite).
+* `apps/web`: Web Components Frontend (Static hosting).
 * `packages/pipeline`: Python ETL scripts.
 * `packages/shared`: Shared types/constants.
 * `infra/`: Docker & Deployment config.
 
 ### 1.2 Testing Infrastructure (TDD Setup)
 
-* **Frontend:** Install `vitest` and `react-testing-library`.
-  * _Task:_ Create a failing test for a `<DuckDBProvider>` component.
+* **Frontend:** Write tests for web components using Web Test Runner.
+  * _Task:_ Create a failing test for a `DuckDBProvider` class.
 * **Pipeline:** Install `pytest`.
   * _Task:_ Create a failing test that checks if a generated Parquet file has the correct schema.
 
@@ -36,10 +36,10 @@ Establish a clean directory structure to separate concerns.
 
 * **Docker:** Configure Nginx to serve this file with `Access-Control-Allow-Origin` and `Access-Control-Expose-Headers: Content-Length, Content-Range`.
 
-* **Frontend:** Implement `useDuckDB` hook.
+* **Frontend:** Implement `DuckDBProvider` class.
 
-  * _Pass Criteria:_ Vitest (running in a browser-like env) confirms the hook returns a ready connection.
-  * _Feature:_ Query the Parquet file via HTTP from the React app.
+  * _Pass Criteria:_ Web Test Runner confirms the class returns a ready connection.
+  * _Feature:_ Query the Parquet file via HTTP from the web components app.
 
 ## Phase 2: The Science Pipeline (Data Engineering)
 
@@ -86,7 +86,7 @@ Establish a clean directory structure to separate concerns.
 
 ### 3.3 Visualization Components
 
-* **TDD:** Snapshot tests for `RiskCard` and `ManhattanPlot` components.
+* **TDD:** Snapshot tests for `risk-card` and `manhattan-plot` web components.
 * **Implementation:** Build UI to display "Your Risk: 1.2x" vs "Average".
 
 ## Phase 4: Business Model (Auth & Payments)
@@ -126,9 +126,8 @@ Establish a clean directory structure to separate concerns.
 1. `ci-web.yml`: Runs on every PR to `main`.
 
    * `npm ci`
-   * `npm run lint`
-   * `npm run test` (Vitest)
-   * `npm run build`
+   * `npm run build` (copies static files)
+   * Web Test Runner for component tests
 
 2. `ci-pipeline.yml`: Runs when `packages/pipeline` changes.
 
@@ -139,7 +138,7 @@ Establish a clean directory structure to separate concerns.
 
 * **Staging:**
 
-  * Web: `staging.dna-app.com` (Vercel/Netlify Preview).
+  * Web: `staging.dna-app.com` (S3 + CloudFront static hosting).
   * Data: S3 Bucket `dna-data-staging`.
 
 * **Production:**

@@ -10,15 +10,16 @@ Files should be organized as follows:
 /asili
   ├── docker-compose.yml
   ├── README.md
-  ├── pipeline/
+  ├── packages/pipeline/
   │   ├── Dockerfile
   │   └── etl_job.py
   ├── cdn/
   │   └── nginx.conf
-  └── webapp/
+  └── apps/web/
       ├── Dockerfile
-      ├── vite.config.js
-      └── (Your React Source Code)
+      ├── server.js
+      ├── components/
+      └── (Web Components)
 ```
 
 
@@ -31,15 +32,24 @@ CDN: The cdn container will start serving these files at http://localhost:4343/d
 
 Webapp: The webapp will start at http://localhost:4242.
 
-Connecting DuckDB (In your React App)
+Connecting DuckDB (In your Web Components App)
 
 When writing your frontend code, you can now query the data like this:
 
-```
+```javascript
 import * as duckdb from '@duckdb/duckdb-wasm';
 
-// ... init duckdb (requires loading bundles and worker instantiation) ...
-// See: [https://duckdb.org/docs/api/wasm/overview](https://duckdb.org/docs/api/wasm/overview)
+// Initialize DuckDB with local bundles
+const bundle = {
+    mainModule: '/node_modules/@duckdb/duckdb-wasm/dist/duckdb-eh.wasm',
+    mainWorker: '/node_modules/@duckdb/duckdb-wasm/dist/duckdb-browser-eh.worker.js',
+    pthreadWorker: '/node_modules/@duckdb/duckdb-wasm/dist/duckdb-browser-coi.pthread.worker.js'
+};
+
+const worker = new Worker(bundle.mainWorker);
+const db = new duckdb.AsyncDuckDB(new duckdb.ConsoleLogger(), worker);
+await db.instantiate(bundle.mainModule, bundle.pthreadWorker);
+const conn = await db.connect();
 
 // The URL points to your local Docker CDN
 const parquetUrl = 'http://localhost:4343/data/Alzheimers_Risk_hg38.parquet';

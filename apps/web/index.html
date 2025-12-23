@@ -1,0 +1,22 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Asili - Personal Genomic Risk Assistant</title>
+    <script type="importmap">
+    {
+        "imports": {
+            "@duckdb/duckdb-wasm": "/node_modules/@duckdb/duckdb-wasm/dist/duckdb-browser.mjs",
+            "apache-arrow": "/node_modules/apache-arrow/Arrow.mjs",
+            "flatbuffers": "/node_modules/flatbuffers/mjs/flatbuffers.js",
+            "tslib": "/node_modules/tslib/tslib.es6.mjs"
+        }
+    }
+    </script>
+</head>
+<body>
+    <asili-app></asili-app>
+    <script type="module" src="./components/asili-app.js"></script>
+</body>
+</html>
