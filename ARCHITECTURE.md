@@ -23,23 +23,13 @@ Files should be organized as follows:
 
 
 ## Setup Instructions
-
-Initialize Frontend:
-If you haven't created the React app yet, run this inside the webapp folder:
-
-cd webapp
-npm create vite@latest . -- --template react
-
-
-npm install
-
-# Ensure you replace the generated vite.config.js with the one provided here!
+`docker compose up`
 
 Pipeline: The pipeline container will start, generate mock Parquet files ("Trait Packs") in data_out/, and then exit.
 
-CDN: The cdn container will start serving these files at http://localhost:8080/data/.
+CDN: The cdn container will start serving these files at http://localhost:4343/data/.
 
-Webapp: The webapp will start at http://localhost:3000.
+Webapp: The webapp will start at http://localhost:4242.
 
 Connecting DuckDB (In your React App)
 
