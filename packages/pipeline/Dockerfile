@@ -8,7 +8,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends build-essential
 
 # Install Python packages
 # pyarrow and pandas are the heavy lifters here
-RUN pip install --no-cache-dir pandas pyarrow numpy
+RUN pip install --no-cache-dir pandas pyarrow numpy requests
 
 COPY . .
 

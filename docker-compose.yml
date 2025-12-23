@@ -18,6 +18,7 @@ services:
       context: ./packages/pipeline
       dockerfile: Dockerfile
     volumes:
+      - ./packages/pipeline:/app
       - ./data_out:/output
     command: python etl_job.py
 

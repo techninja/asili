@@ -1,0 +1,31 @@
+{
+  "traits": [
+    {
+      "id": "alzheimers_risk",
+      "name": "Alzheimer's Disease Risk",
+      "description": "Genetic risk factors for late-onset Alzheimer's disease",
+      "category": "neurological",
+      "pgs_id": "PGS000036",
+      "url": "https://ftp.ebi.ac.uk/pub/databases/spot/pgs/scores/PGS000036/ScoringFiles/PGS000036.txt.gz",
+      "file": "Alzheimers_Risk_hg38.parquet"
+    },
+    {
+      "id": "type_2_diabetes",
+      "name": "Type 2 Diabetes Risk", 
+      "description": "Genetic predisposition to type 2 diabetes mellitus",
+      "category": "metabolic",
+      "pgs_id": "PGS000014",
+      "url": "https://ftp.ebi.ac.uk/pub/databases/spot/pgs/scores/PGS000014/ScoringFiles/PGS000014.txt.gz",
+      "file": "Type_2_Diabetes_hg38.parquet"
+    },
+    {
+      "id": "coronary_artery_disease",
+      "name": "Coronary Artery Disease Risk",
+      "description": "Genetic risk factors for coronary artery disease",
+      "category": "cardiovascular", 
+      "pgs_id": "PGS000018",
+      "url": "https://ftp.ebi.ac.uk/pub/databases/spot/pgs/scores/PGS000018/ScoringFiles/PGS000018.txt.gz",
+      "file": "Coronary_Artery_Disease_hg38.parquet"
+    }
+  ]
+}
