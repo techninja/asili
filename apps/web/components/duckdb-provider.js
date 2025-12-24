@@ -1,3 +1,4 @@
+import { Debug } from '../lib/debug.js';
 import * as duckdb from '@duckdb/duckdb-wasm';
 
 export class DuckDBProvider {
@@ -30,12 +31,12 @@ export class DuckDBProvider {
     }
 
     async calculateRisk(traitUrl, userDNA) {
-        console.log(`[${new Date().toISOString()}] Calculating risk with`, userDNA.length, 'user DNA variants');
+        Debug.log(1, 'DuckDB', 'Calculating risk with', userDNA.length, 'user DNA variants');
         await this.loadParquet(traitUrl, 'trait_data');
         
-        console.log(`[${new Date().toISOString()}] Getting trait data for matching positions...`);
+        Debug.log(2, 'DuckDB', 'Getting trait data for matching positions...');
         const traitResult = await this.query(`
-            SELECT chr_name, chr_position, effect_allele, effect_weight 
+            SELECT chr_name, chr_position, effect_allele, effect_weight, pgs_id 
             FROM trait_data
         `);
         const traitData = traitResult.toArray();
@@ -43,9 +44,10 @@ export class DuckDBProvider {
         // Clean up trait table immediately
         await this.query('DROP TABLE IF EXISTS trait_data');
         
-        console.log(`[${new Date().toISOString()}] Calculating risk in JavaScript...`);
+        Debug.log(2, 'DuckDB', 'Calculating risk across', new Set(traitData.map(t => t.pgs_id)).size, 'PGS scores...');
         let riskScore = 0;
         const userDNAMap = new Map();
+        const pgsContributions = new Map();
         
         // Create lookup map for user DNA
         userDNA.forEach(snp => {
@@ -59,8 +61,16 @@ export class DuckDBProvider {
             const genotype = userDNAMap.get(key);
             if (genotype && genotype.includes(trait.effect_allele)) {
                 riskScore += trait.effect_weight;
+                
+                // Track PGS contributions for coverage analysis
+                if (!pgsContributions.has(trait.pgs_id)) {
+                    pgsContributions.set(trait.pgs_id, 0);
+                }
+                pgsContributions.set(trait.pgs_id, pgsContributions.get(trait.pgs_id) + 1);
             }
         });
+        
+        Debug.log(2, 'DuckDB', 'PGS coverage:', Object.fromEntries(pgsContributions));
         
         // Clear references for GC
         userDNAMap.clear();
@@ -72,7 +82,7 @@ export class DuckDBProvider {
         
         if (window.gc) window.gc();
         
-        console.log(`[${new Date().toISOString()}] Risk score calculated:`, riskScore);
+        Debug.log(1, 'DuckDB', 'Risk score calculated:', riskScore);
         return riskScore;
     }
 }

@@ -35,6 +35,10 @@ export class GeneticDatabase {
         const db = event.target.result;
         const oldVersion = event.oldVersion;
         
+        if (!db.objectStoreNames.contains('individual_metadata')) {
+          const metadataStore = db.createObjectStore('individual_metadata', { keyPath: 'individualId' });
+        }
+        
         if (!db.objectStoreNames.contains('individuals')) {
           const individualStore = db.createObjectStore('individuals', { keyPath: 'id' });
         }
@@ -69,6 +73,20 @@ export class GeneticDatabase {
     return new Promise((resolve, reject) => {
       const request = index.count(individualId);
       request.onsuccess = () => resolve(request.result);
+      request.onerror = () => reject(request.error);
+    });
+  }
+
+  async hasData(individualId) {
+    const transaction = this.db.transaction(['snps'], 'readonly');
+    const store = transaction.objectStore('snps');
+    const index = store.index('individualId');
+    
+    return new Promise((resolve, reject) => {
+      const request = index.openCursor(individualId);
+      request.onsuccess = () => {
+        resolve(!!request.result);
+      };
       request.onerror = () => reject(request.error);
     });
   }
@@ -234,6 +252,58 @@ export class GeneticDatabase {
       request.onsuccess = () => resolve(request.result);
       request.onerror = () => reject(request.error);
     });
+  }
+
+  async setIndividualMetadata(individualId, variantCount, importedAt) {
+    const metadata = { individualId, variantCount, importedAt };
+    const transaction = this.db.transaction(['individual_metadata'], 'readwrite');
+    const store = transaction.objectStore('individual_metadata');
+    
+    return new Promise((resolve, reject) => {
+      const request = store.put(metadata);
+      request.onsuccess = () => resolve(metadata);
+      request.onerror = () => reject(request.error);
+    });
+  }
+
+  async getIndividualMetadata(individualId) {
+    const transaction = this.db.transaction(['individual_metadata'], 'readonly');
+    const store = transaction.objectStore('individual_metadata');
+    
+    return new Promise((resolve, reject) => {
+      const request = store.get(individualId);
+      request.onsuccess = () => resolve(request.result);
+      request.onerror = () => reject(request.error);
+    });
+  }
+
+  async waitForIdle() {
+    return new Promise((resolve) => {
+      // Wait for any pending transactions to complete
+      if (this.db.transaction) {
+        setTimeout(() => this.waitForIdle().then(resolve), 10);
+      } else {
+        resolve();
+      }
+    });
+  }
+
+  async getAllCachedRisks(traitFiles, individualId) {
+    console.log(`[${new Date().toISOString()}] getAllCachedRisks start:`, traitFiles.length, 'files');
+    const transaction = this.db.transaction(['risk_cache'], 'readonly');
+    const store = transaction.objectStore('risk_cache');
+    
+    const promises = traitFiles.map(traitFile => 
+      new Promise((resolve) => {
+        const request = store.get([traitFile, individualId]);
+        request.onsuccess = () => resolve(request.result);
+        request.onerror = () => resolve(null);
+      })
+    );
+    
+    const results = await Promise.all(promises);
+    console.log(`[${new Date().toISOString()}] getAllCachedRisks end:`, results.length, 'results');
+    return results;
   }
 
   async getCachedRisk(traitFile, individualId) {

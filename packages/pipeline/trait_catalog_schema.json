@@ -1,0 +1,55 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "type": "object",
+  "properties": {
+    "trait_families": {
+      "type": "object",
+      "patternProperties": {
+        "^[a-z_]+$": {
+          "type": "object",
+          "properties": {
+            "name": {"type": "string"},
+            "description": {"type": "string"},
+            "category": {"type": "string"},
+            "subtypes": {
+              "type": "object",
+              "patternProperties": {
+                "^[a-z_]+$": {
+                  "type": "object",
+                  "properties": {
+                    "name": {"type": "string"},
+                    "pgs_ids": {
+                      "type": "array",
+                      "items": {"type": "string"}
+                    },
+                    "description": {"type": "string"},
+                    "weight": {"type": "number", "minimum": 0, "maximum": 1}
+                  },
+                  "required": ["name", "pgs_ids"]
+                }
+              }
+            },
+            "biomarkers": {
+              "type": "object",
+              "patternProperties": {
+                "^[a-z_]+$": {
+                  "type": "object",
+                  "properties": {
+                    "name": {"type": "string"},
+                    "pgs_ids": {
+                      "type": "array",
+                      "items": {"type": "string"}
+                    }
+                  },
+                  "required": ["name", "pgs_ids"]
+                }
+              }
+            }
+          },
+          "required": ["name", "description", "category", "subtypes"]
+        }
+      }
+    }
+  },
+  "required": ["trait_families"]
+}

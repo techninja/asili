@@ -1,14 +1,17 @@
+import { Debug } from '../lib/debug.js';
+
 export class DNAUploader extends HTMLElement {
     constructor() {
         super();
         this.attachShadow({ mode: 'open' });
         this.geneticDb = null;
         this.selectedIndividual = null;
+        this.selectedFile = null;
+        this.uploadState = 'idle'; // idle, file-selected, importing
     }
 
     async connectedCallback() {
         this.render();
-        // Wait a bit for geneticDb to be set by parent
         setTimeout(() => this.loadIndividuals(), 100);
     }
 
@@ -16,59 +19,86 @@ export class DNAUploader extends HTMLElement {
         if (!this.geneticDb) return;
         const individuals = await this.geneticDb.getIndividuals();
         this.updateIndividualSelector(individuals);
+        this.updateStats();
     }
 
     updateIndividualSelector(individuals) {
         const selector = this.shadowRoot.getElementById('individualSelector');
         if (!selector) return;
         
-        selector.innerHTML = '<option value="">Select dataset...</option>';
+        selector.innerHTML = '<option value="">Select individual...</option>';
         individuals.forEach(individual => {
             const option = document.createElement('option');
             option.value = individual.id;
-            option.textContent = `${individual.name} (${individual.relationship})`;
+            option.textContent = individual.name;
             selector.appendChild(option);
         });
         
-        if (individuals.length > 0) {
+        // Add "Add Individual" option
+        const addOption = document.createElement('option');
+        addOption.value = 'add-new';
+        addOption.textContent = '+ Add Individual';
+        selector.appendChild(addOption);
+        
+        if (individuals.length > 0 && !this.selectedIndividual && this.uploadState !== 'importing') {
             this.selectedIndividual = individuals[0].id;
             selector.value = this.selectedIndividual;
+            this.updateStats();
+            document.dispatchEvent(new CustomEvent('individual-changed', { 
+                detail: { individualId: this.selectedIndividual, ready: true }
+            }));
+        } else if (individuals.length === 0) {
+            // Trigger refresh when no individuals exist
+            document.dispatchEvent(new CustomEvent('individual-changed', { 
+                detail: { individualId: null, ready: true }
+            }));
+        }
+    }
+
+    async updateStats() {
+        const stats = this.shadowRoot.getElementById('stats');
+        if (!this.geneticDb || !stats) return;
+        
+        if (this.uploadState === 'importing') return;
+        
+        if (this.selectedIndividual) {
+            stats.textContent = 'Individual selected';
+        } else {
+            stats.textContent = 'No individual selected';
         }
     }
 
     render() {
         this.shadowRoot.innerHTML = `
             <style>
-                .upload-area {
-                    border: 2px dashed #ccc;
-                    border-radius: 8px;
-                    padding: 40px;
-                    text-align: center;
-                    margin: 20px 0;
-                    cursor: pointer;
-                }
-                .upload-area:hover { border-color: #007acc; }
-                .upload-area.dragover { border-color: #007acc; background: #f0f8ff; }
-                input[type="file"] { display: none; }
-                .status { margin-top: 10px; font-size: 14px; }
+                .dataset-selector { margin: 10px 0; }
+                select { padding: 8px; font-size: 14px; width: 200px; }
+                .stats { font-size: 12px; color: #666; margin-top: 5px; }
+                .upload-section { margin-top: 15px; display: none; }
+                .file-info { background: #f0f0f0; padding: 10px; border-radius: 4px; margin: 10px 0; }
                 .name-input { margin: 10px 0; }
                 .name-input input { padding: 8px; font-size: 14px; width: 200px; }
-                .individual-selector { margin: 10px 0; }
-                select { padding: 8px; font-size: 14px; }
+                button { padding: 8px 16px; margin: 5px; cursor: pointer; }
+                .primary { background: #007acc; color: white; border: none; border-radius: 4px; }
+                .secondary { background: #f0f0f0; border: 1px solid #ccc; border-radius: 4px; }
+                input[type="file"] { display: none; }
             </style>
-            <div class="individual-selector">
-                <label>Active Dataset: </label>
+            <div class="dataset-selector">
+                <label>Individual: </label>
                 <select id="individualSelector">
-                    <option value="">No datasets available</option>
+                    <option value="">Loading...</option>
                 </select>
+                <div class="stats" id="stats">No individual selected</div>
             </div>
-            <div class="upload-area" id="uploadArea">
-                <p>Drop your 23andMe or AncestryDNA file here, or click to select</p>
-                <div class="name-input">
-                    <input type="text" id="nameInput" placeholder="Enter name (e.g., John, Mom, Child1)" />
+            
+            <div class="upload-section" id="uploadSection">
+                <div class="file-info" id="fileInfo" style="display: none;"></div>
+                <div class="name-input" id="nameInput" style="display: none;">
+                    <input type="text" id="nameField" placeholder="Individual name" />
+                    <button class="primary" id="importBtn">Import</button>
+                    <button class="secondary" id="cancelBtn">Cancel</button>
                 </div>
                 <input type="file" id="fileInput" accept=".txt,.csv">
-                <div class="status" id="status"></div>
             </div>
         `;
 
@@ -76,70 +106,159 @@ export class DNAUploader extends HTMLElement {
     }
 
     setupEventListeners() {
-        const uploadArea = this.shadowRoot.getElementById('uploadArea');
-        const fileInput = this.shadowRoot.getElementById('fileInput');
-        const status = this.shadowRoot.getElementById('status');
         const individualSelector = this.shadowRoot.getElementById('individualSelector');
+        const fileInput = this.shadowRoot.getElementById('fileInput');
+        const importBtn = this.shadowRoot.getElementById('importBtn');
+        const cancelBtn = this.shadowRoot.getElementById('cancelBtn');
+        const fileInfo = this.shadowRoot.getElementById('fileInfo');
+        const nameInputDiv = this.shadowRoot.getElementById('nameInput');
+        const nameField = this.shadowRoot.getElementById('nameField');
+        const stats = this.shadowRoot.getElementById('stats');
 
         individualSelector.addEventListener('change', (e) => {
-            this.selectedIndividual = e.target.value;
-            this.dispatchEvent(new CustomEvent('individual-changed', { detail: this.selectedIndividual }));
+            if (e.target.value === 'add-new') {
+                fileInput.click();
+            } else {
+                this.selectedIndividual = e.target.value;
+                if (this.selectedIndividual) {
+                    const stats = this.shadowRoot.getElementById('stats');
+                    stats.textContent = 'Loading variants...';
+                } else {
+                    // Handle "Select individual..." selection
+                    this.updateStats();
+                }
+                document.dispatchEvent(new CustomEvent('individual-changed', { detail: this.selectedIndividual }));
+            }
         });
 
-        uploadArea.addEventListener('click', () => fileInput.click());
-        uploadArea.addEventListener('dragover', (e) => {
-            e.preventDefault();
-            uploadArea.classList.add('dragover');
-        });
-        uploadArea.addEventListener('dragleave', () => {
-            uploadArea.classList.remove('dragover');
-        });
-        uploadArea.addEventListener('drop', (e) => {
-            e.preventDefault();
-            uploadArea.classList.remove('dragover');
-            this.handleFile(e.dataTransfer.files[0], status);
-        });
         fileInput.addEventListener('change', (e) => {
-            this.handleFile(e.target.files[0], status);
+            const file = e.target.files[0];
+            Debug.log(2, 'DNAUploader', 'File selected:', file?.name);
+            if (file) {
+                this.selectedFile = file;
+                const baseName = file.name.replace(/\.[^/.]+$/, ""); // Remove extension
+                nameField.value = baseName;
+                Debug.log(2, 'DNAUploader', 'Setting up UI for file:', baseName);
+                
+                // Clear current selection and hide traits
+                this.selectedIndividual = null;
+                stats.textContent = 'Adding new individual...';
+                document.dispatchEvent(new CustomEvent('individual-changed', { detail: null }));
+                
+                // Show upload section and file info
+                const uploadSection = this.shadowRoot.getElementById('uploadSection');
+                uploadSection.style.display = 'block';
+                fileInfo.style.display = 'block';
+                fileInfo.textContent = `Selected: ${file.name} (${(file.size / 1024 / 1024).toFixed(1)} MB)`;
+                nameInputDiv.style.display = 'block';
+                Debug.log(2, 'DNAUploader', 'Name input should now be visible');
+            } else {
+                Debug.log(2, 'DNAUploader', 'File selection cancelled, resetting dropdown');
+                individualSelector.value = this.selectedIndividual || '';
+            }
+        });
+
+        importBtn.addEventListener('click', () => {
+            Debug.log(1, 'DNAUploader', 'Import button clicked');
+            this.importDataset();
+        });
+        
+        nameField.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') {
+                Debug.log(2, 'DNAUploader', 'Enter pressed in name field');
+                this.importDataset();
+            }
+        });
+        
+        cancelBtn.addEventListener('click', () => {
+            Debug.log(2, 'DNAUploader', 'Cancel clicked');
+            this.selectedFile = null;
+            fileInfo.style.display = 'none';
+            nameInputDiv.style.display = 'none';
+            nameField.value = '';
+            fileInput.value = '';
+            individualSelector.value = this.selectedIndividual || '';
+            if (this.selectedIndividual) {
+                stats.textContent = 'Loading variants...';
+                this.updateStats();
+                document.dispatchEvent(new CustomEvent('individual-changed', { detail: this.selectedIndividual }));
+            } else {
+                stats.textContent = 'No individual selected';
+            }
         });
     }
 
-    async handleFile(file, status) {
-        if (!file) return;
+    async importDataset() {
+        Debug.log(1, 'DNAUploader', 'importDataset called');
+        const nameField = this.shadowRoot.getElementById('nameField');
+        const stats = this.shadowRoot.getElementById('stats');
+        const fileInfo = this.shadowRoot.getElementById('fileInfo');
+        const nameInputDiv = this.shadowRoot.getElementById('nameInput');
+        const uploadSection = this.shadowRoot.getElementById('uploadSection');
+        const individualSelector = this.shadowRoot.getElementById('individualSelector');
+        const name = nameField.value.trim();
         
-        const nameInput = this.shadowRoot.getElementById('nameInput');
-        const name = nameInput.value.trim();
+        Debug.log(1, 'DNAUploader', 'Import name:', name);
         
         if (!name) {
-            status.textContent = 'Please enter a name for this dataset';
+            alert('Please enter an individual name');
             return;
         }
         
-        status.textContent = 'Processing DNA file...';
+        // Create individual ID and add to dropdown immediately
+        const individualId = `${Date.now()}_${name.replace(/\s+/g, '_')}`;
+        Debug.log(1, 'DNAUploader', 'Adding individual to database:', individualId);
+        await this.geneticDb.addIndividual(individualId, name, 'family');
+        
+        // Read file before clearing selectedFile
+        Debug.log(2, 'DNAUploader', 'Reading file text');
+        const text = await this.selectedFile.text();
+        
+        // Hide upload UI and select new individual
+        uploadSection.style.display = 'none';
+        this.selectedFile = null;
+        nameField.value = '';
+        this.shadowRoot.getElementById('fileInput').value = '';
+        
+        // Refresh dropdown and select new individual immediately
+        this.uploadState = 'importing'; // Set importing state BEFORE loadIndividuals
+        await this.loadIndividuals();
+        this.selectedIndividual = individualId;
+        individualSelector.value = individualId;
+        
+        // Start import process
+        stats.textContent = 'Processing DNA file...';
+        
+        // Dispatch event to clear trait cards during import
+        document.dispatchEvent(new CustomEvent('individual-changed', { 
+            detail: { individualId, ready: false }
+        }));
         
         try {
-            const text = await file.text();
-            const individualId = `${Date.now()}_${name.replace(/\s+/g, '_')}`;
+            Debug.log(1, 'DNAUploader', 'Starting import process');
+            const count = await this.geneticDb.importData(text, individualId, (current, total) => {
+                stats.textContent = `Importing ${current.toLocaleString()}/${total.toLocaleString()} variants...`;
+            });
             
-            // Add individual to database
-            await this.geneticDb.addIndividual(individualId, name, 'family');
+            Debug.log(1, 'DNAUploader', 'Import complete, count:', count);
             
-            if (this.geneticDb) {
-                const count = await this.geneticDb.importData(text, individualId, (current, total) => {
-                    status.textContent = `Processing ${current}/${total} variants...`;
-                });
-                status.textContent = `✓ Imported ${count} genetic variants for ${name}`;
-                nameInput.value = '';
-                
-                // Refresh individual list and select new one
-                await this.loadIndividuals();
-                this.selectedIndividual = individualId;
-                this.shadowRoot.getElementById('individualSelector').value = individualId;
-                
-                this.dispatchEvent(new CustomEvent('dna-imported', { detail: { count, individualId, name } }));
-            }
+            // Reset state and select individual after import completion
+            this.uploadState = 'idle';
+            this.selectedIndividual = individualId;
+            individualSelector.value = individualId;
+            stats.textContent = `${count.toLocaleString()} variants loaded`;
+            
+            Debug.log(1, 'DNAUploader', 'Dispatching events for new individual');
+            this.dispatchEvent(new CustomEvent('dna-imported', { detail: { count, individualId, name } }));
+            // Only dispatch individual-changed after import is complete
+            document.dispatchEvent(new CustomEvent('individual-changed', { 
+                detail: { individualId, ready: true }
+            }));
+            
         } catch (error) {
-            status.textContent = `Error: ${error.message}`;
+            Debug.error('DNAUploader', 'Import error:', error);
+            this.uploadState = 'idle';
+            stats.textContent = `Error: ${error.message}`;
         }
     }
 }

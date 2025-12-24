@@ -9,99 +9,99 @@ from io import StringIO
 from datetime import datetime, timezone
 from email.utils import parsedate_to_datetime
 
-# Output directory mapped in docker-compose
 OUTPUT_DIR = "/output"
 os.makedirs(OUTPUT_DIR, exist_ok=True)
 
 def load_trait_catalog():
-    """Load trait catalog from canonical source"""
+    """Load the trait catalog configuration"""
     catalog_path = os.path.join(os.path.dirname(__file__), "trait_catalog.json")
     with open(catalog_path, 'r') as f:
         return json.load(f)
 
 def get_trait_configs():
-    """Convert catalog to config format for processing"""
+    """Extract subtypes and biomarkers as combined files"""
     catalog = load_trait_catalog()
     configs = {}
     
-    for trait in catalog["traits"]:
-        # Convert filename to config key
-        key = trait["file"].replace("_hg38.parquet", "")
-        configs[key] = {
-            "pgs_id": trait["pgs_id"],
-            "name": trait["name"],
-            "description": trait["description"],
-            "category": trait["category"],
-            "url": trait["url"]
-        }
+    for family_name, family_data in catalog["trait_families"].items():
+        # Process subtypes - combine all PGS IDs into one file per subtype
+        for subtype_name, subtype_data in family_data["subtypes"].items():
+            key = f"{family_name}_{subtype_name}"
+            configs[key] = {
+                "pgs_ids": subtype_data["pgs_ids"],
+                "name": subtype_data["name"],
+                "description": subtype_data["description"],
+                "category": family_data["category"],
+                "source_family": family_name,
+                "source_type": "subtype",
+                "source_subtype": subtype_name,
+                "weight": subtype_data.get("weight", 1.0)
+            }
+        
+        # Process biomarkers - combine all PGS IDs into one file per biomarker
+        if "biomarkers" in family_data:
+            for biomarker_name, biomarker_data in family_data["biomarkers"].items():
+                key = f"{family_name}_{biomarker_name}"
+                configs[key] = {
+                    "pgs_ids": biomarker_data["pgs_ids"],
+                    "name": biomarker_data["name"],
+                    "description": biomarker_data.get("description", ""),
+                    "category": family_data["category"],
+                    "source_family": family_name,
+                    "source_type": "biomarker",
+                    "source_subtype": biomarker_name,
+                    "weight": 1.0
+                }
     
     return configs
 
 def needs_update(trait_name, config):
-    """Check if trait pack needs updating based on remote file modification time"""
+    """Check if trait pack needs updating"""
     output_path = os.path.join(OUTPUT_DIR, f"{trait_name}_hg38.parquet")
     
     if not os.path.exists(output_path):
         print(f"  - {trait_name}: No local file found, will download")
         return True
     
-    # Get local file modification time (make timezone-aware)
-    local_mtime = datetime.fromtimestamp(os.path.getmtime(output_path), tz=timezone.utc)
-    print(f"  - {trait_name}: Local file modified {local_mtime}")
+    return False  # Skip remote checks for predictable URLs
+
+def download_and_combine_pgs(trait_name, config):
+    """Download and combine multiple PGS files"""
+    print(f"  - {trait_name}: Downloading {len(config['pgs_ids'])} PGS files...")
     
-    # Get remote file modification time via HEAD request
-    try:
-        print(f"  - {trait_name}: Checking remote file at {config['url']}")
-        response = requests.head(config["url"], timeout=30)
-        print(f"  - {trait_name}: Remote response status {response.status_code}")
+    combined_df = pd.DataFrame()
+    
+    for pgs_id in config['pgs_ids']:
+        url = f"https://ftp.ebi.ac.uk/pub/databases/spot/pgs/scores/{pgs_id}/ScoringFiles/{pgs_id}.txt.gz"
+        print(f"    - Downloading {pgs_id}...")
         
-        if 'Last-Modified' in response.headers:
-            remote_mtime = parsedate_to_datetime(response.headers['Last-Modified'])
-            print(f"  - {trait_name}: Remote file modified {remote_mtime}")
-            needs_update = remote_mtime > local_mtime
-            print(f"  - {trait_name}: Needs update: {needs_update}")
-            return needs_update
-        else:
-            print(f"  - {trait_name}: No Last-Modified header, assuming update needed")
-    except Exception as e:
-        print(f"  - {trait_name}: Could not check remote modification time: {e}")
+        try:
+            response = requests.get(url, timeout=60)
+            response.raise_for_status()
+            
+            content = gzip.decompress(response.content).decode('utf-8')
+            lines = [line for line in content.split('\n') if not line.startswith('#') and line.strip()]
+            
+            if not lines:
+                print(f"    - No data in {pgs_id}, skipping")
+                continue
+                
+            df = pd.read_csv(StringIO('\n'.join(lines)), sep='\t')
+            df['pgs_id'] = pgs_id  # Add PGS ID column
+            
+            combined_df = pd.concat([combined_df, df], ignore_index=True)
+            print(f"    - Added {len(df)} variants from {pgs_id}")
+            
+        except Exception as e:
+            print(f"    - Error downloading {pgs_id}: {e}")
+            continue
     
-    return False
+    print(f"  - Combined total: {len(combined_df)} variants")
+    return combined_df
 
-def download_and_parse_pgs(trait_name, config):
-    print(f"  - {trait_name}: Starting download from {config['url']}")
-    
-    response = requests.get(config["url"], timeout=60)
-    print(f"  - {trait_name}: Download complete, status {response.status_code}, size {len(response.content)} bytes")
-    response.raise_for_status()
-    
-    # Decompress gzipped content
-    print(f"  - {trait_name}: Decompressing gzipped content...")
-    content = gzip.decompress(response.content).decode('utf-8')
-    print(f"  - {trait_name}: Decompressed to {len(content)} characters")
-    
-    # Skip header lines starting with #
-    lines = [line for line in content.split('\n') if not line.startswith('#') and line.strip()]
-    print(f"  - {trait_name}: Found {len(lines)} data lines after filtering headers")
-    
-    # Parse as CSV
-    df = pd.read_csv(StringIO('\n'.join(lines)), sep='\t')
-    print(f"  - {trait_name}: Parsed into DataFrame with columns: {list(df.columns)}")
-    
-    return df
-
-def harmonize_pgs_data(df):
-    """Convert PGS format to standardized schema"""
-    # Map PGS columns to our schema
-    column_mapping = {
-        'chr_name': 'chr_name',
-        'chr_position': 'chr_position', 
-        'effect_allele': 'effect_allele',
-        'other_allele': 'other_allele',
-        'effect_weight': 'effect_weight'
-    }
-    
-    # Handle common PGS column variations
+def harmonize_pgs_data(df, config):
+    """Convert PGS format to standardized schema with source tracking"""
+    # Handle column variations
     if 'hm_chr' in df.columns:
         df['chr_name'] = df['hm_chr'].astype(str)
     elif 'CHR' in df.columns:
@@ -123,110 +123,94 @@ def harmonize_pgs_data(df):
     elif 'effect_weight' not in df.columns and 'OR' in df.columns:
         df['effect_weight'] = df['OR']
     
-    # Select and clean required columns
-    required_cols = ['chr_name', 'chr_position', 'effect_allele', 'other_allele', 'effect_weight']
+    # Add source tracking columns
+    df['source_family'] = config['source_family']
+    df['source_type'] = config['source_type']
+    df['source_subtype'] = config['source_subtype']
+    df['source_weight'] = config['weight']
+    
+    # Select required columns (pgs_id already added in download step)
+    required_cols = ['chr_name', 'chr_position', 'effect_allele', 'other_allele', 'effect_weight', 
+                    'pgs_id', 'source_family', 'source_type', 'source_subtype', 'source_weight']
     df = df[required_cols].dropna()
     
-    # Clean chromosome names (remove 'chr' prefix)
+    # Clean chromosome names
     df['chr_name'] = df['chr_name'].astype(str).str.replace('chr', '', regex=False)
-    
-    # Add weight type
     df['weight_type'] = 'log_odds'
     
     return df
 
-def update_trait_catalog(trait_name, config, variant_count):
-    """Update the trait catalog with metadata"""
-    catalog_path = os.path.join(OUTPUT_DIR, "trait_catalog.json")
+def update_trait_catalog(updated_data):
+    """Update trait catalog with timestamps and variant counts"""
+    catalog_path = os.path.join(os.path.dirname(__file__), "trait_catalog.json")
     
-    # Load existing catalog or create new
-    if os.path.exists(catalog_path):
-        with open(catalog_path, 'r') as f:
-            catalog = json.load(f)
-    else:
-        catalog = {"traits": []}
+    with open(catalog_path, 'r') as f:
+        catalog = json.load(f)
     
-    # Find or create trait entry
-    trait_id = trait_name.lower()
-    trait_entry = None
-    for trait in catalog["traits"]:
-        if trait["id"] == trait_id:
-            trait_entry = trait
-            break
+    # Update timestamps and variant counts
+    for family_name, family_data in catalog["trait_families"].items():
+        for subtype_name, subtype_data in family_data["subtypes"].items():
+            key = f"{family_name}_{subtype_name}"
+            if key in updated_data:
+                catalog["trait_families"][family_name]["subtypes"][subtype_name]["last_updated"] = updated_data[key]["timestamp"]
+                catalog["trait_families"][family_name]["subtypes"][subtype_name]["variant_count"] = updated_data[key]["variant_count"]
+        
+        if "biomarkers" in family_data:
+            for biomarker_name, biomarker_data in family_data["biomarkers"].items():
+                key = f"{family_name}_{biomarker_name}"
+                if key in updated_data:
+                    catalog["trait_families"][family_name]["biomarkers"][biomarker_name]["last_updated"] = updated_data[key]["timestamp"]
+                    catalog["trait_families"][family_name]["biomarkers"][biomarker_name]["variant_count"] = updated_data[key]["variant_count"]
     
-    if not trait_entry:
-        trait_entry = {
-            "id": trait_id,
-            "file": f"{trait_name}_hg38.parquet"
-        }
-        catalog["traits"].append(trait_entry)
-    
-    # Update metadata
-    trait_entry.update({
-        "name": config["name"],
-        "description": config["description"],
-        "category": config["category"],
-        "pgs_id": config["pgs_id"],
-        "variant_count": variant_count,
-        "last_updated": datetime.now().isoformat()
-    })
-    
-    # Save catalog
     with open(catalog_path, 'w') as f:
         json.dump(catalog, f, indent=2)
     
-    print(f"Updated trait catalog with {trait_name}")
+    # Copy to output directory
+    output_catalog_path = os.path.join(OUTPUT_DIR, "trait_catalog.json")
+    with open(output_catalog_path, 'w') as f:
+        json.dump(catalog, f, indent=2)
 
 def generate_trait_pack(trait_name, config):
     print(f"Checking {trait_name}...")
     
+    output_path = os.path.join(OUTPUT_DIR, f"{trait_name}_hg38.parquet")
+    
     if not needs_update(trait_name, config):
         print(f"  - Skipping {trait_name} (up to date)")
-        return
+        return None
         
     print(f"  - Generating {trait_name}...")
     
-    # Download and parse PGS data
-    df = download_and_parse_pgs(trait_name, config)
-    print(f"Downloaded {len(df)} variants")
+    df = download_and_combine_pgs(trait_name, config)
+    if df.empty:
+        print(f"  - No data for {trait_name}, skipping")
+        return None
+        
+    df = harmonize_pgs_data(df, config)
     
-    # Harmonize to standard schema
-    df = harmonize_pgs_data(df)
-    print(f"Harmonized to {len(df)} valid variants")
-    
-    # Natural sort chromosomes (1, 2, ..., 10, 11, ..., 22, X, Y)
+    # Sort by chromosome and position
     chr_order = [str(i) for i in range(1, 23)] + ['X', 'Y', 'MT']
     df['chr_name'] = pd.Categorical(df['chr_name'], categories=chr_order, ordered=True)
     df = df.sort_values(['chr_name', 'chr_position'])
     
-    # Create PyArrow table
+    # Write Parquet
     table = pa.Table.from_pandas(df, preserve_index=False)
+    pq.write_table(table, output_path, compression='ZSTD', compression_level=3)
     
-    # Write optimized Parquet
-    output_path = os.path.join(OUTPUT_DIR, f"{trait_name}_hg38.parquet")
-    pq.write_table(
-        table,
-        output_path,
-        compression='ZSTD',
-        compression_level=3,
-        use_dictionary=True,
-        write_statistics=True
-    )
-    
-    print(f"Successfully generated: {output_path}")
-    print(f"  - Rows: {len(df)}")
-    print(f"  - Size: {os.path.getsize(output_path) / 1024 / 1024:.2f} MB")
-    
-    # Update trait catalog
-    update_trait_catalog(trait_name, config, len(df))
+    print(f"Successfully generated: {output_path} ({len(df)} variants)")
+    return {"timestamp": datetime.now().isoformat(), "variant_count": len(df)}
 
 if __name__ == "__main__":
     trait_configs = get_trait_configs()
+    updated_data = {}
     
     for trait_name, config in trait_configs.items():
         try:
-            generate_trait_pack(trait_name, config)
+            result = generate_trait_pack(trait_name, config)
+            if result:
+                updated_data[trait_name] = result
         except Exception as e:
             print(f"Error processing {trait_name}: {e}")
     
-    print("ETL Job Complete. Real trait packs ready for serving.")
+    update_trait_catalog(updated_data)
+    print("ETL Job Complete. Trait packs ready for serving.")

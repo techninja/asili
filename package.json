@@ -6,6 +6,7 @@
   "main": "manage-traits.js",
   "scripts": {
     "traits": "node packages/pipeline/manage-traits.js",
+    "etl": "docker compose run --rm pipeline python etl_job.py",
     "start": "docker compose up -d"
   },
   "dependencies": {

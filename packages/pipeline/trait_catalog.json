@@ -1,86 +1,184 @@
 {
-  "traits": [
-    {
-      "id": "alzheimers_risk",
-      "name": "Alzheimer's Disease Risk",
-      "description": "Genetic risk factors for late-onset Alzheimer's disease",
-      "category": "neurological",
-      "pgs_id": "PGS000036",
-      "url": "https://ftp.ebi.ac.uk/pub/databases/spot/pgs/scores/PGS000036/ScoringFiles/PGS000036.txt.gz",
-      "file": "Alzheimers_Risk_hg38.parquet"
-    },
-    {
-      "id": "type_2_diabetes",
-      "name": "Type 2 Diabetes Risk",
-      "description": "Genetic predisposition to type 2 diabetes mellitus",
+  "trait_families": {
+    "diabetes": {
+      "name": "Diabetes Risk Profile",
+      "description": "Comprehensive diabetes and glucose metabolism risk assessment",
       "category": "metabolic",
-      "pgs_id": "PGS000014",
-      "url": "https://ftp.ebi.ac.uk/pub/databases/spot/pgs/scores/PGS000014/ScoringFiles/PGS000014.txt.gz",
-      "file": "Type_2_Diabetes_hg38.parquet"
+      "subtypes": {
+        "general": {
+          "name": "diabetes mellitus",
+          "pgs_ids": [
+            "PGS001327",
+            "PGS001329",
+            "PGS001371",
+            "PGS002321",
+            "PGS002324"
+          ],
+          "description": "A metabolic disorder characterized by abnormally high blood sugar levels due to diminished production of insulin or insulin resistance/desensitization.",
+          "weight": 0.3,
+          "last_updated": "2025-12-24T21:25:37.482688",
+          "variant_count": 2224964
+        },
+        "type1": {
+          "name": "type 1 diabetes mellitus",
+          "pgs_ids": [
+            "PGS000021",
+            "PGS000022",
+            "PGS000023",
+            "PGS000024",
+            "PGS000833",
+            "PGS000869",
+            "PGS001296",
+            "PGS001297",
+            "PGS001817",
+            "PGS002025",
+            "PGS003749",
+            "PGS003750",
+            "PGS003993",
+            "PGS004009",
+            "PGS004020",
+            "PGS004035",
+            "PGS004063",
+            "PGS004078",
+            "PGS004093",
+            "PGS004102",
+            "PGS004117",
+            "PGS004132",
+            "PGS004147",
+            "PGS004162",
+            "PGS004171",
+            "PGS004172",
+            "PGS004173",
+            "PGS004174",
+            "PGS004175",
+            "PGS004874"
+          ],
+          "description": "A chronic condition characterized by minimal or absent production of insulin by the pancreas.",
+          "weight": 0.4,
+          "last_updated": "2025-12-24T21:26:03.227601",
+          "variant_count": 656164
+        },
+        "type2": {
+          "name": "type 2 diabetes mellitus",
+          "pgs_ids": [
+            "PGS000014",
+            "PGS000020",
+            "PGS000031",
+            "PGS000032",
+            "PGS000033"
+          ],
+          "description": "A type of diabetes mellitus that is characterized by insulin resistance or desensitization and increased blood glucose levels.",
+          "weight": 0.6,
+          "last_updated": "2025-12-24T21:26:27.636995",
+          "variant_count": 6924938
+        }
+      },
+      "biomarkers": {
+        "insulin": {
+          "name": "BMI-adjusted fasting blood insulin measurement",
+          "pgs_ids": [
+            "PGS005277"
+          ],
+          "last_updated": "2025-12-24T21:26:32.510355",
+          "variant_count": 1233791
+        }
+      }
     },
-    {
-      "id": "coronary_artery_disease",
-      "name": "Coronary Artery Disease Risk",
-      "description": "Genetic risk factors for coronary artery disease",
+    "cardiovascular": {
+      "name": "Cardiovascular Risk Profile",
+      "description": "Heart disease and blood pressure risk assessment",
       "category": "cardiovascular",
-      "pgs_id": "PGS000018",
-      "url": "https://ftp.ebi.ac.uk/pub/databases/spot/pgs/scores/PGS000018/ScoringFiles/PGS000018.txt.gz",
-      "file": "Coronary_Artery_Disease_hg38.parquet"
+      "subtypes": {
+        "coronary": {
+          "name": "coronary artery disease",
+          "pgs_ids": [
+            "PGS000018"
+          ],
+          "description": "Genetic risk factors for coronary artery disease",
+          "weight": 1.0,
+          "last_updated": "2025-12-24T21:26:39.038132",
+          "variant_count": 1745179
+        },
+        "hypertension": {
+          "name": "hypertension",
+          "pgs_ids": [
+            "PGS000706"
+          ],
+          "description": "Persistently high systemic arterial blood pressure.",
+          "weight": 0.8,
+          "last_updated": "2025-12-24T21:26:41.004476",
+          "variant_count": 186726
+        }
+      },
+      "biomarkers": {
+        "systolic_bp": {
+          "name": "systolic blood pressure",
+          "pgs_ids": [
+            "PGS000900"
+          ],
+          "last_updated": "2025-12-24T21:26:44.831084",
+          "variant_count": 1098015
+        },
+        "diastolic_bp": {
+          "name": "diastolic blood pressure",
+          "pgs_ids": [
+            "PGS000912"
+          ],
+          "last_updated": "2025-12-24T21:26:48.370930",
+          "variant_count": 1098015
+        }
+      }
     },
-    {
-      "id": "pgs002224",
-      "pgs_id": "PGS002224",
-      "name": "sitting height measurement",
-      "description": "Quantification of some aspect of height, when assuming a sitting position.",
-      "category": "physical",
-      "variant_count": 910252,
-      "url": "https://ftp.ebi.ac.uk/pub/databases/spot/pgs/scores/PGS002224/ScoringFiles/PGS002224.txt.gz",
-      "file": "sitting_height_measurement_hg38.parquet",
-      "last_updated": "2025-12-24T00:08:05.523Z"
+    "neurological": {
+      "name": "Neurological Risk Profile",
+      "description": "Brain health and neurological disease risk assessment",
+      "category": "neurological",
+      "subtypes": {
+        "alzheimers": {
+          "name": "Alzheimer's disease",
+          "pgs_ids": [
+            "PGS000036"
+          ],
+          "description": "Genetic risk factors for late-onset Alzheimer's disease",
+          "weight": 1.0,
+          "last_updated": "2025-12-24T21:26:50.431642",
+          "variant_count": 171249
+        }
+      }
     },
-    {
-      "id": "pgs000706",
-      "pgs_id": "PGS000706",
-      "name": "hypertension",
-      "description": "Persistently high systemic arterial blood pressure. Based on multiple readings (blood pressure determination), hypertension is currently defined as when systolic pressure is consistently greater than 140 mm Hg or when diastolic pressure is consistently 90 mm Hg or more. [MESH: D006973]",
-      "category": "disease",
-      "variant_count": 186726,
-      "url": "https://ftp.ebi.ac.uk/pub/databases/spot/pgs/scores/PGS000706/ScoringFiles/PGS000706.txt.gz",
-      "file": "hypertension_hg38.parquet",
-      "last_updated": "2025-12-24T00:12:41.320Z"
-    },
-    {
-      "id": "pgs000912",
-      "pgs_id": "PGS000912",
-      "name": "diastolic blood pressure",
-      "description": "The blood pressure after the contraction of the heart while the chambers of the heart refill with blood.",
-      "category": "physical",
-      "variant_count": 1098015,
-      "url": "https://ftp.ebi.ac.uk/pub/databases/spot/pgs/scores/PGS000912/ScoringFiles/PGS000912.txt.gz",
-      "file": "diastolic_blood_pressure_hg38.parquet",
-      "last_updated": "2025-12-24T00:12:59.920Z"
-    },
-    {
-      "id": "pgs000900",
-      "pgs_id": "PGS000900",
-      "name": "systolic blood pressure",
-      "description": "The blood pressure during the contraction of the left ventricle of the heart.",
-      "category": "physical",
-      "variant_count": 1098015,
-      "url": "https://ftp.ebi.ac.uk/pub/databases/spot/pgs/scores/PGS000900/ScoringFiles/PGS000900.txt.gz",
-      "file": "systolic_blood_pressure_hg38.parquet",
-      "last_updated": "2025-12-24T00:13:23.616Z"
-    },
-    {
-      "id": "pgs002033",
-      "pgs_id": "PGS002033",
-      "name": "obesity",
-      "description": "A disorder involving an excessive amount of body fat.",
+    "metabolic": {
+      "name": "Metabolic Risk Profile",
+      "description": "Body composition and metabolic health assessment",
       "category": "metabolic",
-      "variant_count": 846292,
-      "url": "https://ftp.ebi.ac.uk/pub/databases/spot/pgs/scores/PGS002033/ScoringFiles/PGS002033.txt.gz",
-      "file": "obesity_hg38.parquet",
-      "last_updated": "2025-12-24T00:15:40.397Z"
+      "subtypes": {
+        "obesity": {
+          "name": "obesity",
+          "pgs_ids": [
+            "PGS002033"
+          ],
+          "description": "A disorder involving an excessive amount of body fat.",
+          "weight": 1.0,
+          "last_updated": "2025-12-24T21:26:54.023910",
+          "variant_count": 846292
+        }
+      }
+    },
+    "physical": {
+      "name": "Physical Traits Profile",
+      "description": "Physical measurements and anthropometric traits",
+      "category": "physical",
+      "subtypes": {
+        "sitting_height": {
+          "name": "sitting height measurement",
+          "pgs_ids": [
+            "PGS002224"
+          ],
+          "description": "Quantification of some aspect of height, when assuming a sitting position.",
+          "weight": 1.0,
+          "last_updated": "2025-12-24T21:26:58.085746",
+          "variant_count": 910252
+        }
+      }
     }
-  ]
+  }
 }

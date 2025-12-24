@@ -13,7 +13,7 @@ async function loadCatalog() {
         return JSON.parse(data);
     } catch (error) {
         console.log(chalk.yellow('No existing catalog found, creating new one...'));
-        return { traits: [] };
+        return { trait_families: {} };
     }
 }
 
@@ -73,120 +73,161 @@ async function searchPGS(query) {
     }
 }
 
-async function addTrait() {
-    console.log(chalk.cyan('\n=== Add New Trait ===\n'));
+async function addTraitFamily() {
+    console.log(chalk.cyan('\n=== Add Trait to Family ===\n'));
     
+    const catalog = await loadCatalog();
+    
+    // Select family
+    const familyChoices = Object.entries(catalog.trait_families).map(([key, family]) => ({
+        title: family.name,
+        value: key
+    }));
+    
+    const { familyKey } = await prompts({
+        type: 'select',
+        name: 'familyKey',
+        message: 'Select trait family:',
+        choices: familyChoices
+    });
+    
+    if (!familyKey) return;
+    
+    // Select subtype or biomarker
+    const { itemType } = await prompts({
+        type: 'select',
+        name: 'itemType',
+        message: 'Add to:',
+        choices: [
+            { title: 'Subtype (main risk factor)', value: 'subtype' },
+            { title: 'Biomarker (supporting measurement)', value: 'biomarker' }
+        ]
+    });
+    
+    if (!itemType) return;
+    
+    // Search for PGS scores
     const { searchQuery } = await prompts({
         type: 'text',
         name: 'searchQuery',
-        message: 'Search for trait (e.g., "diabetes", "alzheimer", "height"):',
+        message: 'Search for trait (e.g., "diabetes", "alzheimer"):',
         validate: value => value.length > 2 || 'Please enter at least 3 characters'
     });
-
+    
     const results = await searchPGS(searchQuery);
     
     if (results.length === 0) {
         console.log(chalk.yellow('No results found. Try a different search term.'));
         return;
     }
-
-    console.log(chalk.green(`\nFound ${results.length} results:\n`));
     
-    const choices = results.slice(0, 10).map((result, index) => ({
+    // Select multiple PGS scores
+    const choices = results.slice(0, 10).map((result) => ({
         title: `${chalk.bold(result.name)} (${result.id})`,
         description: `${result.variant_count?.toLocaleString()} variants | ${result.description}`,
-        value: result
+        value: result.id
     }));
-
-    const { selectedTrait } = await prompts({
-        type: 'select',
-        name: 'selectedTrait',
-        message: 'Select a trait to add:',
+    
+    const { selectedPgsIds } = await prompts({
+        type: 'multiselect',
+        name: 'selectedPgsIds',
+        message: 'Select PGS scores (space to select, enter to confirm):',
         choices
     });
-
-    if (!selectedTrait) return;
-
-    const { category } = await prompts({
-        type: 'select',
-        name: 'category',
-        message: 'Select category:',
-        choices: [
-            { title: 'Disease Risk', value: 'disease' },
-            { title: 'Physical Traits', value: 'physical' },
-            { title: 'Behavioral', value: 'behavioral' },
-            { title: 'Metabolic', value: 'metabolic' },
-            { title: 'Other', value: 'other' }
-        ]
-    });
-
-    const catalog = await loadCatalog();
     
-    const newTrait = {
-        id: selectedTrait.id.toLowerCase().replace(/[^a-z0-9]/g, '_'),
-        pgs_id: selectedTrait.id,
-        name: selectedTrait.name,
-        description: selectedTrait.description,
-        category,
-        variant_count: selectedTrait.variant_count,
-        url: selectedTrait.ftp_scoring_file,
-        file: `${selectedTrait.name.replace(/[^a-zA-Z0-9]/g, '_')}_hg38.parquet`,
-        last_updated: new Date().toISOString()
+    if (!selectedPgsIds || selectedPgsIds.length === 0) return;
+    
+    // Get subtype/biomarker name
+    const { itemName } = await prompts({
+        type: 'text',
+        name: 'itemName',
+        message: `${itemType} name:`,
+        validate: value => value.length > 0 || 'Name is required'
+    });
+    
+    const { itemKey } = await prompts({
+        type: 'text',
+        name: 'itemKey',
+        message: `${itemType} key (lowercase, underscores):`,
+        initial: itemName.toLowerCase().replace(/[^a-z0-9]/g, '_'),
+        validate: value => /^[a-z_]+$/.test(value) || 'Use lowercase letters and underscores only'
+    });
+    
+    // Add to catalog
+    const targetSection = itemType === 'subtype' ? 'subtypes' : 'biomarkers';
+    
+    if (!catalog.trait_families[familyKey][targetSection]) {
+        catalog.trait_families[familyKey][targetSection] = {};
+    }
+    
+    const newItem = {
+        name: itemName,
+        pgs_ids: selectedPgsIds
     };
-
-    catalog.traits.push(newTrait);
+    
+    if (itemType === 'subtype') {
+        const { weight } = await prompts({
+            type: 'number',
+            name: 'weight',
+            message: 'Weight (0.0-1.0):',
+            initial: 1.0,
+            validate: value => (value >= 0 && value <= 1) || 'Weight must be between 0 and 1'
+        });
+        newItem.weight = weight;
+        
+        const { description } = await prompts({
+            type: 'text',
+            name: 'description',
+            message: 'Description:'
+        });
+        if (description) newItem.description = description;
+    }
+    
+    catalog.trait_families[familyKey][targetSection][itemKey] = newItem;
+    
     await saveCatalog(catalog);
     
-    console.log(chalk.green(`\n✓ Added trait: ${newTrait.name}`));
-    console.log(chalk.gray(`  File: ${newTrait.file}`));
-    console.log(chalk.gray(`  Variants: ${newTrait.variant_count?.toLocaleString()}`));
+    console.log(chalk.green(`\n✓ Added ${itemType}: ${itemName}`));
+    console.log(chalk.gray(`  PGS IDs: ${selectedPgsIds.join(', ')}`));
 }
 
 async function listTraits() {
     const catalog = await loadCatalog();
     
-    console.log(chalk.cyan('\n=== Current Traits ===\n'));
+    console.log(chalk.cyan('\n=== Current Trait Families ===\n'));
     
-    if (catalog.traits.length === 0) {
-        console.log(chalk.yellow('No traits in catalog'));
+    if (Object.keys(catalog.trait_families).length === 0) {
+        console.log(chalk.yellow('No trait families in catalog'));
         return;
     }
 
-    catalog.traits.forEach((trait, index) => {
-        console.log(`${chalk.bold(`${index + 1}. ${trait.name}`)} ${chalk.gray(`(${trait.pgs_id})`)}`);
-        console.log(`   ${chalk.blue(trait.category)} | ${chalk.green(trait.variant_count?.toLocaleString() || 'Unknown')} variants`);
-        console.log(`   ${chalk.gray(trait.description)}`);
+    Object.entries(catalog.trait_families).forEach(([familyName, familyData]) => {
+        console.log(chalk.bold.blue(`${familyData.name} (${familyName})`));
+        console.log(`   ${chalk.gray(familyData.description)}`);
+        
+        // Show subtypes
+        Object.entries(familyData.subtypes).forEach(([subtypeName, subtypeData]) => {
+            console.log(`   ${chalk.green('▸')} ${subtypeData.name} ${chalk.gray(`(${subtypeData.pgs_id})`)}`);
+            if (subtypeData.variant_count) {
+                console.log(`     ${chalk.blue(subtypeData.variant_count.toLocaleString())} variants`);
+            }
+        });
+        
+        // Show biomarkers if present
+        if (familyData.biomarkers) {
+            Object.entries(familyData.biomarkers).forEach(([biomarkerName, biomarkerData]) => {
+                console.log(`   ${chalk.yellow('◦')} ${biomarkerData.name} ${chalk.gray(`(${biomarkerData.pgs_id})`)}`);
+            });
+        }
+        
         console.log();
     });
 }
 
-async function removeTrait() {
-    const catalog = await loadCatalog();
-    
-    if (catalog.traits.length === 0) {
-        console.log(chalk.yellow('No traits to remove'));
-        return;
-    }
-
-    const choices = catalog.traits.map((trait, index) => ({
-        title: `${trait.name} (${trait.pgs_id})`,
-        description: `${trait.category} | ${trait.variant_count?.toLocaleString()} variants`,
-        value: index
-    }));
-
-    const { traitIndex } = await prompts({
-        type: 'select',
-        name: 'traitIndex',
-        message: 'Select trait to remove:',
-        choices
-    });
-
-    if (traitIndex === undefined) return;
-
-    const removedTrait = catalog.traits.splice(traitIndex, 1)[0];
-    await saveCatalog(catalog);
-    
-    console.log(chalk.red(`✓ Removed trait: ${removedTrait.name}`));
+async function freshStart() {
+    const freshCatalog = { trait_families: {} };
+    await saveCatalog(freshCatalog);
+    console.log(chalk.green('✓ Catalog reset to empty state'));
 }
 
 async function main() {
@@ -198,8 +239,8 @@ async function main() {
         message: 'What would you like to do?',
         choices: [
             { title: '📋 List current traits', value: 'list' },
-            { title: '➕ Add new trait', value: 'add' },
-            { title: '🗑️  Remove trait', value: 'remove' },
+            { title: '➕ Add trait to family', value: 'add' },
+            { title: '🔄 Fresh start', value: 'fresh' },
             { title: '🚪 Exit', value: 'exit' }
         ]
     });
@@ -209,10 +250,10 @@ async function main() {
             await listTraits();
             break;
         case 'add':
-            await addTrait();
+            await addTraitFamily();
             break;
-        case 'remove':
-            await removeTrait();
+        case 'fresh':
+            await freshStart();
             break;
         case 'exit':
             console.log(chalk.gray('Goodbye!'));
