@@ -11,7 +11,7 @@
     },
     {
       "id": "type_2_diabetes",
-      "name": "Type 2 Diabetes Risk", 
+      "name": "Type 2 Diabetes Risk",
       "description": "Genetic predisposition to type 2 diabetes mellitus",
       "category": "metabolic",
       "pgs_id": "PGS000014",
@@ -22,10 +22,65 @@
       "id": "coronary_artery_disease",
       "name": "Coronary Artery Disease Risk",
       "description": "Genetic risk factors for coronary artery disease",
-      "category": "cardiovascular", 
+      "category": "cardiovascular",
       "pgs_id": "PGS000018",
       "url": "https://ftp.ebi.ac.uk/pub/databases/spot/pgs/scores/PGS000018/ScoringFiles/PGS000018.txt.gz",
       "file": "Coronary_Artery_Disease_hg38.parquet"
+    },
+    {
+      "id": "pgs002224",
+      "pgs_id": "PGS002224",
+      "name": "sitting height measurement",
+      "description": "Quantification of some aspect of height, when assuming a sitting position.",
+      "category": "physical",
+      "variant_count": 910252,
+      "url": "https://ftp.ebi.ac.uk/pub/databases/spot/pgs/scores/PGS002224/ScoringFiles/PGS002224.txt.gz",
+      "file": "sitting_height_measurement_hg38.parquet",
+      "last_updated": "2025-12-24T00:08:05.523Z"
+    },
+    {
+      "id": "pgs000706",
+      "pgs_id": "PGS000706",
+      "name": "hypertension",
+      "description": "Persistently high systemic arterial blood pressure. Based on multiple readings (blood pressure determination), hypertension is currently defined as when systolic pressure is consistently greater than 140 mm Hg or when diastolic pressure is consistently 90 mm Hg or more. [MESH: D006973]",
+      "category": "disease",
+      "variant_count": 186726,
+      "url": "https://ftp.ebi.ac.uk/pub/databases/spot/pgs/scores/PGS000706/ScoringFiles/PGS000706.txt.gz",
+      "file": "hypertension_hg38.parquet",
+      "last_updated": "2025-12-24T00:12:41.320Z"
+    },
+    {
+      "id": "pgs000912",
+      "pgs_id": "PGS000912",
+      "name": "diastolic blood pressure",
+      "description": "The blood pressure after the contraction of the heart while the chambers of the heart refill with blood.",
+      "category": "physical",
+      "variant_count": 1098015,
+      "url": "https://ftp.ebi.ac.uk/pub/databases/spot/pgs/scores/PGS000912/ScoringFiles/PGS000912.txt.gz",
+      "file": "diastolic_blood_pressure_hg38.parquet",
+      "last_updated": "2025-12-24T00:12:59.920Z"
+    },
+    {
+      "id": "pgs000900",
+      "pgs_id": "PGS000900",
+      "name": "systolic blood pressure",
+      "description": "The blood pressure during the contraction of the left ventricle of the heart.",
+      "category": "physical",
+      "variant_count": 1098015,
+      "url": "https://ftp.ebi.ac.uk/pub/databases/spot/pgs/scores/PGS000900/ScoringFiles/PGS000900.txt.gz",
+      "file": "systolic_blood_pressure_hg38.parquet",
+      "last_updated": "2025-12-24T00:13:23.616Z"
+    },
+    {
+      "id": "pgs002033",
+      "pgs_id": "PGS002033",
+      "name": "obesity",
+      "description": "A disorder involving an excessive amount of body fat.",
+      "category": "metabolic",
+      "variant_count": 846292,
+      "url": "https://ftp.ebi.ac.uk/pub/databases/spot/pgs/scores/PGS002033/ScoringFiles/PGS002033.txt.gz",
+      "file": "obesity_hg38.parquet",
+      "last_updated": "2025-12-24T00:15:40.397Z"
     }
   ]
 }
