@@ -2,18 +2,24 @@
   "name": "asili",
   "version": "0.5.0",
   "type": "module",
-    "description": "Swahili for \"Root\", Asili is your personal family genomic risk assistant that never owns your data.",
+  "description": "Swahili for \"Root\", Asili is your personal family genomic risk assistant that never owns your data.",
   "main": "manage-traits.js",
   "scripts": {
     "traits": "node packages/pipeline/manage-traits.js",
-    "etl": "docker compose run --rm pipeline python etl_job.py",
+    "etl": "docker compose run --rm pipeline pnpm run etl",
     "start": "docker compose up -d"
   },
   "dependencies": {
+    "ajv": "^8.17.1",
+    "ajv-formats": "^3.0.1",
     "chalk": "^5.3.0",
     "prompts": "^2.4.2"
   },
-  "keywords": ["genomics", "traits", "cli"],
+  "keywords": [
+    "genomics",
+    "traits",
+    "cli"
+  ],
   "author": "techninja (James Todd)",
   "license": "MIT"
 }

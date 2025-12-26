@@ -23,7 +23,7 @@ export class GeneticDatabase {
 
   async init() {
     return new Promise((resolve, reject) => {
-      const request = indexedDB.open('AsiliDB', 3);
+      const request = indexedDB.open('AsiliDB', 1);
       
       request.onerror = () => reject(request.error);
       request.onsuccess = () => {
@@ -33,14 +33,13 @@ export class GeneticDatabase {
       
       request.onupgradeneeded = (event) => {
         const db = event.target.result;
-        const oldVersion = event.oldVersion;
         
         if (!db.objectStoreNames.contains('individual_metadata')) {
-          const metadataStore = db.createObjectStore('individual_metadata', { keyPath: 'individualId' });
+          db.createObjectStore('individual_metadata', { keyPath: 'individualId' });
         }
         
         if (!db.objectStoreNames.contains('individuals')) {
-          const individualStore = db.createObjectStore('individuals', { keyPath: 'id' });
+          db.createObjectStore('individuals', { keyPath: 'id' });
         }
         
         if (!db.objectStoreNames.contains('snps')) {
@@ -50,8 +49,7 @@ export class GeneticDatabase {
         }
         
         if (!db.objectStoreNames.contains('risk_cache')) {
-          console.log('Creating risk_cache table');
-          const cacheStore = db.createObjectStore('risk_cache', { keyPath: ['traitFile', 'individualId'] });
+          db.createObjectStore('risk_cache', { keyPath: ['traitFile', 'individualId'] });
         }
       };
     });
@@ -288,14 +286,14 @@ export class GeneticDatabase {
     });
   }
 
-  async getAllCachedRisks(traitFiles, individualId) {
-    console.log(`[${new Date().toISOString()}] getAllCachedRisks start:`, traitFiles.length, 'files');
+  async getAllCachedRisks(traitIds, individualId) {
+    console.log(`[${new Date().toISOString()}] getAllCachedRisks start:`, traitIds.length, 'traits');
     const transaction = this.db.transaction(['risk_cache'], 'readonly');
     const store = transaction.objectStore('risk_cache');
     
-    const promises = traitFiles.map(traitFile => 
+    const promises = traitIds.map(traitId => 
       new Promise((resolve) => {
-        const request = store.get([traitFile, individualId]);
+        const request = store.get([traitId, individualId]);
         request.onsuccess = () => resolve(request.result);
         request.onerror = () => resolve(null);
       })
@@ -306,20 +304,20 @@ export class GeneticDatabase {
     return results;
   }
 
-  async getCachedRisk(traitFile, individualId) {
+  async getCachedRisk(traitId, individualId) {
     const transaction = this.db.transaction(['risk_cache'], 'readonly');
     const store = transaction.objectStore('risk_cache');
     
     return new Promise((resolve, reject) => {
-      const request = store.get([traitFile, individualId]);
+      const request = store.get([traitId, individualId]);
       request.onsuccess = () => resolve(request.result);
       request.onerror = () => reject(request.error);
     });
   }
 
-  async setCachedRisk(traitFile, individualId, riskData) {
+  async setCachedRisk(traitId, individualId, riskData) {
     const cacheEntry = {
-      traitFile,
+      traitFile: traitId, // Keep old field name for compatibility
       individualId,
       ...riskData,
       calculatedAt: Date.now()

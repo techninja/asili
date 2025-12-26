@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Multi-Format Risk Calculation Test</title>
+</head>
+<body>
+    <h1>Multi-Format Risk Calculation Test</h1>
+    <div id="test-results"></div>
+    
+    <script type="module">
+        // Test the new multi-format trait structure
+        const testCatalog = {
+            "trait_families": {
+                "diabetes": {
+                    "name": "Diabetes Risk Profile",
+                    "subtypes": {
+                        "general": {
+                            "name": "diabetes mellitus",
+                            "formats": {
+                                "STANDARD_SNP": {
+                                    "format_name": "Standard SNP",
+                                    "file_path": "diabetes_general_standard_snp_hg38.parquet",
+                                    "variant_count": 5891713,
+                                    "pgs_ids": ["PGS001327", "PGS001329"]
+                                },
+                                "RSID_ONLY": {
+                                    "format_name": "rsID Only", 
+                                    "file_path": "diabetes_general_rsid_only_hg38.parquet",
+                                    "variant_count": 4,
+                                    "pgs_ids": ["PGS002256"]
+                                }
+                            },
+                            "variant_count": 5891717
+                        }
+                    }
+                }
+            }
+        };
+        
+        function testTraitConversion() {
+            const availableTraits = [];
+            Object.entries(testCatalog.trait_families).forEach(([familyKey, family]) => {
+                Object.entries(family.subtypes).forEach(([subtypeKey, subtype]) => {
+                    availableTraits.push({
+                        id: `${familyKey}_${subtypeKey}`,
+                        name: subtype.name,
+                        formats: subtype.formats || {},
+                        variant_count: subtype.variant_count
+                    });
+                });
+            });
+            
+            const results = document.getElementById('test-results');
+            results.innerHTML = `
+                <h2>Converted Traits:</h2>
+                <pre>${JSON.stringify(availableTraits, null, 2)}</pre>
+                <h2>Format Files:</h2>
+                <ul>
+                    ${availableTraits.map(trait => 
+                        Object.values(trait.formats).map(format => 
+                            `<li>${format.file_path} (${format.variant_count} variants)</li>`
+                        ).join('')
+                    ).join('')}
+                </ul>
+            `;
+        }
+        
+        testTraitConversion();
+    </script>
+</body>
+</html>

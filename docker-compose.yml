@@ -19,8 +19,8 @@ services:
       dockerfile: Dockerfile
     volumes:
       - ./packages/pipeline:/app
+      - /app/node_modules
       - ./data_out:/output
-    command: python etl_job.py
 
   # 3. The Local CDN (Simulating S3)
   cdn:

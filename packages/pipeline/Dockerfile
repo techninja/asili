@@ -1,15 +1,18 @@
-FROM python:3.9-slim
+FROM node:22-slim
+
+# Install pnpm
+RUN npm install -g pnpm
 
 WORKDIR /app
 
-# Install system dependencies (if any specific C libraries are needed for Arrow)
-# usually slim is fine for basic pyarrow
-RUN apt-get update && apt-get install -y --no-install-recommends build-essential
+# Copy package files
+COPY package*.json ./
+RUN pnpm install --prod
 
-# Install Python packages
-# pyarrow and pandas are the heavy lifters here
-RUN pip install --no-cache-dir pandas pyarrow numpy requests
-
+# Copy pipeline scripts
 COPY . .
 
-CMD ["python", "etl_job.py"]
+# Create output directory
+RUN mkdir -p /output
+
+CMD ["pnpm", "run", "etl"]
