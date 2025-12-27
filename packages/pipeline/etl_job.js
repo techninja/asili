@@ -244,7 +244,25 @@ function getTraitConfigs(catalog) {
 }
 
 async function needsUpdate(traitName, config) {
-    // Check if any format-specific files exist and are up to date
+    // Get file hashes from PGS API for validation
+    const expectedHashes = new Map();
+    for (const pgsId of config.pgs_ids) {
+        try {
+            const fileData = await pgsApiClient.getScoreFile(pgsId);
+            if (fileData.results?.[0]?.ftp_scoring_file) {
+                const fileInfo = fileData.results[0];
+                expectedHashes.set(pgsId, {
+                    size: fileInfo.size,
+                    checksum: fileInfo.checksum_sha256 || fileInfo.checksum_md5,
+                    date_released: fileInfo.date_released
+                });
+            }
+        } catch (error) {
+            console.log(`    Warning: Could not get file info for ${pgsId}`);
+        }
+    }
+    
+    // Check if any format-specific files exist and validate hashes
     const formatFiles = [
         `${traitName}_standard_snp_hg38.parquet`,
         `${traitName}_hla_allele_hg38.parquet`, 
@@ -253,30 +271,35 @@ async function needsUpdate(traitName, config) {
     ];
     
     let hasAnyFiles = false;
-    let needsRegeneration = false;
     
-    // Get last_updated from catalog for this trait
+    // Get stored hashes from catalog
     const catalog = await loadTraitCatalog();
     const [familyName, subtypeName] = traitName.split('_', 2);
     const family = catalog.trait_families[familyName];
     
-    let lastUpdated;
-    if (family?.subtypes?.[subtypeName]?.last_updated) {
-        lastUpdated = new Date(family.subtypes[subtypeName].last_updated);
-    } else if (family?.biomarkers?.[subtypeName]?.last_updated) {
-        lastUpdated = new Date(family.biomarkers[subtypeName].last_updated);
+    let storedHashes;
+    if (family?.subtypes?.[subtypeName]) {
+        storedHashes = family.subtypes[subtypeName].source_hashes;
+    } else if (family?.biomarkers?.[subtypeName]) {
+        storedHashes = family.biomarkers[subtypeName].source_hashes;
+    }
+    
+    // Compare hashes - if any PGS file hash changed, regenerate
+    if (storedHashes && expectedHashes.size > 0) {
+        for (const [pgsId, expected] of expectedHashes) {
+            const stored = storedHashes[pgsId];
+            if (!stored || stored.checksum !== expected.checksum || stored.size !== expected.size) {
+                console.log(`  - ${traitName}: PGS ${pgsId} changed, will regenerate`);
+                return true;
+            }
+        }
     }
     
     for (const fileName of formatFiles) {
         const filePath = path.join(OUTPUT_DIR, fileName);
         try {
-            const stats = await fs.stat(filePath);
+            await fs.stat(filePath);
             hasAnyFiles = true;
-            
-            if (lastUpdated && stats.mtime < lastUpdated) {
-                needsRegeneration = true;
-                break;
-            }
         } catch {
             // File doesn't exist, continue checking others
         }
@@ -284,11 +307,6 @@ async function needsUpdate(traitName, config) {
     
     if (!hasAnyFiles) {
         console.log(`  - ${traitName}: No files found, will download`);
-        return true;
-    }
-    
-    if (needsRegeneration) {
-        console.log(`  - ${traitName}: Files outdated, will regenerate`);
         return true;
     }
     
@@ -387,133 +405,181 @@ async function downloadAndCombinePgs(traitName, config) {
         }
     }
     
-    // Close all writers and update catalog for each format
+    // Close all writers and validate minimum size
+    const MIN_VARIANTS = 100; // Minimum variants for a valid parquet file
+    
     for (const [formatKey, writer] of Object.entries(writers)) {
         await writer.close();
         
-        // Update catalog immediately for this format
-        await updateTraitCatalogFormat(traitName, formatKey, formatStats[formatKey]);
-        
-        console.log(`  - Closed ${formatKey} writer (${formatStats[formatKey].variant_count} variants)`);
+        // Only keep formats that have sufficient variants
+        if (formatStats[formatKey].variant_count < MIN_VARIANTS) {
+            const filePath = path.join(OUTPUT_DIR, formatStats[formatKey].file_path);
+            try {
+                await fs.unlink(filePath);
+                console.log(`  - Deleted ${formatKey} file (${formatStats[formatKey].variant_count} variants < ${MIN_VARIANTS} minimum)`);
+            } catch {}
+            delete formatStats[formatKey];
+        } else {
+            console.log(`  - Closed ${formatKey} writer (${formatStats[formatKey].variant_count} variants)`);
+        }
     }
     
-    return { totalVariants, formatStats };
+    return { totalVariants, formatStats: Object.fromEntries(Object.entries(formatStats).filter(([_, stats]) => stats.variant_count > 0)) };
 }
 
-async function updateTraitCatalogFormat(traitName, formatKey, formatStats) {
-    const catalogPath = path.join(__dirname, 'trait_catalog.json');
-    const catalog = JSON.parse(await fs.readFile(catalogPath, 'utf8'));
+async function updateOutputManifest(updatedData) {
+    const manifestPath = path.join(OUTPUT_DIR, 'trait_manifest.json');
+    let manifest = { traits: {}, generated_at: new Date().toISOString() };
     
-    const [familyName, subtypeName] = traitName.split('_', 2);
-    const family = catalog.trait_families[familyName];
+    try {
+        const existing = await fs.readFile(manifestPath, 'utf8');
+        manifest = JSON.parse(existing);
+    } catch {}
     
-    let targetItem;
-    if (family?.subtypes?.[subtypeName]) {
-        targetItem = catalog.trait_families[familyName].subtypes[subtypeName];
-    } else if (family?.biomarkers?.[subtypeName]) {
-        targetItem = catalog.trait_families[familyName].biomarkers[subtypeName];
+    // Update manifest with generated files and metadata
+    for (const [traitName, data] of Object.entries(updatedData)) {
+        if (data.metadata_only) {
+            // Only update metadata, preserve existing file info
+            const existing = manifest.traits[traitName] || {};
+            manifest.traits[traitName] = {
+                ...existing,
+                pgs_metadata: data.pgs_metadata,
+                last_updated: data.timestamp
+            };
+        } else {
+            // Full update with new files
+            manifest.traits[traitName] = {
+                last_updated: data.timestamp,
+                variant_count: data.variant_count,
+                formats: data.formats,
+                source_hashes: data.source_hashes,
+                pgs_metadata: data.pgs_metadata
+            };
+        }
     }
     
-    if (targetItem) {
-        // Initialize formats object if it doesn't exist
-        if (!targetItem.formats) {
-            targetItem.formats = {};
+    manifest.generated_at = new Date().toISOString();
+    await fs.writeFile(manifestPath, JSON.stringify(manifest, null, 2));
+}
+
+// Global metadata cache to avoid duplicate API calls
+const globalMetadataCache = new Map();
+
+async function collectPgsMetadata(pgsIds) {
+    const metadata = {};
+    const uncachedIds = [];
+    
+    // Check global cache first
+    for (const pgsId of pgsIds) {
+        if (globalMetadataCache.has(pgsId)) {
+            metadata[pgsId] = globalMetadataCache.get(pgsId);
+        } else {
+            uncachedIds.push(pgsId);
         }
+    }
+    
+    if (uncachedIds.length === 0) {
+        console.log(`    All ${pgsIds.length} PGS scores found in cache`);
+        return metadata;
+    }
+    
+    const batchSize = 10; // Process in smaller batches
+    console.log(`    Collecting metadata for ${uncachedIds.length} new PGS scores in batches of ${batchSize}...`);
+    
+    for (let i = 0; i < uncachedIds.length; i += batchSize) {
+        const batch = uncachedIds.slice(i, i + batchSize);
+        console.log(`    Processing batch ${Math.floor(i/batchSize) + 1}/${Math.ceil(uncachedIds.length/batchSize)} (${batch.length} scores)`);
         
-        // Fetch PGS titles for this format
-        const pgsMetadata = {};
-        for (const pgsId of formatStats.pgs_ids) {
+        const batchPromises = batch.map(async (pgsId) => {
             try {
                 const scoreData = await pgsApiClient.getScore(pgsId);
-                pgsMetadata[pgsId] = {
-                    name: scoreData.name || pgsId,
-                    trait: scoreData.trait_reported || '',
-                    ancestry: scoreData.ancestry_broad || ''
+                return {
+                    pgsId,
+                    metadata: {
+                        name: scoreData.name || '',
+                        trait: scoreData.trait_reported || '',
+                        ancestry: scoreData.ancestry_broad || ''
+                    }
                 };
             } catch (error) {
-                console.log(`    Failed to fetch metadata for ${pgsId}: ${error.message}`);
-                pgsMetadata[pgsId] = { name: pgsId, trait: '', ancestry: '' };
+                console.log(`      Warning: Could not get metadata for ${pgsId}: ${error.message}`);
+                return {
+                    pgsId,
+                    metadata: {
+                        name: pgsId,
+                        trait: 'Unknown',
+                        ancestry: ''
+                    }
+                };
             }
-        }
+        });
         
-        // Update format-specific info
-        targetItem.formats[formatKey] = {
-            format_name: formatStats.format_name,
-            file_path: formatStats.file_path,
-            variant_count: formatStats.variant_count,
-            pgs_ids: formatStats.pgs_ids,
-            pgs_metadata: pgsMetadata,
-            last_updated: new Date().toISOString()
-        };
+        const batchResults = await Promise.all(batchPromises);
+        batchResults.forEach(({ pgsId, metadata: pgsMetadata }) => {
+            metadata[pgsId] = pgsMetadata;
+            globalMetadataCache.set(pgsId, pgsMetadata); // Cache for future use
+        });
         
-        // Update overall last_updated and total variant_count
-        targetItem.last_updated = new Date().toISOString();
-        
-        // Calculate total variants across all formats
-        let totalVariants = 0;
-        for (const format of Object.values(targetItem.formats)) {
-            totalVariants += format.variant_count;
-        }
-        targetItem.variant_count = totalVariants;
-    }
-    
-    await fs.writeFile(catalogPath, JSON.stringify(catalog, null, 2));
-    
-    // Copy to output directory
-    const outputCatalogPath = path.join(OUTPUT_DIR, 'trait_catalog.json');
-    await fs.writeFile(outputCatalogPath, JSON.stringify(catalog, null, 2));
-}
-
-async function updateTraitCatalog(updatedData) {
-    const catalogPath = path.join(__dirname, 'trait_catalog.json');
-    const catalog = JSON.parse(await fs.readFile(catalogPath, 'utf8'));
-    
-    // Update timestamps and variant counts
-    for (const [familyName, familyData] of Object.entries(catalog.trait_families)) {
-        for (const [subtypeName, subtypeData] of Object.entries(familyData.subtypes || {})) {
-            const key = `${familyName}_${subtypeName}`;
-            if (updatedData[key]) {
-                catalog.trait_families[familyName].subtypes[subtypeName].last_updated = updatedData[key].timestamp;
-                catalog.trait_families[familyName].subtypes[subtypeName].variant_count = updatedData[key].variant_count;
-            }
-        }
-        
-        if (familyData.biomarkers) {
-            for (const [biomarkerName, biomarkerData] of Object.entries(familyData.biomarkers)) {
-                const key = `${familyName}_${biomarkerName}`;
-                if (updatedData[key]) {
-                    catalog.trait_families[familyName].biomarkers[biomarkerName].last_updated = updatedData[key].timestamp;
-                    catalog.trait_families[familyName].biomarkers[biomarkerName].variant_count = updatedData[key].variant_count;
-                }
-            }
+        // Small delay between batches to be respectful
+        if (i + batchSize < uncachedIds.length) {
+            await new Promise(resolve => setTimeout(resolve, 1000));
         }
     }
     
-    await fs.writeFile(catalogPath, JSON.stringify(catalog, null, 2));
-    
-    // Copy to output directory
-    const outputCatalogPath = path.join(OUTPUT_DIR, 'trait_catalog.json');
-    await fs.writeFile(outputCatalogPath, JSON.stringify(catalog, null, 2));
+    return metadata;
 }
 
 async function generateTraitPack(traitName, config) {
     console.log(`Checking ${traitName}...`);
     
-    if (!(await needsUpdate(traitName, config))) {
-        console.log(`  - Skipping ${traitName} (up to date)`);
-        return null;
+    // Always collect fresh metadata
+    console.log(`  - Collecting metadata for ${config.pgs_ids.length} PGS scores...`);
+    const pgsMetadata = await collectPgsMetadata(config.pgs_ids);
+    
+    const needsFileUpdate = await needsUpdate(traitName, config);
+    
+    if (!needsFileUpdate) {
+        console.log(`  - Files up to date, updating metadata only`);
+        return {
+            timestamp: new Date().toISOString(),
+            variant_count: 0, // Will be filled from existing manifest
+            formats: {}, // Will be filled from existing manifest
+            source_hashes: {},
+            pgs_metadata: pgsMetadata,
+            metadata_only: true
+        };
     }
     
     console.log(`  - Generating ${traitName}...`);
     
-    const result = await downloadAndCombinePgs(traitName, config);
-    if (result.totalVariants === 0) {
-        console.log(`  - No data for ${traitName}, skipping`);
-        return null;
+    // Collect source file hashes for validation
+    const sourceHashes = {};
+    for (const pgsId of config.pgs_ids) {
+        try {
+            const fileData = await pgsApiClient.getScoreFile(pgsId);
+            if (fileData.results?.[0]) {
+                const fileInfo = fileData.results[0];
+                sourceHashes[pgsId] = {
+                    size: fileInfo.size,
+                    checksum: fileInfo.checksum_sha256 || fileInfo.checksum_md5,
+                    date_released: fileInfo.date_released
+                };
+            }
+        } catch (error) {
+            console.log(`    Warning: Could not get file info for ${pgsId}`);
+        }
     }
     
-    console.log(`Successfully generated trait pack for ${traitName} (${result.totalVariants} total variants across ${Object.keys(result.formatStats).length} formats)`);
-    return { timestamp: new Date().toISOString(), variant_count: result.totalVariants, formats: result.formatStats };
+    const result = await downloadAndCombinePgs(traitName, config);
+    
+    console.log(`Successfully processed trait pack for ${traitName} (${result.totalVariants} total variants across ${Object.keys(result.formatStats).length} formats)`);
+    return { 
+        timestamp: new Date().toISOString(), 
+        variant_count: result.totalVariants, 
+        formats: result.formatStats,
+        source_hashes: sourceHashes,
+        pgs_metadata: pgsMetadata
+    };
 }
 
 async function main() {
@@ -524,15 +590,20 @@ async function main() {
     for (const [traitName, config] of Object.entries(traitConfigs)) {
         try {
             const result = await generateTraitPack(traitName, config);
-            if (result) {
-                updatedData[traitName] = result;
-            }
+            // Always process result (either full update or metadata-only)
+            updatedData[traitName] = result;
         } catch (error) {
             console.log(`Error processing ${traitName}: ${error.message}`);
         }
     }
     
-    await updateTraitCatalog(updatedData);
+    await updateOutputManifest(updatedData);
+    
+    // Copy canonical catalog to output as index
+    const canonicalPath = path.join(__dirname, 'trait_catalog.json');
+    const outputIndexPath = path.join(OUTPUT_DIR, 'trait_catalog_index.json');
+    await fs.copyFile(canonicalPath, outputIndexPath);
+    
     console.log('ETL Job Complete. Trait packs ready for serving.');
 }
 

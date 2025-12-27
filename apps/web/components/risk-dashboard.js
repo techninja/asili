@@ -34,57 +34,56 @@ export class RiskDashboard extends HTMLElement {
         grid.innerHTML = '<div class="loading">Loading trait catalog...</div>';
         
         try {
-            const response = await fetch('http://localhost:4343/data/trait_catalog.json');
-            const catalog = await response.json();
+            const [catalogResponse, manifestResponse] = await Promise.all([
+                fetch('http://localhost:4343/data/trait_catalog_index.json'),
+                fetch('http://localhost:4343/data/trait_manifest.json')
+            ]);
+            
+            const catalog = await catalogResponse.json();
+            const manifest = await manifestResponse.json();
             
             // Store catalog for family grouping
             this.traitCatalog = catalog;
             
-            // Convert enhanced catalog to flat trait list
+            // Convert catalog to flat trait list with manifest data
             this.availableTraits = [];
             Object.entries(catalog.trait_families).forEach(([familyKey, family]) => {
                 Object.entries(family.subtypes).forEach(([subtypeKey, subtype]) => {
-                    // Collect PGS metadata from all formats
-                    const pgsMetadata = {};
-                    Object.values(subtype.formats || {}).forEach(format => {
-                        Object.assign(pgsMetadata, format.pgs_metadata || {});
-                    });
+                    const traitId = `${familyKey}_${subtypeKey}`;
+                    const manifestData = manifest.traits[traitId] || {};
                     
                     this.availableTraits.push({
-                        id: `${familyKey}_${subtypeKey}`,
+                        id: traitId,
                         name: subtype.name,
                         description: subtype.description,
                         category: family.category,
                         family: familyKey,
                         familyName: family.name,
-                        formats: subtype.formats || {},
+                        formats: manifestData.formats || {},
                         pgs_ids: subtype.pgs_ids,
-                        pgs_metadata: pgsMetadata,
-                        variant_count: subtype.variant_count,
-                        last_updated: subtype.last_updated
+                        pgs_metadata: manifestData.pgs_metadata || {},
+                        variant_count: manifestData.variant_count || 0,
+                        last_updated: manifestData.last_updated
                     });
                 });
                 
                 if (family.biomarkers) {
                     Object.entries(family.biomarkers).forEach(([biomarkerKey, biomarker]) => {
-                        // Collect PGS metadata from all formats
-                        const pgsMetadata = {};
-                        Object.values(biomarker.formats || {}).forEach(format => {
-                            Object.assign(pgsMetadata, format.pgs_metadata || {});
-                        });
+                        const traitId = `${familyKey}_${biomarkerKey}`;
+                        const manifestData = manifest.traits[traitId] || {};
                         
                         this.availableTraits.push({
-                            id: `${familyKey}_${biomarkerKey}`,
+                            id: traitId,
                             name: biomarker.name,
                             description: biomarker.description || '',
                             category: family.category,
                             family: familyKey,
                             familyName: family.name,
-                            formats: biomarker.formats || {},
+                            formats: manifestData.formats || {},
                             pgs_ids: biomarker.pgs_ids,
-                            pgs_metadata: pgsMetadata,
-                            variant_count: biomarker.variant_count,
-                            last_updated: biomarker.last_updated
+                            pgs_metadata: manifestData.pgs_metadata || {},
+                            variant_count: manifestData.variant_count || 0,
+                            last_updated: manifestData.last_updated
                         });
                     });
                 }
@@ -259,7 +258,7 @@ export class RiskDashboard extends HTMLElement {
         return `
             <div class="risk-display">
                 <button class="analyze-btn" onclick="this.getRootNode().host.analyzeRisk('${traitId}', '${individualId}', this)">
-                    Calculate Risk
+                    <span>Calculate Risk</span>
                 </button>
             </div>
         `;
@@ -337,12 +336,23 @@ export class RiskDashboard extends HTMLElement {
                 .medium { background: #fff3cd; color: #856404; }
                 .high { background: #f8d7da; color: #721c24; }
                 .trait-stats { font-size: 12px; color: #666; margin-top: 10px; }
-                .analyze-btn { width: 100%; padding: 10px; background: #007acc; color: white; border: none; border-radius: 4px; cursor: pointer; }
+                .analyze-btn { position: relative; width: 100%; padding: 10px; background: #007acc; color: white; border: none; border-radius: 4px; cursor: pointer; overflow: hidden; }
                 .analyze-btn:hover { background: #005a99; }
                 .analyze-btn:disabled { background: #ccc; cursor: not-allowed; }
+                .analyze-btn:disabled::before { width: var(--progress, 0%); }
+                .analyze-btn::before { content: ''; position: absolute; top: 0; left: 0; height: 100%; background: rgba(255,255,255,0.3); width: 0%; transition: width 0.3s ease; z-index: 1; }
+                .analyze-btn.progress::before { width: var(--progress, 0%); }
+                .analyze-btn span { position: relative; z-index: 2; }
+                .analyze-btn.loading span::after { content: ''; display: inline-block; width: 12px; height: 12px; margin-left: 8px; border: 2px solid rgba(255,255,255,0.3); border-top: 2px solid white; border-radius: 50%; animation: spin 1s linear infinite; }
+                .analyze-btn.progress span::after { content: '⚡'; margin-left: 8px; }
+                @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
                 .loading-card .risk-display { opacity: 0.6; }
                 .loading { color: #666; font-style: italic; }
                 .error { color: #d32f2f; font-size: 12px; }
+                .error-message { margin-top: 10px; padding: 8px; background: #f8d7da; border: 1px solid #f5c6cb; border-radius: 4px; }
+                .error-text { font-size: 12px; color: #721c24; margin-bottom: 5px; }
+                .retry-btn { font-size: 11px; padding: 4px 8px; background: #dc3545; color: white; border: none; border-radius: 3px; cursor: pointer; }
+                .retry-btn:hover { background: #c82333; }
                 .pgs-breakdown { margin-top: 15px; }
                 .breakdown-title { font-size: 12px; font-weight: bold; margin-bottom: 8px; color: #333; }
                 .pgs-list { max-height: 200px; overflow-y: auto; }
@@ -373,13 +383,31 @@ export class RiskDashboard extends HTMLElement {
             const trait = this.availableTraits.find(t => t.id === traitId);
             if (!trait) throw new Error('Trait not found');
             
-            buttonElement.textContent = 'Loading trait data...';
-            const { userDNA, totalVariants } = await this.getUserDNAForMultipleFormats(trait, individualId, (status) => {
-                buttonElement.textContent = status;
+            buttonElement.innerHTML = '<span>Loading trait data...</span>';
+            buttonElement.classList.remove('progress');
+            buttonElement.classList.add('loading');
+            buttonElement.style.removeProperty('--progress');
+            const { userDNA, totalVariants } = await this.getUserDNAForMultipleFormats(trait, individualId, (status, percent = 0) => {
+                const span = buttonElement.querySelector('span');
+                if (span) {
+                    span.textContent = `${status} (${Math.round(percent)}%)`;
+                } else {
+                    buttonElement.textContent = `${status} (${Math.round(percent)}%)`;
+                }
+                buttonElement.style.setProperty('--progress', `${percent}%`);
             });
             
-            buttonElement.textContent = 'Calculating risk score...';
-            const result = await this.calculateCombinedRisk(trait, userDNA);
+            const result = await this.calculateCombinedRisk(trait, userDNA, (message, percent) => {
+                const span = buttonElement.querySelector('span');
+                if (span) {
+                    span.textContent = `${message} (${Math.round(percent)}%)`;
+                } else {
+                    buttonElement.textContent = `${message} (${Math.round(percent)}%)`;
+                }
+                buttonElement.classList.remove('loading');
+                buttonElement.classList.add('progress');
+                buttonElement.style.setProperty('--progress', `${percent}%`);
+            });
             
             buttonElement.textContent = 'Saving results...';
             // Cache the result
@@ -413,6 +441,17 @@ export class RiskDashboard extends HTMLElement {
         } catch (error) {
             buttonElement.textContent = 'Error - Retry';
             buttonElement.disabled = false;
+            
+            // Show detailed error with retry option
+            const card = buttonElement.closest('.trait-card');
+            const errorDiv = document.createElement('div');
+            errorDiv.className = 'error-message';
+            errorDiv.innerHTML = `
+                <div class="error-text">Calculation failed: ${error.message}</div>
+                <button class="retry-btn" onclick="this.getRootNode().host.analyzeRisk('${traitId}', '${individualId}', this.parentElement.parentElement.querySelector('.analyze-btn'))">Retry</button>
+            `;
+            card.appendChild(errorDiv);
+            
             this.error('Risk calculation failed:', error);
         }
     }
@@ -443,48 +482,53 @@ export class RiskDashboard extends HTMLElement {
         const allPositions = new Set();
         const allRsids = new Set();
         let totalVariants = 0;
+        const validFormats = Object.entries(trait.formats).filter(([_, formatData]) => formatData.variant_count > 0);
         
-        // Load all format files and collect positions/rsids
-        for (const [formatKey, formatData] of Object.entries(trait.formats)) {
-            statusCallback?.(`Loading ${formatData.format_name} data...`);
+        // Allocate 30% for format loading phase
+        for (let i = 0; i < validFormats.length; i++) {
+            const [formatKey, formatData] = validFormats[i];
+            const baseProgress = (i / validFormats.length) * 30;
+            
+            statusCallback?.(`Loading ${formatData.format_name} data...`, baseProgress);
             const url = `http://localhost:4343/data/${formatData.file_path}`;
-            console.log(`[${new Date().toISOString()}] Loading format data from:`, url);
+            console.log(`[${new Date().toISOString()}] Loading format data from:`, url, `(${formatData.variant_count} variants)`);
             
             await this.duckdb.loadParquet(url, `temp_${formatKey.toLowerCase()}`);
             totalVariants += formatData.variant_count;
             
-            // Check what columns exist and detect format
-            const columnsResult = await this.duckdb.query(`PRAGMA table_info(temp_${formatKey.toLowerCase()})`);
-            const columns = columnsResult.toArray().map(row => row.name);
-            const formatInfo = getFormatFromColumns(columns);
-            
-            if (formatInfo?.format.matchingStrategy === 'position') {
-                // Standard SNP format - use positions
-                const positionsResult = await this.duckdb.query(`SELECT DISTINCT chr_name, chr_position FROM temp_${formatKey.toLowerCase()}`);
-                positionsResult.toArray().forEach(row => {
-                    allPositions.add(`${row.chr_name}:${row.chr_position}`);
-                });
-            } else if (formatInfo?.format.matchingStrategy === 'rsid') {
-                // rsID format - collect rsids
-                const rsidsResult = await this.duckdb.query(`SELECT DISTINCT rsid FROM temp_${formatKey.toLowerCase()}`);
-                rsidsResult.toArray().forEach(row => {
-                    allRsids.add(row.rsid);
-                });
-            } else if (formatInfo?.format.matchingStrategy === 'variant_id') {
-                // HLA format - collect variant IDs as rsids
-                const variantResult = await this.duckdb.query(`SELECT DISTINCT variant_id FROM temp_${formatKey.toLowerCase()}`);
-                variantResult.toArray().forEach(row => {
-                    allRsids.add(row.variant_id);
-                });
-            }
-            
+            statusCallback?.(`Analyzing ${formatData.format_name} format...`, baseProgress + (30 / validFormats.length * 0.8));
+                
+                // Check what columns exist and detect format
+                const columnsResult = await this.duckdb.query(`PRAGMA table_info(temp_${formatKey.toLowerCase()})`);
+                const columns = columnsResult.toArray().map(row => row.name);
+                const formatInfo = getFormatFromColumns(columns);
+                
+                if (formatInfo?.format.matchingStrategy === 'position') {
+                    // Standard SNP format - use positions
+                    const positionsResult = await this.duckdb.query(`SELECT DISTINCT chr_name, chr_position FROM temp_${formatKey.toLowerCase()}`);
+                    positionsResult.toArray().forEach(row => {
+                        allPositions.add(`${row.chr_name}:${row.chr_position}`);
+                    });
+                } else if (formatInfo?.format.matchingStrategy === 'rsid') {
+                    // rsID format - collect rsids
+                    const rsidsResult = await this.duckdb.query(`SELECT DISTINCT rsid FROM temp_${formatKey.toLowerCase()}`);
+                    rsidsResult.toArray().forEach(row => {
+                        allRsids.add(row.rsid);
+                    });
+                } else if (formatInfo?.format.matchingStrategy === 'variant_id') {
+                    // HLA format - collect variant IDs as rsids
+                    const variantResult = await this.duckdb.query(`SELECT DISTINCT variant_id FROM temp_${formatKey.toLowerCase()}`);
+                    variantResult.toArray().forEach(row => {
+                        allRsids.add(row.variant_id);
+                    });
+                }
             // Clean up temp table
             await this.duckdb.query(`DROP TABLE IF EXISTS temp_${formatKey.toLowerCase()}`);
         }
         
         console.log(`[${new Date().toISOString()}] Collected`, allPositions.size, 'positions and', allRsids.size, 'rsids');
         
-        statusCallback?.('Searching DNA matches...');
+        statusCallback?.('Searching DNA matches...', 30);
         let matches = [];
         
         // Get matches by positions if we have any
@@ -504,21 +548,28 @@ export class RiskDashboard extends HTMLElement {
         return { userDNA: matches, totalVariants };
     }
     
-    async calculateCombinedRisk(trait, userDNA) {
+    async calculateCombinedRisk(trait, userDNA, progressCallback) {
         let totalScore = 0;
         let totalWeight = 0;
         let combinedBreakdown = {};
+        const validFormats = Object.entries(trait.formats).filter(([_, formatData]) => formatData.variant_count > 0);
+        let currentFormat = 0;
         
         // Calculate risk for each format separately and combine
-        for (const [formatKey, formatData] of Object.entries(trait.formats)) {
+        for (const [formatKey, formatData] of validFormats) {
             const url = `http://localhost:4343/data/${formatData.file_path}`;
-            const result = await this.duckdb.calculateRisk(url, userDNA);
+            const formatProgress = (message, percent) => {
+                // Map 0-100% to 35-100% (reserve 35% for initial loading)
+                const overallPercent = 35 + (currentFormat / validFormats.length * 65) + (percent / validFormats.length * 0.65);
+                progressCallback?.(message, overallPercent);
+            };
             
-            // Weight by number of variants in this format
-            const weight = formatData.variant_count || 1;
-            totalScore += result.riskScore * weight;
-            totalWeight += weight;
-            
+            const result = await this.duckdb.calculateRisk(url, userDNA, formatProgress);
+                
+                // Weight by number of variants in this format
+                const weight = formatData.variant_count || 1;
+                totalScore += result.riskScore * weight;
+                totalWeight += weight;
             // Merge PGS breakdowns with metadata
             for (const [pgsId, breakdown] of Object.entries(result.pgsBreakdown)) {
                 combinedBreakdown[pgsId] = {
@@ -526,6 +577,8 @@ export class RiskDashboard extends HTMLElement {
                     metadata: trait.pgs_metadata?.[pgsId] || { name: pgsId }
                 };
             }
+            
+            currentFormat++;
         }
         
         return {

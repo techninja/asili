@@ -156,7 +156,7 @@ async function refreshTraitData() {
                 subtype.pgs_ids = [...subtype.pgs_ids, ...newIds];
             }
             
-            // Update variant counts for all PGS IDs
+            // Update variant counts for all PGS IDs - but don't store in canonical
             let totalVariants = 0;
             for (const pgsId of subtype.pgs_ids) {
                 try {
@@ -170,8 +170,7 @@ async function refreshTraitData() {
                 }
             }
             
-            subtype.variant_count = totalVariants;
-            subtype.last_updated = new Date().toISOString();
+            console.log(chalk.blue(`    Total variants: ${totalVariants.toLocaleString()}`));
         }
         
         // Refresh biomarkers
@@ -211,8 +210,7 @@ async function refreshTraitData() {
                 }
             }
             
-            biomarker.variant_count = totalVariants;
-            biomarker.last_updated = new Date().toISOString();
+            console.log(chalk.blue(`    Total variants: ${totalVariants.toLocaleString()}`));
         }
     }
     
@@ -368,11 +366,7 @@ async function addTraitFamily() {
     const newItem = {
         name: traitName,
         pgs_ids: selectedPgsIds,
-        description: traitDescription,
-        last_updated: new Date().toISOString(),
-        variant_count: totalVariants,
-        trait_efo_id: firstResult.trait_efo,
-        trait_ontology: firstResult.trait_ontology
+        description: traitDescription
     };
     
     // Default weight for subtypes
@@ -406,8 +400,8 @@ async function listTraits() {
         console.log(`   ${chalk.gray(familyData.description)}`);
         
         // Show subtypes
-        Object.entries(familyData.subtypes).forEach(([subtypeName, subtypeData]) => {
-            console.log(`   ${chalk.green('▸')} ${subtypeData.name} ${chalk.gray(`(${subtypeData.pgs_id})`)}`);
+        Object.entries(familyData.subtypes || {}).forEach(([subtypeName, subtypeData]) => {
+            console.log(`   ${chalk.green('▸')} ${subtypeData.name} ${chalk.gray(`(${subtypeData.pgs_ids.join(', ')})`)}`);
             if (subtypeData.variant_count) {
                 console.log(`     ${chalk.blue(subtypeData.variant_count.toLocaleString())} variants`);
             }
@@ -416,7 +410,7 @@ async function listTraits() {
         // Show biomarkers if present
         if (familyData.biomarkers) {
             Object.entries(familyData.biomarkers).forEach(([biomarkerName, biomarkerData]) => {
-                console.log(`   ${chalk.yellow('◦')} ${biomarkerData.name} ${chalk.gray(`(${biomarkerData.pgs_id})`)}`);
+                console.log(`   ${chalk.yellow('◦')} ${biomarkerData.name} ${chalk.gray(`(${biomarkerData.pgs_ids.join(', ')})`)}`);
             });
         }
         

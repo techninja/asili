@@ -27,13 +27,17 @@ export class DuckDBProvider {
         return await this.conn.query(sql);
     }
 
-    async loadParquet(url, tableName) {
+    async loadParquet(url, tableName, progressCallback) {
+        progressCallback?.('Loading parquet file...', 0);
         await this.query(`CREATE OR REPLACE TABLE ${tableName} AS SELECT * FROM '${url}'`);
+        progressCallback?.('Parquet loaded', 100);
     }
 
-    async calculateRisk(traitUrl, userDNA) {
+    async calculateRisk(traitUrl, userDNA, progressCallback) {
         Debug.log(1, 'DuckDB', 'Calculating risk with', userDNA.length, 'user DNA variants');
-        await this.loadParquet(traitUrl, 'trait_data');
+        
+        progressCallback?.('Loading trait data...', 0);
+        await this.loadParquet(traitUrl, 'trait_data', progressCallback);
         
         // Detect format by checking columns
         const columnsResult = await this.query('PRAGMA table_info(trait_data)');
@@ -46,18 +50,18 @@ export class DuckDBProvider {
         
         Debug.log(2, 'DuckDB', 'Detected format:', formatInfo.format.name);
         
-        // Get trait data using format-specific query
-        const query = getMatchingDataForFormat(formatInfo.key, 'trait_data');
-        const traitResult = await this.query(query);
-        const traitData = traitResult.toArray();
+        // Get total count for progress
+        progressCallback?.('Counting variants...', 10);
+        const countResult = await this.query('SELECT COUNT(*) as total FROM trait_data');
+        const totalVariants = Number(countResult.toArray()[0].total);
         
-        // Clean up trait table immediately
-        await this.query('DROP TABLE IF EXISTS trait_data');
+        Debug.log(2, 'DuckDB', 'Processing', totalVariants, 'variants in chunks');
         
-        Debug.log(2, 'DuckDB', 'Calculating risk across', new Set(traitData.map(t => t.pgs_id)).size, 'PGS scores...');
+        // Process in chunks to avoid memory issues
+        const CHUNK_SIZE = 50000;
         let riskScore = 0;
-        const userDNAMap = new Map();
         const pgsBreakdown = new Map();
+        const userDNAMap = new Map();
         
         // Create lookup map for user DNA based on format
         if (formatInfo.format.matchingStrategy === 'position') {
@@ -71,46 +75,63 @@ export class DuckDBProvider {
             });
         }
         
-        // Calculate risk for matching variants
-        traitData.forEach(trait => {
-            // Initialize PGS tracking
-            if (!pgsBreakdown.has(trait.pgs_id)) {
-                pgsBreakdown.set(trait.pgs_id, { positive: 0, negative: 0, positiveSum: 0, negativeSum: 0, total: 0 });
-            }
-            pgsBreakdown.get(trait.pgs_id).total++;
+        // Process chunks
+        for (let offset = 0; offset < totalVariants; offset += CHUNK_SIZE) {
+            const progress = 20 + (offset / totalVariants * 70);
+            progressCallback?.(`Processing chunk ${Math.floor(offset/CHUNK_SIZE) + 1}/${Math.ceil(totalVariants/CHUNK_SIZE)}...`, progress);
             
-            let key, genotype;
+            const query = getMatchingDataForFormat(formatInfo.key, 'trait_data') + ` LIMIT ${CHUNK_SIZE} OFFSET ${offset}`;
+            const chunkResult = await this.query(query);
+            const chunkData = chunkResult.toArray();
             
-            if (formatInfo.format.matchingStrategy === 'position') {
-                key = `${trait.chr_name}:${trait.chr_position}`;
-                genotype = userDNAMap.get(key);
-            } else if (formatInfo.format.matchingStrategy === 'rsid') {
-                key = trait.rsid;
-                genotype = userDNAMap.get(key);
-            } else if (formatInfo.format.matchingStrategy === 'variant_id') {
-                key = trait.variant_id;
-                genotype = userDNAMap.get(key);
-            }
-            
-            if (genotype && genotype.includes(trait.effect_allele)) {
-                riskScore += trait.effect_weight;
-                
-                const breakdown = pgsBreakdown.get(trait.pgs_id);
-                if (trait.effect_weight > 0) {
-                    breakdown.positive++;
-                    breakdown.positiveSum += trait.effect_weight;
-                } else {
-                    breakdown.negative++;
-                    breakdown.negativeSum += trait.effect_weight;
+            // Process chunk
+            chunkData.forEach(trait => {
+                // Initialize PGS tracking
+                if (!pgsBreakdown.has(trait.pgs_id)) {
+                    pgsBreakdown.set(trait.pgs_id, { positive: 0, negative: 0, positiveSum: 0, negativeSum: 0, total: 0 });
                 }
-            }
-        });
+                pgsBreakdown.get(trait.pgs_id).total++;
+                
+                let key, genotype;
+                
+                if (formatInfo.format.matchingStrategy === 'position') {
+                    key = `${trait.chr_name}:${trait.chr_position}`;
+                    genotype = userDNAMap.get(key);
+                } else if (formatInfo.format.matchingStrategy === 'rsid') {
+                    key = trait.rsid;
+                    genotype = userDNAMap.get(key);
+                } else if (formatInfo.format.matchingStrategy === 'variant_id') {
+                    key = trait.variant_id;
+                    genotype = userDNAMap.get(key);
+                }
+                
+                if (genotype && genotype.includes(trait.effect_allele)) {
+                    riskScore += trait.effect_weight;
+                    
+                    const breakdown = pgsBreakdown.get(trait.pgs_id);
+                    if (trait.effect_weight > 0) {
+                        breakdown.positive++;
+                        breakdown.positiveSum += trait.effect_weight;
+                    } else {
+                        breakdown.negative++;
+                        breakdown.negativeSum += trait.effect_weight;
+                    }
+                }
+            });
+            
+            // Force garbage collection between chunks
+            if (window.gc) window.gc();
+        }
+        
+        progressCallback?.('Finalizing...', 95);
+        
+        // Clean up trait table
+        await this.query('DROP TABLE IF EXISTS trait_data');
         
         Debug.log(2, 'DuckDB', 'PGS breakdown:', Object.fromEntries(pgsBreakdown));
         
         // Clear references for GC
         userDNAMap.clear();
-        traitData.length = 0;
         
         // Force memory cleanup
         await this.conn.close();
@@ -119,6 +140,7 @@ export class DuckDBProvider {
         if (window.gc) window.gc();
         
         Debug.log(1, 'DuckDB', 'Risk score calculated:', riskScore);
+        progressCallback?.('Complete', 100);
         return { riskScore, pgsBreakdown: Object.fromEntries(pgsBreakdown) };
     }
 }

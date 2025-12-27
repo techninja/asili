@@ -77,21 +77,6 @@
           "type": "number",
           "minimum": 0,
           "maximum": 1
-        },
-        "last_updated": {
-          "type": "string",
-          "format": "date-time"
-        },
-        "variant_count": {
-          "type": "integer",
-          "minimum": 0
-        },
-        "trait_efo_id": {
-          "type": "string",
-          "pattern": "^EFO_[0-9]{7}$"
-        },
-        "trait_ontology": {
-          "type": "string"
         }
       },
       "additionalProperties": false
@@ -114,21 +99,6 @@
           "uniqueItems": true
         },
         "description": {
-          "type": "string"
-        },
-        "last_updated": {
-          "type": "string",
-          "format": "date-time"
-        },
-        "variant_count": {
-          "type": "integer",
-          "minimum": 0
-        },
-        "trait_efo_id": {
-          "type": "string",
-          "pattern": "^EFO_[0-9]{7}$"
-        },
-        "trait_ontology": {
           "type": "string"
         }
       },

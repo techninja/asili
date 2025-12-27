@@ -29,145 +29,7 @@
             "PGS002491"
           ],
           "description": "A metabolic disorder characterized by abnormally high blood sugar levels due to diminished production of insulin or insulin resistance/desensitization.",
-          "weight": 0.3,
-          "last_updated": "2025-12-26T22:06:42.385Z",
-          "variant_count": 5891717,
-          "formats": {
-            "STANDARD_SNP": {
-              "format_name": "Standard SNP",
-              "file_path": "diabetes_general_standard_snp_hg38.parquet",
-              "variant_count": 5891713,
-              "pgs_ids": [
-                "PGS001327",
-                "PGS001329",
-                "PGS001371",
-                "PGS002321",
-                "PGS002324",
-                "PGS000306",
-                "PGS000308",
-                "PGS005276",
-                "PGS005277",
-                "PGS000127",
-                "PGS000128",
-                "PGS000129",
-                "PGS005278",
-                "PGS002393",
-                "PGS002396",
-                "PGS002442",
-                "PGS002445",
-                "PGS002491"
-              ],
-              "pgs_metadata": {
-                "PGS001327": {
-                  "name": "GBE_HC221",
-                  "trait": "Diabetes",
-                  "ancestry": ""
-                },
-                "PGS001329": {
-                  "name": "GBE_HC652",
-                  "trait": "Unspecified diabetes mellitus (time-to-event)",
-                  "ancestry": ""
-                },
-                "PGS001371": {
-                  "name": "GBE_INI2976",
-                  "trait": "Age diabetes diagnosed",
-                  "ancestry": ""
-                },
-                "PGS002321": {
-                  "name": "disease_DIABETES_ANY_DIAGNOSED.BOLT-LMM",
-                  "trait": "Diabetes (any type)",
-                  "ancestry": ""
-                },
-                "PGS002324": {
-                  "name": "disease_ENDOCRINE_DIABETES.BOLT-LMM",
-                  "trait": "Endocrine and diabetes diseases",
-                  "ancestry": ""
-                },
-                "PGS000306": {
-                  "name": "GRS19_FGadjBMI",
-                  "trait": "Fasting glucose (body mass index adjusted)",
-                  "ancestry": ""
-                },
-                "PGS000308": {
-                  "name": "GRS12_FIadjBMI",
-                  "trait": "Fasting insulin (body mass index adjusted)",
-                  "ancestry": ""
-                },
-                "PGS005276": {
-                  "name": "FI_PS_EUR",
-                  "trait": "Fasting insulin adjusted for BMI",
-                  "ancestry": ""
-                },
-                "PGS005277": {
-                  "name": "FI_PS_AFR",
-                  "trait": "Fasting insulin adjusted for BMI",
-                  "ancestry": ""
-                },
-                "PGS000127": {
-                  "name": "GS-E-EUR",
-                  "trait": "HbA1c",
-                  "ancestry": ""
-                },
-                "PGS000128": {
-                  "name": "GS-E-AFR",
-                  "trait": "HbA1c",
-                  "ancestry": ""
-                },
-                "PGS000129": {
-                  "name": "GS-E-EAS",
-                  "trait": "HbA1c",
-                  "ancestry": ""
-                },
-                "PGS005278": {
-                  "name": "FI_PS_AMR",
-                  "trait": "Fasting insulin adjusted for BMI",
-                  "ancestry": ""
-                },
-                "PGS002393": {
-                  "name": "disease_DIABETES_ANY_DIAGNOSED.P+T.0.0001",
-                  "trait": "Diabetes (any type)",
-                  "ancestry": ""
-                },
-                "PGS002396": {
-                  "name": "disease_ENDOCRINE_DIABETES.P+T.0.0001",
-                  "trait": "Endocrine and diabetes diseases",
-                  "ancestry": ""
-                },
-                "PGS002442": {
-                  "name": "disease_DIABETES_ANY_DIAGNOSED.P+T.0.001",
-                  "trait": "Diabetes (any type)",
-                  "ancestry": ""
-                },
-                "PGS002445": {
-                  "name": "disease_ENDOCRINE_DIABETES.P+T.0.001",
-                  "trait": "Endocrine and diabetes diseases",
-                  "ancestry": ""
-                },
-                "PGS002491": {
-                  "name": "disease_DIABETES_ANY_DIAGNOSED.P+T.0.01",
-                  "trait": "Diabetes (any type)",
-                  "ancestry": ""
-                }
-              },
-              "last_updated": "2025-12-26T22:06:42.068Z"
-            },
-            "RSID_ONLY": {
-              "format_name": "rsID Only",
-              "file_path": "diabetes_general_rsid_only_hg38.parquet",
-              "variant_count": 4,
-              "pgs_ids": [
-                "PGS002256"
-              ],
-              "pgs_metadata": {
-                "PGS002256": {
-                  "name": "GRS4_GDM",
-                  "trait": "Gestational diabetes mellitus in early pregnancy",
-                  "ancestry": ""
-                }
-              },
-              "last_updated": "2025-12-26T22:06:42.383Z"
-            }
-          }
+          "weight": 0.3
         },
         "type1": {
           "name": "type 1 diabetes mellitus",
@@ -204,211 +66,7 @@
             "PGS004874"
           ],
           "description": "A chronic condition characterized by minimal or absent production of insulin by the pancreas.",
-          "weight": 0.4,
-          "last_updated": "2025-12-26T22:07:13.618Z",
-          "variant_count": 656392,
-          "formats": {
-            "HLA_ALLELE": {
-              "format_name": "HLA Allele",
-              "file_path": "diabetes_type1_hla_allele_hg38.parquet",
-              "variant_count": 155,
-              "pgs_ids": [
-                "PGS000021",
-                "PGS000022",
-                "PGS000024"
-              ],
-              "pgs_metadata": {
-                "PGS000021": {
-                  "name": "GRS1",
-                  "trait": "Type 1 diabetes (T1D)",
-                  "ancestry": ""
-                },
-                "PGS000022": {
-                  "name": "T1D_GRS",
-                  "trait": "Type 1 diabetes (T1D)",
-                  "ancestry": ""
-                },
-                "PGS000024": {
-                  "name": "GRS2",
-                  "trait": "Type 1 diabetes (T1D)",
-                  "ancestry": ""
-                }
-              },
-              "last_updated": "2025-12-26T22:07:04.517Z"
-            },
-            "STANDARD_SNP": {
-              "format_name": "Standard SNP",
-              "file_path": "diabetes_type1_standard_snp_hg38.parquet",
-              "variant_count": 656237,
-              "pgs_ids": [
-                "PGS000023",
-                "PGS000833",
-                "PGS000869",
-                "PGS001296",
-                "PGS001297",
-                "PGS001817",
-                "PGS002025",
-                "PGS003749",
-                "PGS003750",
-                "PGS003993",
-                "PGS004009",
-                "PGS004020",
-                "PGS004035",
-                "PGS004063",
-                "PGS004078",
-                "PGS004093",
-                "PGS004102",
-                "PGS004117",
-                "PGS004132",
-                "PGS004147",
-                "PGS004162",
-                "PGS004171",
-                "PGS004172",
-                "PGS004173",
-                "PGS004174",
-                "PGS004175",
-                "PGS004874"
-              ],
-              "pgs_metadata": {
-                "PGS000023": {
-                  "name": "AA_GRS",
-                  "trait": "Type 1 diabetes (T1D)",
-                  "ancestry": ""
-                },
-                "PGS000833": {
-                  "name": "T1D",
-                  "trait": "Type 1 diabetes (T1D)",
-                  "ancestry": ""
-                },
-                "PGS000869": {
-                  "name": "T1D_48",
-                  "trait": "Type 1 diabetes (T1D)",
-                  "ancestry": ""
-                },
-                "PGS001296": {
-                  "name": "GBE_HC648",
-                  "trait": "Insulin-dependent diabetes mellitus (time-to-event)",
-                  "ancestry": ""
-                },
-                "PGS001297": {
-                  "name": "GBE_HC337",
-                  "trait": "Type 1 diabetes (T1D)",
-                  "ancestry": ""
-                },
-                "PGS001817": {
-                  "name": "portability-PLR_250.1",
-                  "trait": "Type 1 diabetes (T1D)",
-                  "ancestry": ""
-                },
-                "PGS002025": {
-                  "name": "portability-ldpred2_250.1",
-                  "trait": "Type 1 diabetes (T1D)",
-                  "ancestry": ""
-                },
-                "PGS003749": {
-                  "name": "ModelT1D_under25",
-                  "trait": "Type 1 diabetes (T1D)",
-                  "ancestry": ""
-                },
-                "PGS003750": {
-                  "name": "ModelT1D",
-                  "trait": "Type 1 diabetes (T1D)",
-                  "ancestry": ""
-                },
-                "PGS003993": {
-                  "name": "dbslmm.auto.GCST90013445.T1D",
-                  "trait": "Type 1 diabetes (T1D)",
-                  "ancestry": ""
-                },
-                "PGS004009": {
-                  "name": "lassosum.auto.GCST90013445.T1D",
-                  "trait": "Type 1 diabetes (T1D)",
-                  "ancestry": ""
-                },
-                "PGS004020": {
-                  "name": "lassosum.CV.GCST90013445.T1D",
-                  "trait": "Type 1 diabetes (T1D)",
-                  "ancestry": ""
-                },
-                "PGS004035": {
-                  "name": "ldpred2.auto.GCST90013445.T1D",
-                  "trait": "Type 1 diabetes (T1D)",
-                  "ancestry": ""
-                },
-                "PGS004063": {
-                  "name": "megaprs.auto.GCST90013445.T1D",
-                  "trait": "Type 1 diabetes (T1D)",
-                  "ancestry": ""
-                },
-                "PGS004078": {
-                  "name": "megaprs.CV.GCST90013445.T1D",
-                  "trait": "Type 1 diabetes (T1D)",
-                  "ancestry": ""
-                },
-                "PGS004093": {
-                  "name": "prscs.auto.GCST90013445.T1D",
-                  "trait": "Type 1 diabetes (T1D)",
-                  "ancestry": ""
-                },
-                "PGS004102": {
-                  "name": "prscs.CV.GCST90013445.T1D",
-                  "trait": "Type 1 diabetes (T1D)",
-                  "ancestry": ""
-                },
-                "PGS004117": {
-                  "name": "pt_clump.auto.GCST90013445.T1D",
-                  "trait": "Type 1 diabetes (T1D)",
-                  "ancestry": ""
-                },
-                "PGS004132": {
-                  "name": "pt_clump_nested.CV.GCST90013445.T1D",
-                  "trait": "Type 1 diabetes (T1D)",
-                  "ancestry": ""
-                },
-                "PGS004147": {
-                  "name": "sbayesr.auto.GCST90013445.T1D",
-                  "trait": "Type 1 diabetes (T1D)",
-                  "ancestry": ""
-                },
-                "PGS004162": {
-                  "name": "UKBB_EnsPGS.GCST90013445.T1D",
-                  "trait": "Type 1 diabetes (T1D)",
-                  "ancestry": ""
-                },
-                "PGS004171": {
-                  "name": "t1d_1",
-                  "trait": "Type 1 diabetes",
-                  "ancestry": ""
-                },
-                "PGS004172": {
-                  "name": "t1d_2",
-                  "trait": "Type 1 diabetes",
-                  "ancestry": ""
-                },
-                "PGS004173": {
-                  "name": "t1d_3",
-                  "trait": "Type 1 diabetes",
-                  "ancestry": ""
-                },
-                "PGS004174": {
-                  "name": "t1d_4",
-                  "trait": "Type 1 diabetes",
-                  "ancestry": ""
-                },
-                "PGS004175": {
-                  "name": "t1d_5",
-                  "trait": "Type 1 diabetes",
-                  "ancestry": ""
-                },
-                "PGS004874": {
-                  "name": "INTERVENE_MegaPRS_T1D",
-                  "trait": "Type 1 diabetes (T1D)",
-                  "ancestry": ""
-                }
-              },
-              "last_updated": "2025-12-26T22:07:13.617Z"
-            }
-          }
+          "weight": 0.4
         },
         "type2": {
           "name": "type 2 diabetes mellitus",
@@ -425,91 +83,7 @@
             "PGS000713"
           ],
           "description": "A type of diabetes mellitus that is characterized by insulin resistance or desensitization and increased blood glucose levels.",
-          "weight": 0.6,
-          "last_updated": "2025-12-26T22:12:05.067Z",
-          "variant_count": 13901264,
-          "formats": {
-            "STANDARD_SNP": {
-              "format_name": "Standard SNP",
-              "file_path": "diabetes_type2_standard_snp_hg38.parquet",
-              "variant_count": 13901234,
-              "pgs_ids": [
-                "PGS000014",
-                "PGS000020",
-                "PGS000031",
-                "PGS000036",
-                "PGS000125",
-                "PGS000330",
-                "PGS000712",
-                "PGS000713"
-              ],
-              "pgs_metadata": {
-                "PGS000014": {
-                  "name": "GPS_T2D",
-                  "trait": "Type 2 diabetes (T2D)",
-                  "ancestry": ""
-                },
-                "PGS000020": {
-                  "name": "dGRS1000",
-                  "trait": "Type 2 diabetes (T2D)",
-                  "ancestry": ""
-                },
-                "PGS000031": {
-                  "name": "GRSt",
-                  "trait": "Type 2 diabetes (T2D)",
-                  "ancestry": ""
-                },
-                "PGS000036": {
-                  "name": "gePS_T2D",
-                  "trait": "Type 2 diabetes (T2D)",
-                  "ancestry": ""
-                },
-                "PGS000125": {
-                  "name": "Qi_T2D_2017",
-                  "trait": "Type 2 diabetes (T2D)",
-                  "ancestry": ""
-                },
-                "PGS000330": {
-                  "name": "PRS_T2D",
-                  "trait": "Type 2 diabetes (T2D)",
-                  "ancestry": ""
-                },
-                "PGS000712": {
-                  "name": "T2D_HbA1c_39",
-                  "trait": "T2D (cases vs HbA1c filtered controls)",
-                  "ancestry": ""
-                },
-                "PGS000713": {
-                  "name": "T2D",
-                  "trait": "Type 2 diabetes (T2D)",
-                  "ancestry": ""
-                }
-              },
-              "last_updated": "2025-12-26T22:12:04.445Z"
-            },
-            "RSID_CHR": {
-              "format_name": "rsID + Chr",
-              "file_path": "diabetes_type2_rsid_chr_hg38.parquet",
-              "variant_count": 30,
-              "pgs_ids": [
-                "PGS000032",
-                "PGS000033"
-              ],
-              "pgs_metadata": {
-                "PGS000032": {
-                  "name": "GRSB",
-                  "trait": "Type 2 diabetes (based on SNPs involved in β-cell function)",
-                  "ancestry": ""
-                },
-                "PGS000033": {
-                  "name": "GRSIR",
-                  "trait": "Type 2 diabetes (based on SNPs involved in insulin resistance)",
-                  "ancestry": ""
-                }
-              },
-              "last_updated": "2025-12-26T22:12:05.062Z"
-            }
-          }
+          "weight": 0.6
         }
       },
       "biomarkers": {
@@ -520,45 +94,7 @@
             "PGS000308",
             "PGS005276",
             "PGS005278"
-          ],
-          "last_updated": "2025-12-26T22:13:15.807Z",
-          "variant_count": 3532566,
-          "formats": {
-            "STANDARD_SNP": {
-              "format_name": "Standard SNP",
-              "file_path": "diabetes_insulin_standard_snp_hg38.parquet",
-              "variant_count": 3532566,
-              "pgs_ids": [
-                "PGS005277",
-                "PGS000308",
-                "PGS005276",
-                "PGS005278"
-              ],
-              "pgs_metadata": {
-                "PGS005277": {
-                  "name": "FI_PS_AFR",
-                  "trait": "Fasting insulin adjusted for BMI",
-                  "ancestry": ""
-                },
-                "PGS000308": {
-                  "name": "GRS12_FIadjBMI",
-                  "trait": "Fasting insulin (body mass index adjusted)",
-                  "ancestry": ""
-                },
-                "PGS005276": {
-                  "name": "FI_PS_EUR",
-                  "trait": "Fasting insulin adjusted for BMI",
-                  "ancestry": ""
-                },
-                "PGS005278": {
-                  "name": "FI_PS_AMR",
-                  "trait": "Fasting insulin adjusted for BMI",
-                  "ancestry": ""
-                }
-              },
-              "last_updated": "2025-12-26T22:13:15.805Z"
-            }
-          }
+          ]
         }
       }
     },
@@ -586,125 +122,7 @@
             "PGS000116"
           ],
           "description": "Genetic risk factors for coronary artery disease",
-          "weight": 1,
-          "last_updated": "2025-12-26T22:18:25.169Z",
-          "variant_count": 9254825,
-          "formats": {
-            "STANDARD_SNP": {
-              "format_name": "Standard SNP",
-              "file_path": "cardiovascular_coronary_standard_snp_hg38.parquet",
-              "variant_count": 9205335,
-              "pgs_ids": [
-                "PGS000018",
-                "PGS001839",
-                "PGS002048",
-                "PGS000962",
-                "PGS004899",
-                "PGS000013",
-                "PGS000019",
-                "PGS000058",
-                "PGS000116"
-              ],
-              "pgs_metadata": {
-                "PGS000018": {
-                  "name": "metaGRS_CAD",
-                  "trait": "Coronary artery disease",
-                  "ancestry": ""
-                },
-                "PGS001839": {
-                  "name": "portability-PLR_411.4",
-                  "trait": "Coronary atherosclerosis",
-                  "ancestry": ""
-                },
-                "PGS002048": {
-                  "name": "portability-ldpred2_411.4",
-                  "trait": "Coronary atherosclerosis",
-                  "ancestry": ""
-                },
-                "PGS000962": {
-                  "name": "GBE_HC942",
-                  "trait": "Chronic ischaemic heart disease (time-to-event)",
-                  "ancestry": ""
-                },
-                "PGS004899": {
-                  "name": "PRS_SCAD",
-                  "trait": "Spontaneous coronary artery dissection",
-                  "ancestry": ""
-                },
-                "PGS000013": {
-                  "name": "GPS_CAD",
-                  "trait": "Coronary artery disease",
-                  "ancestry": ""
-                },
-                "PGS000019": {
-                  "name": "GRS_CAD",
-                  "trait": "Coronary artery disease",
-                  "ancestry": ""
-                },
-                "PGS000058": {
-                  "name": "CAD_GRS_204",
-                  "trait": "Coronary artery disease",
-                  "ancestry": ""
-                },
-                "PGS000116": {
-                  "name": "CAD_EJ2020",
-                  "trait": "Coronary artery disease",
-                  "ancestry": ""
-                }
-              },
-              "last_updated": "2025-12-26T22:18:23.019Z"
-            },
-            "RSID_ONLY": {
-              "format_name": "rsID Only",
-              "file_path": "cardiovascular_coronary_rsid_only_hg38.parquet",
-              "variant_count": 49444,
-              "pgs_ids": [
-                "PGS000010",
-                "PGS000011",
-                "PGS000012",
-                "PGS000057"
-              ],
-              "pgs_metadata": {
-                "PGS000010": {
-                  "name": "GRS27",
-                  "trait": "Coronary heart disease",
-                  "ancestry": ""
-                },
-                "PGS000011": {
-                  "name": "GRS50",
-                  "trait": "Coronary artery disease",
-                  "ancestry": ""
-                },
-                "PGS000012": {
-                  "name": "GRS49K",
-                  "trait": "Coronary artery disease",
-                  "ancestry": ""
-                },
-                "PGS000057": {
-                  "name": "CHD57",
-                  "trait": "Coronary heart disease",
-                  "ancestry": ""
-                }
-              },
-              "last_updated": "2025-12-26T22:18:24.795Z"
-            },
-            "RSID_CHR": {
-              "format_name": "rsID + Chr",
-              "file_path": "cardiovascular_coronary_rsid_chr_hg38.parquet",
-              "variant_count": 46,
-              "pgs_ids": [
-                "PGS000059"
-              ],
-              "pgs_metadata": {
-                "PGS000059": {
-                  "name": "CHD46",
-                  "trait": "Coronary heart disease",
-                  "ancestry": ""
-                }
-              },
-              "last_updated": "2025-12-26T22:18:25.167Z"
-            }
-          }
+          "weight": 1
         },
         "hypertension": {
           "name": "hypertension",
@@ -727,127 +145,7 @@
             "PGS002505"
           ],
           "description": "Persistently high systemic arterial blood pressure.",
-          "weight": 0.8,
-          "last_updated": "2025-12-26T22:21:18.949Z",
-          "variant_count": 7845254,
-          "formats": {
-            "STANDARD_SNP": {
-              "format_name": "Standard SNP",
-              "file_path": "cardiovascular_hypertension_standard_snp_hg38.parquet",
-              "variant_count": 5725376,
-              "pgs_ids": [
-                "PGS000706",
-                "PGS000957",
-                "PGS000958",
-                "PGS001320",
-                "PGS001838",
-                "PGS003586",
-                "PGS003587",
-                "PGS004593",
-                "PGS002047",
-                "PGS002296",
-                "PGS002335",
-                "PGS002407",
-                "PGS002456",
-                "PGS002505"
-              ],
-              "pgs_metadata": {
-                "PGS000706": {
-                  "name": "HC215",
-                  "trait": "Hypertension",
-                  "ancestry": ""
-                },
-                "PGS000957": {
-                  "name": "GBE_HC932",
-                  "trait": "Essential (primary hypertension) (time-to-event)",
-                  "ancestry": ""
-                },
-                "PGS000958": {
-                  "name": "GBE_HC273",
-                  "trait": "Essential hypertension",
-                  "ancestry": ""
-                },
-                "PGS001320": {
-                  "name": "GBE_HC215",
-                  "trait": "Hypertension",
-                  "ancestry": ""
-                },
-                "PGS001838": {
-                  "name": "portability-PLR_401",
-                  "trait": "Hypertension",
-                  "ancestry": ""
-                },
-                "PGS003586": {
-                  "name": "PE",
-                  "trait": "Pre-eclampsia",
-                  "ancestry": ""
-                },
-                "PGS003587": {
-                  "name": "GH",
-                  "trait": "Gestational hypertension",
-                  "ancestry": ""
-                },
-                "PGS004593": {
-                  "name": "pe",
-                  "trait": "Preeclampsia",
-                  "ancestry": ""
-                },
-                "PGS002047": {
-                  "name": "portability-ldpred2_401",
-                  "trait": "Hypertension",
-                  "ancestry": ""
-                },
-                "PGS002296": {
-                  "name": "PRS2166_HT",
-                  "trait": "Hypertension",
-                  "ancestry": ""
-                },
-                "PGS002335": {
-                  "name": "disease_HYPERTENSION_DIAGNOSED.BOLT-LMM",
-                  "trait": "Hypertension",
-                  "ancestry": ""
-                },
-                "PGS002407": {
-                  "name": "disease_HYPERTENSION_DIAGNOSED.P+T.0.0001",
-                  "trait": "Hypertension",
-                  "ancestry": ""
-                },
-                "PGS002456": {
-                  "name": "disease_HYPERTENSION_DIAGNOSED.P+T.0.001",
-                  "trait": "Hypertension",
-                  "ancestry": ""
-                },
-                "PGS002505": {
-                  "name": "disease_HYPERTENSION_DIAGNOSED.P+T.0.01",
-                  "trait": "Hypertension",
-                  "ancestry": ""
-                }
-              },
-              "last_updated": "2025-12-26T22:21:18.223Z"
-            },
-            "RSID_ONLY": {
-              "format_name": "rsID Only",
-              "file_path": "cardiovascular_hypertension_rsid_only_hg38.parquet",
-              "variant_count": 2119878,
-              "pgs_ids": [
-                "PGS004456",
-                "PGS004526"
-              ],
-              "pgs_metadata": {
-                "PGS004456": {
-                  "name": "disease.I10.score",
-                  "trait": "I10 (Essential (primary) hypertension)",
-                  "ancestry": ""
-                },
-                "PGS004526": {
-                  "name": "meta.I10.score",
-                  "trait": "I10 (Essential (primary) hypertension)",
-                  "ancestry": ""
-                }
-              },
-              "last_updated": "2025-12-26T22:21:18.946Z"
-            }
-          }
+          "weight": 0.8
         }
       },
       "biomarkers": {
@@ -857,9 +155,7 @@
             "PGS000900",
             "PGS000301",
             "PGS000901"
-          ],
-          "last_updated": "2025-12-26T20:08:42.168Z",
-          "variant_count": 2197000
+          ]
         },
         "diastolic_bp": {
           "name": "diastolic blood pressure",
@@ -867,9 +163,7 @@
             "PGS000912",
             "PGS000302",
             "PGS001133"
-          ],
-          "last_updated": "2025-12-26T20:09:03.340Z",
-          "variant_count": 1113078
+          ]
         }
       }
     },
@@ -891,79 +185,7 @@
             "PGS003762"
           ],
           "description": "Genetic risk factors for late-onset Alzheimer's disease",
-          "weight": 1,
-          "last_updated": "2025-12-26T22:21:27.552Z",
-          "variant_count": 174467,
-          "formats": {
-            "STANDARD_SNP": {
-              "format_name": "Standard SNP",
-              "file_path": "neurological_alzheimers_standard_snp_hg38.parquet",
-              "variant_count": 174460,
-              "pgs_ids": [
-                "PGS000036",
-                "PGS000025",
-                "PGS000026",
-                "PGS001347",
-                "PGS001542",
-                "PGS001543",
-                "PGS003762"
-              ],
-              "pgs_metadata": {
-                "PGS000036": {
-                  "name": "gePS_T2D",
-                  "trait": "Type 2 diabetes (T2D)",
-                  "ancestry": ""
-                },
-                "PGS000025": {
-                  "name": "GRS",
-                  "trait": "Alzheimer's disease",
-                  "ancestry": ""
-                },
-                "PGS000026": {
-                  "name": "PHS",
-                  "trait": "Alzheimer's disease",
-                  "ancestry": ""
-                },
-                "PGS001347": {
-                  "name": "GBE_FH1263",
-                  "trait": "Family history of Alzheimer's/dementia",
-                  "ancestry": ""
-                },
-                "PGS001542": {
-                  "name": "GBE_INI25013",
-                  "trait": "Volume of caudate (L)",
-                  "ancestry": ""
-                },
-                "PGS001543": {
-                  "name": "GBE_INI25014",
-                  "trait": "Volume of caudate (R)",
-                  "ancestry": ""
-                },
-                "PGS003762": {
-                  "name": "PRS57_amyloid",
-                  "trait": "Amyloid beta 42",
-                  "ancestry": ""
-                }
-              },
-              "last_updated": "2025-12-26T22:21:27.219Z"
-            },
-            "RSID_ONLY": {
-              "format_name": "rsID Only",
-              "file_path": "neurological_alzheimers_rsid_only_hg38.parquet",
-              "variant_count": 7,
-              "pgs_ids": [
-                "PGS000779"
-              ],
-              "pgs_metadata": {
-                "PGS000779": {
-                  "name": "PGS7_AD",
-                  "trait": "Alzheimer's disease",
-                  "ancestry": ""
-                }
-              },
-              "last_updated": "2025-12-26T22:21:27.550Z"
-            }
-          }
+          "weight": 1
         },
         "parkinson_disease": {
           "name": "Parkinson disease",
@@ -980,9 +202,7 @@
             "PGS003763"
           ],
           "description": "Parkinson's disease",
-          "weight": 1,
-          "last_updated": "2025-12-26T20:09:10.230Z",
-          "variant_count": 2061
+          "weight": 1
         }
       }
     },
@@ -999,39 +219,7 @@
             "PGS001825"
           ],
           "description": "A disorder involving an excessive amount of body fat.",
-          "weight": 1,
-          "last_updated": "2025-12-26T22:21:47.642Z",
-          "variant_count": 868528,
-          "formats": {
-            "STANDARD_SNP": {
-              "format_name": "Standard SNP",
-              "file_path": "metabolic_obesity_standard_snp_hg38.parquet",
-              "variant_count": 868528,
-              "pgs_ids": [
-                "PGS002033",
-                "PGS001298",
-                "PGS001825"
-              ],
-              "pgs_metadata": {
-                "PGS002033": {
-                  "name": "portability-ldpred2_278",
-                  "trait": "Overweight, obesity and other hyperalimentation",
-                  "ancestry": ""
-                },
-                "PGS001298": {
-                  "name": "GBE_HC689",
-                  "trait": "Obesity (time-to-event)",
-                  "ancestry": ""
-                },
-                "PGS001825": {
-                  "name": "portability-PLR_278",
-                  "trait": "Overweight, obesity and other hyperalimentation",
-                  "ancestry": ""
-                }
-              },
-              "last_updated": "2025-12-26T22:21:47.640Z"
-            }
-          }
+          "weight": 1
         }
       }
     },
@@ -1048,9 +236,7 @@
             "PGS002005"
           ],
           "description": "Quantification of some aspect of height, when assuming a sitting position.",
-          "weight": 1,
-          "last_updated": "2025-12-26T20:09:50.090Z",
-          "variant_count": 1065019
+          "weight": 1
         }
       }
     }

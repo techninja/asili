@@ -119,6 +119,12 @@ class PGSApiClient {
         const url = `https://www.pgscatalog.org/rest/score/${pgsId}`;
         return this.fetchWithCache(url, cacheKey);
     }
+
+    async getScoreFile(pgsId) {
+        const cacheKey = `score_file_${pgsId}`;
+        const url = `https://www.pgscatalog.org/rest/score/${pgsId}/scoring_file/`;
+        return this.fetchWithCache(url, cacheKey);
+    }
 }
 
 // Singleton instance
