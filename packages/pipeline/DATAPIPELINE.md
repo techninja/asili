@@ -6,9 +6,9 @@ Because the user's DNA never leaves their browser, we cannot perform lookups on 
 
 ## 1. Data Strategy: The "Trait Pack"
 
-A **Trait Pack** is a single, self-contained file representing the genetic risk factors for a specific condition (e.g., _Alzheimer's Risk_, _Caffeine Metabolism_, _Height_).
+A **Trait Pack** is a single, self-contained file representing the genetic risk factors for a specific condition (e.g., _Type 1 Diabetes_, _Coronary Artery Disease_, _Height_).
 
-* **Format:** Apache Parquet
+* **Format:** Apache Parquet with unified schema
 * **Compression:** ZSTD (Level 3)
 * **Access Pattern:** HTTP Range Requests (via DuckDB WASM)
 
@@ -19,70 +19,77 @@ This allows the browser to download _only the headers_ of a 100MB file to see if
 Our primary source of truth is the **PGS Catalog** (Polygenic Score Catalog), an open database of polygenic risk scores.
 
 * **Source URL:** [https://www.pgscatalog.org/](https://www.pgscatalog.org/)
-
-* **Data Type:** Scoring Files (`.txt.gz`)
-
+* **Data Type:** Scoring Files (`.txt.gz`) - multiple formats supported
+* **Caching:** Downloaded files cached locally to avoid re-downloads
 * **Update Frequency:**
+  * **Ad-hoc:** When adding new specific traits requested by users
+  * **Quarterly:** To update existing scores with better-researched versions
 
-  * **Ad-hoc:** When adding new specific traits requested by users.
-  * **Quarterly:** To update existing scores with better-researched versions (e.g., upgrading a score from 2018 to a 2024 study).
+### Data Architecture
 
-### Raw Data Location
+**Trait Catalog (`trait_catalog.json`):** Canonical source defining trait families, subtypes, and PGS score mappings
 
-Raw input files (downloaded from PGS Catalog) should be placed in a local `data_in/` directory (not currently committed) or fetched dynamically by the scripts.
+**Output Manifest (`trait_manifest.json`):** Generated file containing both trait definitions and processing metadata
 
 ## 3. The Precompute Process (ETL)
 
-The `etl_job.py` script performs four critical operations to transform raw CSV/TXT data into a usable Trait Pack.
+The `etl_job.js` script performs format detection, harmonization, and unification to transform multiple PGS formats into standardized Trait Packs.
 
-### Step A: Harmonization
+### Step A: Format Detection & Harmonization
 
-Raw scientific data is messy. We normalize column names to a strict schema to ensure the frontend code is generic.
+PGS files come in multiple formats. We detect and harmonize them into a unified schema:
 
-| Target Column   | Data Type | Description                                                     |
-| --------------- | --------- | --------------------------------------------------------------- |
-| `chr_name`      | String    | Chromosome (1-22, X, Y, MT). Normalized to remove 'chr' prefix. |
-| `chr_position`  | Integer   | Base pair position (HG38 build).                                |
-| `effect_allele` | String    | The specific mutation (A, T, C, or G) that causes the effect.   |
-| `other_allele`  | String    | The reference or non-effect allele.                             |
-| `effect_weight` | Float     | The weight of the effect (Log Odds Ratio or Beta).              |
+**Supported Formats:**
+- **Standard SNP:** chr_name + chr_position based
+- **HLA Allele:** rsID + is_haplotype based  
+- **rsID Only:** rsID without positions
+- **rsID + Chr:** rsID + chr_name without positions
 
-### Step B: LiftOver (Future/Planned)
+**Unified Schema:**
+| Column          | Type    | Description                                    |
+|-----------------|---------|------------------------------------------------|
+| `variant_id`    | String  | Unified identifier (position-based or rsID)   |
+| `chr_name`      | String  | Chromosome (1-22, X, Y, MT) - optional        |
+| `chr_position`  | Integer | Base pair position (HG38 build) - optional    |
+| `effect_allele` | String  | The mutation that causes the effect           |
+| `other_allele`  | String  | Reference allele - optional                   |
+| `effect_weight` | Float   | Effect weight (Log Odds Ratio or Beta)        |
+| `pgs_id`        | String  | Source PGS score identifier                   |
+| `format_type`   | String  | Original format type for debugging            |
 
-_Current State:_ We assume input data is **GRCh38 (hg38)**. _Requirement:_ If source data is hg19, we must perform a "LiftOver" to remap coordinates to hg38, as most consumer DNA files (23andMe v5, Ancestry) are easily mapped to this standard.
+### Step B: Coordinate System
 
-### Step C: Sorting (CRITICAL)
+**Current State:** We process files as-is from PGS Catalog. Most modern scores use **GRCh38 (hg38)** or provide harmonized versions.
 
-DuckDB can perform a **Merge Join** (O(n)) instead of a Hash Join (O(n\*m)) if both the user's DNA and the Trait Pack are sorted by the same keys.
+**LiftOver Handling:** Files are named with `_hg38.parquet` suffix. If source data requires coordinate conversion, this should be handled during harmonization.
 
-* **Sort Key:** `chr_name` (Ascending) -> `chr_position` (Ascending).
-* _Note:_ `chr_name` is sorted "naturally" (1, 2, ... 10), not lexicographically (1, 10, 2).
+### Step C: Optimization
 
-### Step D: Parquet Optimization
-
-We write the dataframe to Parquet with specific settings for HTTP performance:
-
-* **Compression:** `ZSTD` (High compression ratio, fast decompression in WASM).
-* **Row Groups:** Standard size (optimizes the "seek" capability of range requests).
+DuckDB performs efficient joins when data is properly structured:
+* **Multiple matching strategies:** Position-based and rsID-based matching
+* **Chunked processing:** 50K variants per chunk to manage memory
+* **Minimum thresholds:** 100+ variants required for valid files
 
 ## 4. Output & Deployment
 
-1. **Generation:** The pipeline writes files to `/output` (mapped to `./data_out` on host).
-2. **Naming Convention:** `{Trait_Name}_{Build}.parquet` (e.g., `Alzheimers_Risk_hg38.parquet`).
-3. **Serving:** The `cdn` container mounts this directory and serves it via Nginx.
+1. **Generation:** Pipeline writes to `/output` (mapped to `./data_out` on host)
+2. **Naming:** `{trait_family}_{subtype}_hg38.parquet`
+3. **Manifest:** `trait_manifest.json` contains metadata and file references
+4. **Serving:** CDN container serves files via Nginx with range request support
 
 ## 5. How to Run
 
-To run the pipeline and regenerate all Trait Packs:
+To run the pipeline and regenerate Trait Packs:
 
-```css
+```bash
 # From project root
 docker-compose up --build pipeline
 ```
 
 The container will:
-
-1. Spin up.
-2. Execute `etl_job.py`.
-3. Write new Parquet files to `./data_out`.
-4. Exit automatically.
+1. Load trait catalog definitions
+2. Check for existing files and validate against PGS API
+3. Download and cache PGS files as needed
+4. Process and harmonize multiple formats into unified parquet files
+5. Update manifest with metadata and file references
+6. Exit automatically

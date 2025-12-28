@@ -1,5 +1,4 @@
 import { Debug } from '../lib/debug.js';
-import { getMatchingDataForFormat, getFormatFromColumns } from '../lib/pgs-schema.js';
 import * as duckdb from '@duckdb/duckdb-wasm';
 
 export class DuckDBProvider {
@@ -39,17 +38,6 @@ export class DuckDBProvider {
         progressCallback?.('Loading trait data...', 0);
         await this.loadParquet(traitUrl, 'trait_data', progressCallback);
         
-        // Detect format by checking columns
-        const columnsResult = await this.query('PRAGMA table_info(trait_data)');
-        const columns = columnsResult.toArray().map(row => row.name);
-        const formatInfo = getFormatFromColumns(columns);
-        
-        if (!formatInfo) {
-            throw new Error(`Unsupported format - columns: ${columns.join(', ')}`);
-        }
-        
-        Debug.log(2, 'DuckDB', 'Detected format:', formatInfo.format.name);
-        
         // Get total count for progress
         progressCallback?.('Counting variants...', 10);
         const countResult = await this.query('SELECT COUNT(*) as total FROM trait_data');
@@ -61,27 +49,23 @@ export class DuckDBProvider {
         const CHUNK_SIZE = 50000;
         let riskScore = 0;
         const pgsBreakdown = new Map();
-        const userDNAMap = new Map();
         
-        // Create lookup map for user DNA based on format
-        if (formatInfo.format.matchingStrategy === 'position') {
-            userDNA.forEach(snp => {
-                const key = `${snp.chromosome}:${snp.position}`;
-                userDNAMap.set(key, snp.allele1 + snp.allele2);
-            });
-        } else if (formatInfo.format.matchingStrategy === 'rsid' || formatInfo.format.matchingStrategy === 'variant_id') {
-            userDNA.forEach(snp => {
-                userDNAMap.set(snp.rsid, snp.allele1 + snp.allele2);
-            });
-        }
+        // Create lookup map for user DNA
+        const userDNAMap = new Map();
+        userDNA.forEach(snp => {
+            // Try multiple keys for matching
+            if (snp.rsid) userDNAMap.set(snp.rsid, snp.allele1 + snp.allele2);
+            if (snp.chromosome && snp.position) {
+                userDNAMap.set(`${snp.chromosome}:${snp.position}`, snp.allele1 + snp.allele2);
+            }
+        });
         
         // Process chunks
         for (let offset = 0; offset < totalVariants; offset += CHUNK_SIZE) {
             const progress = 20 + (offset / totalVariants * 70);
             progressCallback?.(`Processing chunk ${Math.floor(offset/CHUNK_SIZE) + 1}/${Math.ceil(totalVariants/CHUNK_SIZE)}...`, progress);
             
-            const query = getMatchingDataForFormat(formatInfo.key, 'trait_data') + ` LIMIT ${CHUNK_SIZE} OFFSET ${offset}`;
-            const chunkResult = await this.query(query);
+            const chunkResult = await this.query(`SELECT * FROM trait_data LIMIT ${CHUNK_SIZE} OFFSET ${offset}`);
             const chunkData = chunkResult.toArray();
             
             // Process chunk
@@ -92,17 +76,15 @@ export class DuckDBProvider {
                 }
                 pgsBreakdown.get(trait.pgs_id).total++;
                 
-                let key, genotype;
-                
-                if (formatInfo.format.matchingStrategy === 'position') {
-                    key = `${trait.chr_name}:${trait.chr_position}`;
-                    genotype = userDNAMap.get(key);
-                } else if (formatInfo.format.matchingStrategy === 'rsid') {
-                    key = trait.rsid;
-                    genotype = userDNAMap.get(key);
-                } else if (formatInfo.format.matchingStrategy === 'variant_id') {
-                    key = trait.variant_id;
-                    genotype = userDNAMap.get(key);
+                // Try to match variant using available identifiers
+                let genotype = null;
+                if (trait.variant_id && userDNAMap.has(trait.variant_id)) {
+                    genotype = userDNAMap.get(trait.variant_id);
+                } else if (trait.chr_name && trait.chr_position) {
+                    const posKey = `${trait.chr_name}:${trait.chr_position}`;
+                    if (userDNAMap.has(posKey)) {
+                        genotype = userDNAMap.get(posKey);
+                    }
                 }
                 
                 if (genotype && genotype.includes(trait.effect_allele)) {
@@ -118,9 +100,6 @@ export class DuckDBProvider {
                     }
                 }
             });
-            
-            // Force garbage collection between chunks
-            if (window.gc) window.gc();
         }
         
         progressCallback?.('Finalizing...', 95);

@@ -3,7 +3,9 @@ import path from 'path';
 import { fileURLToPath } from 'url';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
-const CACHE_FILE = path.join(__dirname, '.pgs-api-cache.json');
+const CACHE_DIR = '/cache';
+const API_CACHE_FILE = path.join(CACHE_DIR, 'pgs-api-cache.json');
+const PGS_FILES_DIR = path.join(CACHE_DIR, 'pgs_files');
 const RATE_LIMIT = 100; // requests per minute
 const RATE_WINDOW = 60 * 1000; // 1 minute in ms
 
@@ -16,8 +18,11 @@ class PGSApiClient {
     async loadCache() {
         if (this.cache) return this.cache;
         
+        // Ensure cache directory exists
+        await fs.mkdir(CACHE_DIR, { recursive: true });
+        
         try {
-            const data = await fs.readFile(CACHE_FILE, 'utf8');
+            const data = await fs.readFile(API_CACHE_FILE, 'utf8');
             this.cache = JSON.parse(data);
         } catch {
             this.cache = { requests: {}, lastCleanup: Date.now() };
@@ -41,7 +46,7 @@ class PGSApiClient {
 
     async saveCache() {
         if (this.cache) {
-            await fs.writeFile(CACHE_FILE, JSON.stringify(this.cache, null, 2));
+            await fs.writeFile(API_CACHE_FILE, JSON.stringify(this.cache, null, 2));
         }
     }
 
@@ -124,6 +129,36 @@ class PGSApiClient {
         const cacheKey = `score_file_${pgsId}`;
         const url = `https://www.pgscatalog.org/rest/score/${pgsId}/scoring_file/`;
         return this.fetchWithCache(url, cacheKey);
+    }
+
+    async downloadPGSFile(pgsId, downloadUrl) {
+        const fileName = `${pgsId}.txt.gz`;
+        const filePath = path.join(PGS_FILES_DIR, fileName);
+        
+        // Ensure PGS files directory exists
+        await fs.mkdir(PGS_FILES_DIR, { recursive: true });
+        
+        // Check if file already exists
+        try {
+            await fs.access(filePath);
+            console.log(`        Using cached PGS file: ${fileName}`);
+            return filePath;
+        } catch {
+            // File doesn't exist, download it
+        }
+        
+        console.log(`        Downloading PGS file: ${fileName}`);
+        await this.waitForRateLimit();
+        
+        const response = await fetch(downloadUrl);
+        if (!response.ok) {
+            throw new Error(`Failed to download ${downloadUrl}: ${response.status}`);
+        }
+        
+        const buffer = await response.arrayBuffer();
+        await fs.writeFile(filePath, new Uint8Array(buffer));
+        
+        return filePath;
     }
 }
 
