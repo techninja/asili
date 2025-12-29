@@ -1,4 +1,6 @@
 import { Debug } from '../lib/debug.js';
+import { MemoryMonitor } from '../lib/memory-monitor.js';
+import './pgs-breakdown.js';
 
 export class RiskDashboard extends HTMLElement {
     constructor() {
@@ -204,7 +206,22 @@ export class RiskDashboard extends HTMLElement {
             familyGrid.className = 'family-grid';
             
             for (const trait of traits) {
+                Debug.log(2, 'RiskDashboard', 'Getting cached risk for:', trait.id);
+                const cacheStart = performance.now();
                 const cached = await this.geneticDb.getCachedRisk(trait.id, actualIndividualId);
+                const cacheTime = performance.now() - cacheStart;
+                if (cached) {
+                    let dataSize = 'unknown';
+                    try {
+                        dataSize = JSON.stringify(cached).length;
+                    } catch (e) {
+                        dataSize = 'too large to stringify';
+                        Debug.log(1, 'RiskDashboard', 'MASSIVE cached data for:', trait.id, 'pgsDetails keys:', Object.keys(cached.pgsDetails || {}));
+                    }
+                    Debug.log(2, 'RiskDashboard', 'getCachedRisk time:', cacheTime, 'ms for', trait.id, 'size:', dataSize);
+                } else {
+                    Debug.log(2, 'RiskDashboard', 'getCachedRisk time:', cacheTime, 'ms for', trait.id, '(no cache)');
+                }
                 const card = this.createTraitCardSync(trait, actualIndividualId, cached);
                 familyGrid.appendChild(card);
             }
@@ -230,14 +247,14 @@ export class RiskDashboard extends HTMLElement {
             <div class="trait-stats">
                 ${trait.pgs_ids?.length || 0} PGS scores | ${trait.variant_count?.toLocaleString() || 'Unknown'} variants
             </div>
-            ${cached ? this.renderCachedResult(cached) : this.renderAnalyzeButton(trait.id, individualId)}
+            ${cached ? this.renderCachedResult(cached, individualId) : this.renderAnalyzeButton(trait.id, individualId)}
         `;
         
         this.log('Trait card created for:', trait.name);
         return card;
     }
 
-    renderCachedResult(cached) {
+    renderCachedResult(cached, individualId) {
         const level = cached.riskScore < 0.5 ? 'low' : cached.riskScore < 1.5 ? 'medium' : 'high';
         const levelText = cached.riskScore < 0.5 ? 'Lower Risk' : cached.riskScore < 1.5 ? 'Average Risk' : 'Higher Risk';
         
@@ -251,7 +268,7 @@ export class RiskDashboard extends HTMLElement {
                 ${cached.matchedVariants} matched of ${cached.totalVariants?.toLocaleString() || 'unknown'} variants<br>
                 Calculated ${new Date(cached.calculatedAt).toLocaleDateString()}
             </div>
-            ${cached.pgsBreakdown ? this.renderPgsBreakdown(cached.pgsBreakdown) : ''}
+            ${cached.pgsBreakdown ? this.renderPgsBreakdown(cached.pgsBreakdown, individualId) : ''}
         `;
     }
 
@@ -265,7 +282,7 @@ export class RiskDashboard extends HTMLElement {
         `;
     }
 
-    renderPgsBreakdown(pgsBreakdown) {
+    renderPgsBreakdown(pgsBreakdown, individualId) {
         if (!pgsBreakdown || typeof pgsBreakdown !== 'object') return '';
         
         const entries = Object.entries(pgsBreakdown)
@@ -292,14 +309,12 @@ export class RiskDashboard extends HTMLElement {
                         const scorePrefix = netScore >= 0 ? '+' : '';
                         
                         return `
-                            <div class="pgs-item">
+                            <div class="pgs-item" onclick="this.getRootNode().host.showPGSBreakdown('${pgsId}', '${individualId}', this)" style="cursor: pointer;">
                                 <div class="pgs-header">
-                                    <a href="https://www.pgscatalog.org/score/${pgsId}" target="_blank" class="pgs-link" title="${data.metadata?.trait || ''}">
-                                        ${data.metadata?.name || pgsId}
-                                    </a>
+                                    <span class="pgs-name">${data.metadata?.name || pgsId}</span>
                                     <div class="pgs-score" style="color: ${scoreColor}">${scorePrefix}${netScore.toFixed(2)}x</div>
                                 </div>
-                                <div class="pgs-bar">
+                                <div class="pgs-bar" title="View detailed calculation">
                                     <div class="pgs-negative" style="width: ${negPct}%" title="${data.negative} variants: ${data.negativeSum.toFixed(3)}x"></div>
                                     <div class="pgs-positive" style="width: ${posPct}%" title="${data.positive} variants: +${data.positiveSum.toFixed(3)}x"></div>
                                 </div>
@@ -309,6 +324,241 @@ export class RiskDashboard extends HTMLElement {
                 </div>
             </div>
         `;
+    }
+
+    async showPGSBreakdown(pgsId, individualId, buttonElement) {
+        Debug.log(1, 'RiskDashboard', 'showPGSBreakdown start:', pgsId);
+        const startTime = performance.now();
+        
+        // Get trait card from button element
+        const card = buttonElement.closest('.trait-card');
+        const traitId = card?.dataset.traitId;
+        
+        Debug.log(2, 'RiskDashboard', 'Fetching cached risk for:', traitId);
+        const cached = traitId ? await this.geneticDb.getCachedRisk(traitId, individualId) : null;
+        
+        if (cached?.pgsBreakdown) {
+            // Get PGS details from separate cache
+            const pgsDetails = await this.geneticDb.getCachedPGSDetails(traitId, individualId);
+            if (pgsDetails?.[pgsId]) {
+                // Store navigation context
+                this.currentPgsNavigation = {
+                    traitId,
+                    individualId,
+                    pgsIds: Object.entries(cached.pgsBreakdown)
+                        .filter(([_, data]) => (data.positive > 0 || data.negative > 0))
+                        .filter(([_, data]) => Math.abs(data.positiveSum + data.negativeSum) >= 0.005)
+                        .sort(([_, a], [__, b]) => (Math.abs(b.positiveSum + b.negativeSum)) - (Math.abs(a.positiveSum + a.negativeSum)))
+                        .map(([id]) => id),
+                    currentIndex: 0
+                };
+                this.currentPgsNavigation.currentIndex = this.currentPgsNavigation.pgsIds.indexOf(pgsId);
+                
+                this.showPGSBreakdownInCard(pgsId, { ...cached, pgsDetails }, individualId, card);
+            } else {
+                alert('PGS details not available. Please recalculate the risk.');
+            }
+        } else {
+            alert('PGS details not available. Please recalculate the risk.');
+        }
+    }
+    
+    showPGSBreakdownInCard(pgsId, cached, individualId, card) {
+        Debug.log(1, 'RiskDashboard', 'showPGSBreakdownInCard start:', pgsId);
+        const startTime = performance.now();
+        
+        const pgsBreakdown = card.querySelector('.pgs-breakdown');
+        if (!pgsBreakdown) return;
+        
+        // Get trait metadata
+        const traitId = card.dataset.traitId;
+        const trait = this.availableTraits.find(t => t.id === traitId);
+        const pgsMetadata = trait?.pgs_metadata?.[pgsId] || {};
+        const metadata = { ...cached.pgsDetails[pgsId].metadata, ...pgsMetadata };
+        
+        Debug.log(2, 'RiskDashboard', 'Processing variants:', cached.pgsDetails[pgsId].totalVariants);
+        const topVariants = cached.pgsDetails[pgsId].topVariants;
+        
+        // Calculate this PGS contribution to total trait score
+        const pgsContribution = cached.pgsBreakdown[pgsId];
+        const totalAbsMagnitude = Object.values(cached.pgsBreakdown).reduce((sum, pgs) => sum + Math.abs(pgs.positiveSum + pgs.negativeSum), 0);
+        const pgsScore = pgsContribution.positiveSum + pgsContribution.negativeSum;
+        const pgsPercentage = totalAbsMagnitude !== 0 ? Math.abs(pgsScore) / totalAbsMagnitude * 100 : 0;
+        const pgsRiskMultiplier = Math.exp(pgsScore);
+        
+        Debug.log(2, 'RiskDashboard', 'Rendering HTML content');
+        pgsBreakdown.innerHTML = `
+            <div class="breakdown-header">
+                <button class="back-btn" onclick="this.getRootNode().host.showPGSList('${traitId}', '${individualId}')">← Back</button>
+                <h4 style="overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 200px; margin: 0; padding: 5px 0;">${metadata.name || metadata.pgs_name || pgsId}</h4>
+                <div class="nav-buttons">
+                    <button class="nav-btn" onclick="this.getRootNode().host.navigatePGS(-1)" ${this.currentPgsNavigation?.currentIndex === 0 ? 'disabled' : ''}>↑</button>
+                    <button class="nav-btn" onclick="this.getRootNode().host.navigatePGS(1)" ${this.currentPgsNavigation?.currentIndex === (this.currentPgsNavigation?.pgsIds.length - 1) ? 'disabled' : ''}>↓</button>
+                </div>
+            </div>
+            
+            <a href="https://www.pgscatalog.org/score/${pgsId}" target="_blank" class="pgs-catalog-link" style="display: block; margin-bottom: 10px; font-size: 12px;">
+                View on PGS Catalog →
+            </a>
+            
+            <div class="pgs-contribution-box" style="background: linear-gradient(90deg, ${pgsScore >= 0 ? '#f8d7da' : '#d4edda'} ${pgsPercentage}%, #f8f9fa ${pgsPercentage}%); border: 1px solid #ddd; border-radius: 4px; padding: 10px; margin-bottom: 15px; text-align: center;">
+                <div style="font-size: 18px; font-weight: bold; color: ${pgsScore >= 0 ? '#721c24' : '#155724'};">${pgsPercentage.toFixed(1)}%</div>
+                <div style="font-size: 11px; color: #666;">of total trait score</div>
+            </div>
+                    <div class="breakdown-content">
+                    <div class="pgs-summary">
+                        <p class="trait-desc">${metadata.trait || metadata.trait_reported || 'Polygenic Score'}</p>
+                        <div class="calc-summary">
+                            <div class="calc-item">Total variants: ${cached.pgsDetails[pgsId].totalVariants.toLocaleString()}</div>
+                            <div class="calc-item">Contributing: ${pgsContribution.positive + pgsContribution.negative}</div>
+                        </div>
+                    </div>
+                    
+                    <canvas id="cardChart-${pgsId}" width="300" height="150"></canvas>
+                    
+                    <div class="calculation-info">
+                        <h5>How Your Score is Calculated</h5>
+                        <p>Your PGS score: ${pgsScore.toFixed(6)} → Risk multiplier: exp(${pgsScore.toFixed(6)}) = ${pgsRiskMultiplier.toFixed(2)}x</p>
+                    </div>
+                    
+                    <div class="variant-breakdown">
+                        <h5>Top Contributing Variants</h5>
+                        <div class="variant-table">
+                            <div class="table-header">
+                                <span>Variant</span>
+                                <span>Your DNA</span>
+                                <span>Effect Allele</span>
+                                <span>Effect Weight</span>
+                            </div>
+                            ${topVariants.map(variant => `
+                                <div class="table-row">
+                                    <span class="variant-id">${variant.rsid.startsWith('rs') ? `<a href="https://www.ncbi.nlm.nih.gov/snp/${variant.rsid}" target="_blank">${variant.rsid}</a>` : variant.rsid}</span>
+                                    <span class="genotype">${variant.userGenotype || 'N/A'}</span>
+                                    <span class="effect-allele">${variant.effect_allele}</span>
+                                    <span class="effect-weight ${variant.effect_weight >= 0 ? 'positive' : 'negative'}">${variant.effect_weight >= 0 ? '+' : ''}${variant.effect_weight.toFixed(6)}</span>
+                                </div>
+                            `).join('')}
+                        </div>
+                    </div>
+                </div>
+        `;
+        
+        pgsBreakdown.classList.add('showing-detail');
+        
+        Debug.log(1, 'RiskDashboard', 'showPGSBreakdownInCard total time:', performance.now() - startTime, 'ms');
+        
+        // Create chart
+        setTimeout(() => {
+            Debug.log(2, 'RiskDashboard', 'Creating chart for:', pgsId);
+            this.createCardChart(pgsId, cached.pgsDetails[pgsId]);
+        }, 100);
+    }
+    
+    async showPGSList(traitId, individualId) {
+        const card = this.shadowRoot.querySelector(`[data-trait-id="${traitId}"]`);
+        const cached = await this.geneticDb.getCachedRisk(traitId, individualId);
+        
+        if (card && cached) {
+            const pgsBreakdown = card.querySelector('.pgs-breakdown');
+            pgsBreakdown.innerHTML = this.renderPgsBreakdown(cached.pgsBreakdown, individualId);
+            pgsBreakdown.classList.remove('showing-detail');
+        }
+        
+        // Clear navigation context
+        this.currentPgsNavigation = null;
+    }
+    
+    navigatePGS(direction) {
+        if (!this.currentPgsNavigation) return;
+        
+        const newIndex = this.currentPgsNavigation.currentIndex + direction;
+        if (newIndex >= 0 && newIndex < this.currentPgsNavigation.pgsIds.length) {
+            const newPgsId = this.currentPgsNavigation.pgsIds[newIndex];
+            this.currentPgsNavigation.currentIndex = newIndex;
+            
+            // Find the card and show the new PGS
+            const card = this.shadowRoot.querySelector(`[data-trait-id="${this.currentPgsNavigation.traitId}"]`);
+            if (card) {
+                this.showPGSBreakdownFromNavigation(newPgsId, this.currentPgsNavigation.individualId, card);
+            }
+        }
+    }
+    
+    async showPGSBreakdownFromNavigation(pgsId, individualId, card) {
+        const cached = await this.geneticDb.getCachedRisk(this.currentPgsNavigation.traitId, individualId);
+        const pgsDetails = await this.geneticDb.getCachedPGSDetails(this.currentPgsNavigation.traitId, individualId);
+        
+        if (cached && pgsDetails?.[pgsId]) {
+            this.showPGSBreakdownInCard(pgsId, { ...cached, pgsDetails }, individualId, card);
+        }
+    }
+    
+    createCardChart(pgsId, cached) {
+        Debug.log(2, 'RiskDashboard', 'createCardChart start:', pgsId);
+        const startTime = performance.now();
+        
+        const canvas = this.shadowRoot.getElementById(`cardChart-${pgsId}`);
+        if (!canvas) return;
+        
+        // Use pre-computed bins from cache
+        const bins = cached.bins.filter(b => b.count > 0); // Only show bins with data
+        const totalSum = bins.reduce((sum, b) => sum + b.sum, 0);
+        
+        Debug.log(2, 'RiskDashboard', 'Using cached bins:', bins.map(b => `${b.label}: ${b.count} variants`));
+        
+        new Chart(canvas, {
+            type: 'bar',
+            data: {
+                labels: bins.map(b => b.label),
+                datasets: [{
+                    label: 'Variants',
+                    data: bins.map(b => b.count),
+                    backgroundColor: 'rgba(0, 122, 204, 0.8)'
+                }]
+            },
+            options: {
+                responsive: true,
+                plugins: {
+                    legend: { display: false },
+                    tooltip: {
+                        callbacks: {
+                            afterLabel: (context) => {
+                                const bin = bins[context.dataIndex];
+                                const pct = totalSum > 0 ? (bin.sum / totalSum * 100).toFixed(1) : 0;
+                                return `${pct}% of score`;
+                            }
+                        }
+                    }
+                },
+                scales: {
+                    y: { beginAtZero: true },
+                    x: { ticks: { maxRotation: 45 } }
+                }
+            }
+        });
+        
+        Debug.log(1, 'RiskDashboard', 'createCardChart total time:', performance.now() - startTime, 'ms');
+    }
+    
+    async getUserVariantsForPGS(individualId) {
+        const transaction = this.geneticDb.db.transaction(['snps'], 'readonly');
+        const store = transaction.objectStore('snps');
+        const variants = [];
+        
+        await new Promise((resolve) => {
+            const request = store.index('individualId').openCursor(individualId);
+            request.onsuccess = (event) => {
+                const cursor = event.target.result;
+                if (cursor) {
+                    variants.push(cursor.value);
+                    cursor.continue();
+                } else {
+                    resolve();
+                }
+            };
+        });
+        
+        return variants;
     }
 
     render() {
@@ -365,6 +615,37 @@ export class RiskDashboard extends HTMLElement {
                 .pgs-negative { background: #d4edda; height: 100%; float: left; }
                 .pgs-positive { background: #f8d7da; height: 100%; float: left; }
                 .pgs-score { font-weight: bold; font-size: 11px; }
+                .pgs-name { font-size: 11px; color: #007acc; font-weight: 500; }
+                .pgs-item:hover { background: #f8f9fa; }
+                .breakdown-header { display: flex; align-items: center; gap: 10px; margin-bottom: 15px; }
+                .back-btn { background: none; border: none; cursor: pointer; font-size: 16px; color: #007acc; }
+                .back-btn:hover { color: #005a99; }
+                .nav-buttons { margin-left: auto; display: flex; gap: 5px; }
+                .nav-btn { background: #f0f0f0; border: 1px solid #ccc; border-radius: 3px; width: 24px; height: 24px; font-size: 14px; cursor: pointer; }
+                .nav-btn:hover:not(:disabled) { background: #e0e0e0; }
+                .nav-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+                .breakdown-content { max-height: 400px; overflow-y: auto; padding: 5px 0; }
+                .pgs-summary { margin-bottom: 15px; }
+                .trait-desc { font-style: italic; color: #666; margin: 0 0 8px 0; font-size: 12px; }
+                .calc-summary { display: flex; gap: 15px; }
+                .calc-item { font-size: 11px; color: #555; }
+                .calculation-info { margin: 15px 0; }
+                .calculation-info h5 { margin: 0 0 5px 0; font-size: 12px; }
+                .calculation-info p { margin: 0; font-size: 11px; color: #666; line-height: 1.4; }
+                .variant-breakdown { margin: 15px 0; }
+                .variant-table { border: 1px solid #ddd; border-radius: 4px; overflow: hidden; }
+                .table-header { display: grid; grid-template-columns: 1fr 1fr 1fr 1fr; background: #f5f5f5; padding: 8px; font-weight: bold; font-size: 11px; }
+                .table-row { display: grid; grid-template-columns: 1fr 1fr 1fr 1fr; padding: 6px 8px; border-bottom: 1px solid #eee; font-size: 10px; }
+                .variant-id a { color: #007acc; text-decoration: none; font-family: monospace; }
+                .variant-id a:hover { text-decoration: underline; }
+                .genotype { font-family: monospace; font-weight: bold; color: #2e7d32; }
+                .effect-allele { font-family: monospace; color: #d32f2f; font-weight: bold; }
+                .effect-weight { font-family: monospace; }
+                .effect-weight.positive { color: #721c24; }
+                .effect-weight.negative { color: #155724; }
+                .pgs-link-section { margin-top: 15px; text-align: center; }
+                .pgs-catalog-link { color: #007acc; text-decoration: none; font-size: 12px; }
+                .pgs-catalog-link:hover { text-decoration: underline; }
             </style>
             <div id="traitsGrid" class="traits-container">
                 <div class="loading">Loading traits...</div>
@@ -383,6 +664,27 @@ export class RiskDashboard extends HTMLElement {
         try {
             const trait = this.availableTraits.find(t => t.id === traitId);
             if (!trait || !trait.file_path) throw new Error('Trait file not found');
+            
+            // Check memory before starting
+            MemoryMonitor.logMemoryUsage('Before risk calculation');
+            const memoryPressure = MemoryMonitor.getMemoryPressureLevel();
+            
+            if (memoryPressure === 'critical') {
+                throw new Error('Memory usage is too high. Please refresh the page and try again.');
+            }
+            
+            if (memoryPressure === 'high') {
+                // Show warning but allow calculation
+                const warningDiv = document.createElement('div');
+                warningDiv.className = 'memory-warning';
+                warningDiv.innerHTML = `
+                    <div style="background: #fff3cd; border: 1px solid #ffeaa7; padding: 8px; margin: 8px 0; border-radius: 4px; font-size: 12px; color: #856404;">
+                        ⚠️ Memory usage is high. Calculation may be slower.
+                    </div>
+                `;
+                buttonElement.closest('.trait-card').appendChild(warningDiv);
+                setTimeout(() => warningDiv.remove(), 5000);
+            }
             
             buttonElement.innerHTML = '<span>Loading trait data...</span>';
             buttonElement.classList.remove('progress');
@@ -410,10 +712,10 @@ export class RiskDashboard extends HTMLElement {
                 buttonElement.classList.remove('loading');
                 buttonElement.classList.add('progress');
                 buttonElement.style.setProperty('--progress', `${percent}%`);
-            });
+            }, trait.pgs_metadata);
             
             buttonElement.textContent = 'Saving results...';
-            // Cache the result
+            // Cache the result without PGS details
             const riskData = {
                 riskScore: result.riskScore,
                 pgsBreakdown: result.pgsBreakdown,
@@ -422,8 +724,13 @@ export class RiskDashboard extends HTMLElement {
                 traitLastUpdated: trait.last_updated
             };
             
-            console.log('Caching result:', traitId, individualId, riskData);
+            Debug.log(2, 'RiskDashboard', 'Caching result:', traitId, individualId, riskData);
             await this.geneticDb.setCachedRisk(traitId, individualId, riskData);
+            
+            // Cache PGS details separately
+            if (result.pgsDetails) {
+                await this.geneticDb.setCachedPGSDetails(traitId, individualId, result.pgsDetails);
+            }
             
             // Update the card
             const card = buttonElement.closest('.trait-card');
@@ -438,8 +745,10 @@ export class RiskDashboard extends HTMLElement {
                 ${this.renderCachedResult({
                     ...riskData,
                     calculatedAt: Date.now()
-                })}
+                }, individualId)}
             `;
+            
+            MemoryMonitor.logMemoryUsage('After risk calculation');
             
         } catch (error) {
             buttonElement.textContent = 'Error - Retry';
@@ -449,13 +758,20 @@ export class RiskDashboard extends HTMLElement {
             const card = buttonElement.closest('.trait-card');
             const errorDiv = document.createElement('div');
             errorDiv.className = 'error-message';
+            
+            let errorMessage = error.message;
+            if (error.message.includes('malloc') || error.message.includes('memory')) {
+                errorMessage = 'Memory limit exceeded. Try refreshing the page or use a device with more RAM.';
+            }
+            
             errorDiv.innerHTML = `
-                <div class="error-text">Calculation failed: ${error.message}</div>
+                <div class="error-text">Calculation failed: ${errorMessage}</div>
                 <button class="retry-btn" onclick="this.getRootNode().host.analyzeRisk('${traitId}', '${individualId}', this.parentElement.parentElement.querySelector('.analyze-btn'))">Retry</button>
             `;
             card.appendChild(errorDiv);
             
             this.error('Risk calculation failed:', error);
+            MemoryMonitor.logMemoryUsage('After error');
         }
     }
     
@@ -482,17 +798,44 @@ export class RiskDashboard extends HTMLElement {
     }
 
     async getUserDNA(trait, individualId, statusCallback) {
-        statusCallback?.('Loading trait data...', 10);
+        statusCallback?.('Loading user DNA into memory...', 10);
+        
+        // Load all user DNA into memory once
+        const transaction = this.geneticDb.db.transaction(['snps'], 'readonly');
+        const store = transaction.objectStore('snps');
+        const userDNAMap = new Map();
+        
+        await new Promise((resolve) => {
+            const request = store.index('individualId').openCursor(individualId);
+            let loaded = 0;
+            
+            request.onsuccess = (event) => {
+                const cursor = event.target.result;
+                if (cursor) {
+                    loaded++;
+                    const record = cursor.value;
+                    // Store by both rsid and position
+                    if (record.rsid) userDNAMap.set(record.rsid, record);
+                    userDNAMap.set(`${record.chromosome}:${record.position}`, record);
+                    cursor.continue();
+                } else {
+                    Debug.log(2, 'RiskDashboard', `Loaded ${loaded} DNA records into memory`);
+                    resolve();
+                }
+            };
+        });
+        
+        statusCallback?.('Loading trait data...', 30);
         
         // Load the unified trait file to see what variants we need
         const url = `http://localhost:4343/data/${trait.file_path}`;
         await this.duckdb.loadParquet(url, 'temp_trait');
         
-        statusCallback?.('Analyzing variants...', 30);
+        statusCallback?.('Matching variants...', 50);
         
-        // Get all unique variant identifiers from the trait file
+        // Get all variants and match against in-memory DNA
         const variantResult = await this.duckdb.query(`
-            SELECT DISTINCT 
+            SELECT 
                 variant_id,
                 chr_name,
                 chr_position
@@ -501,30 +844,25 @@ export class RiskDashboard extends HTMLElement {
         `);
         
         const variants = variantResult.toArray();
-        const positions = new Set();
-        const rsids = new Set();
+        const matches = [];
         
         variants.forEach(v => {
-            if (v.variant_id) rsids.add(v.variant_id);
-            if (v.chr_name && v.chr_position) positions.add(`${v.chr_name}:${v.chr_position}`);
+            let match = null;
+            if (v.variant_id && userDNAMap.has(v.variant_id)) {
+                match = userDNAMap.get(v.variant_id);
+            } else if (v.chr_name && v.chr_position) {
+                const posKey = `${v.chr_name}:${v.chr_position}`;
+                if (userDNAMap.has(posKey)) {
+                    match = userDNAMap.get(posKey);
+                }
+            }
+            if (match) matches.push(match);
         });
         
         await this.duckdb.query('DROP TABLE temp_trait');
         
-        statusCallback?.('Searching DNA matches...', 50);
-        
-        let matches = [];
-        if (positions.size > 0) {
-            const positionMatches = await this.geneticDb.findByPositions(positions, individualId);
-            matches = matches.concat(positionMatches);
-        }
-        
-        if (rsids.size > 0) {
-            const rsidMatches = await this.geneticDb.findByRsids(Array.from(rsids), individualId);
-            matches = matches.concat(rsidMatches);
-        }
-        
-        statusCallback?.('DNA analysis complete', 100);
+        statusCallback?.('DNA matching complete', 90);
+        Debug.log(2, 'RiskDashboard', 'getUserDNA completed:', matches.length, 'total matches found');
         
         return { userDNA: matches, totalVariants: variants.length };
     }

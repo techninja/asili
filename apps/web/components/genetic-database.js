@@ -16,6 +16,8 @@
  * @property {number} createdAt
  */
 
+import { Debug } from '../lib/debug.js';
+
 export class GeneticDatabase {
   constructor() {
     this.db = null;
@@ -46,10 +48,15 @@ export class GeneticDatabase {
           const snpStore = db.createObjectStore('snps', { keyPath: ['rsid', 'individualId'] });
           snpStore.createIndex('individualId', 'individualId', { unique: false });
           snpStore.createIndex('rsid', 'rsid', { unique: false });
+          snpStore.createIndex('position', ['chromosome', 'position', 'individualId'], { unique: false });
         }
         
         if (!db.objectStoreNames.contains('risk_cache')) {
           db.createObjectStore('risk_cache', { keyPath: ['traitFile', 'individualId'] });
+        }
+        
+        if (!db.objectStoreNames.contains('pgs_details')) {
+          db.createObjectStore('pgs_details', { keyPath: ['traitId', 'individualId'] });
         }
       };
     });
@@ -181,50 +188,69 @@ export class GeneticDatabase {
   }
 
   async findByRsids(rsids, individualId) {
-    const transaction = this.db.transaction(['snps'], 'readonly');
-    const store = transaction.objectStore('snps');
     const results = [];
-
-    return new Promise((resolve) => {
-      let completed = 0;
+    const BATCH_SIZE = 1000;
+    
+    for (let i = 0; i < rsids.length; i += BATCH_SIZE) {
+      const batch = rsids.slice(i, i + BATCH_SIZE);
       
-      rsids.forEach(rsid => {
-        const request = store.get([rsid, individualId]);
-        request.onsuccess = () => {
-          if (request.result) results.push(request.result);
-          completed++;
-          if (completed === rsids.length) resolve(results);
-        };
-        request.onerror = () => {
-          completed++;
-          if (completed === rsids.length) resolve(results);
-        };
+      // Create new transaction for each batch
+      const transaction = this.db.transaction(['snps'], 'readonly');
+      const store = transaction.objectStore('snps');
+      
+      const batchResults = await new Promise((resolve) => {
+        const batchData = [];
+        let completed = 0;
+        
+        batch.forEach(rsid => {
+          const request = store.get([rsid, individualId]);
+          request.onsuccess = () => {
+            if (request.result) batchData.push(request.result);
+            completed++;
+            if (completed === batch.length) resolve(batchData);
+          };
+          request.onerror = () => {
+            completed++;
+            if (completed === batch.length) resolve(batchData);
+          };
+        });
       });
-    });
+      
+      results.push(...batchResults);
+    }
+    
+    return results;
   }
 
   async findByPositions(positions, individualId) {
     const transaction = this.db.transaction(['snps'], 'readonly');
     const store = transaction.objectStore('snps');
     const results = [];
-    let scanned = 0;
-
+    const positionsSet = new Set(positions);
+    
     return new Promise((resolve) => {
       const request = store.index('individualId').openCursor(individualId);
+      let scanned = 0;
+      
       request.onsuccess = (event) => {
         const cursor = event.target.result;
         if (cursor) {
           scanned++;
           const record = cursor.value;
           const key = `${record.chromosome}:${record.position}`;
-          if (positions.has(key)) {
+          if (positionsSet.has(key)) {
             results.push(record);
           }
           cursor.continue();
         } else {
-          console.log(`Scanned ${scanned} records, found ${results.length} matches`);
+          Debug.log(2, 'GeneticDatabase', `Position lookup: found ${results.length} matches from ${positions.size} positions (scanned ${scanned})`);
           resolve(results);
         }
+      };
+      
+      request.onerror = () => {
+        Debug.error('GeneticDatabase', 'Error scanning positions:', request.error);
+        resolve(results);
       };
     });
   }
@@ -311,6 +337,79 @@ export class GeneticDatabase {
     return new Promise((resolve, reject) => {
       const request = store.get([traitId, individualId]);
       request.onsuccess = () => resolve(request.result);
+      request.onerror = () => reject(request.error);
+    });
+  }
+
+  async setCachedPGSDetails(traitId, individualId, pgsDetails) {
+    // Pre-compute bin data for ALL contributing variants + store top 20 detailed variants
+    const optimizedDetails = {};
+    Object.entries(pgsDetails).forEach(([pgsId, data]) => {
+      const contributingVariants = data.variants.filter(v => v.userGenotype); // All matched variants, not just positive weights
+      
+      // Create bins for all contributing variants (separate positive/negative)
+      const bins = [
+        { label: '-1.0+', min: -Infinity, max: -1.0, count: 0, sum: 0 },
+        { label: '-0.1 to -1.0', min: -1.0, max: -0.1, count: 0, sum: 0 },
+        { label: '-0.05 to -0.1', min: -0.1, max: -0.05, count: 0, sum: 0 },
+        { label: '-0.01 to -0.05', min: -0.05, max: -0.01, count: 0, sum: 0 },
+        { label: '-0.001 to -0.01', min: -0.01, max: -0.001, count: 0, sum: 0 },
+        { label: '-0.0001 to -0.001', min: -0.001, max: -0.0001, count: 0, sum: 0 },
+        { label: '0.0001-0.001', min: 0.0001, max: 0.001, count: 0, sum: 0 },
+        { label: '0.001-0.01', min: 0.001, max: 0.01, count: 0, sum: 0 },
+        { label: '0.01-0.05', min: 0.01, max: 0.05, count: 0, sum: 0 },
+        { label: '0.05-0.1', min: 0.05, max: 0.1, count: 0, sum: 0 },
+        { label: '0.1-1.0', min: 0.1, max: 1.0, count: 0, sum: 0 },
+        { label: '1.0+', min: 1.0, max: Infinity, count: 0, sum: 0 }
+      ];
+      
+      contributingVariants.forEach(v => {
+        const weight = v.effect_weight;
+        const bin = bins.find(b => weight >= b.min && weight < b.max);
+        if (bin) {
+          bin.count++;
+          bin.sum += v.effect_weight;
+        }
+      });
+      
+      // Sort contributing variants by effect weight and keep top 20 with all details
+      const topVariants = contributingVariants
+        .filter(v => v.userGenotype) // Only show variants with DNA matches
+        .sort((a, b) => Math.abs(b.effect_weight) - Math.abs(a.effect_weight))
+        .slice(0, 20)
+        .map(v => ({
+          rsid: v.rsid,
+          effect_allele: v.effect_allele,
+          effect_weight: v.effect_weight,
+          userGenotype: v.userGenotype
+        }));
+      
+      optimizedDetails[pgsId] = {
+        metadata: data.metadata,
+        bins: bins, // Pre-computed bin data for all variants
+        totalVariants: contributingVariants.length,
+        topVariants: topVariants
+      };
+    });
+    
+    const entry = { traitId, individualId, pgsDetails: optimizedDetails, cachedAt: Date.now() };
+    const transaction = this.db.transaction(['pgs_details'], 'readwrite');
+    const store = transaction.objectStore('pgs_details');
+    
+    return new Promise((resolve, reject) => {
+      const request = store.put(entry);
+      request.onsuccess = () => resolve(entry);
+      request.onerror = () => reject(request.error);
+    });
+  }
+
+  async getCachedPGSDetails(traitId, individualId) {
+    const transaction = this.db.transaction(['pgs_details'], 'readonly');
+    const store = transaction.objectStore('pgs_details');
+    
+    return new Promise((resolve, reject) => {
+      const request = store.get([traitId, individualId]);
+      request.onsuccess = () => resolve(request.result?.pgsDetails);
       request.onerror = () => reject(request.error);
     });
   }
