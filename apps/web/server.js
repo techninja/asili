@@ -31,10 +31,36 @@ createServer(async (req, res) => {
     return;
   }
 
+  // Proxy /data requests to CDN
+  if (req.url.startsWith('/data/')) {
+    try {
+      const cdnUrl = `http://cdn${req.url}`;
+      const response = await fetch(cdnUrl);
+      
+      res.setHeader('Content-Type', response.headers.get('content-type') || 'application/octet-stream');
+      if (response.headers.get('content-length')) {
+        res.setHeader('Content-Length', response.headers.get('content-length'));
+      }
+      
+      res.writeHead(response.status);
+      const buffer = await response.arrayBuffer();
+      res.end(Buffer.from(buffer));
+      return;
+    } catch (error) {
+      res.writeHead(500);
+      res.end('CDN Error');
+      return;
+    }
+  }
+
   let filePath = req.url === '/' ? '/index.html' : req.url;
   
-  // Serve node_modules directly
-  if (filePath.startsWith('/node_modules/')) {
+  // Serve bundled files from root
+  if (filePath === '/duckdb-bundle.mjs') {
+    filePath = join(__dirname, 'duckdb-bundle.mjs');
+  } else if (filePath.startsWith('/dist/')) {
+    filePath = join(__dirname, filePath);
+  } else if (filePath.startsWith('/node_modules/')) {
     filePath = join(__dirname, filePath);
   } else {
     filePath = join(__dirname, filePath);

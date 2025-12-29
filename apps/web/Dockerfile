@@ -2,17 +2,20 @@ FROM node:22-slim
 
 WORKDIR /app
 
-# Copy package files first
-COPY package*.json ./
+# Install pnpm
+RUN npm install -g pnpm
 
-# Install dependencies
-RUN npm install
+# Copy package files
+COPY package*.json pnpm-lock.yaml* ./
 
-# Copy source code (node_modules excluded by .dockerignore)
+# Install with pnpm (much faster)
+RUN pnpm install --frozen-lockfile
+
+# Copy source
 COPY . .
 
-# Expose port
-EXPOSE 8080
+# Bundle with verbose output
+RUN echo "Starting bundle..." && pnpm run bundle && echo "Bundle complete"
 
-# Start server
-CMD ["npm", "run", "dev"]
+EXPOSE 8080
+CMD ["pnpm", "run", "dev"]

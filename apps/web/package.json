@@ -4,13 +4,16 @@
   "type": "module",
   "scripts": {
     "dev": "node server.js",
-    "build": "mkdir -p dist && cp -r node_modules/@duckdb dist/ && cp *.html components dist/",
+    "build": "node bundle.mjs && mkdir -p dist && cp *.html components dist/",
+    "bundle": "node bundle.mjs",
     "deploy": "aws s3 sync dist/ s3://asili-cdn",
     "test": "node tests/run-tests.js",
     "test:clear": "node tests/clear-storage.js"
   },
   "dependencies": {
-    "@duckdb/duckdb-wasm": "^1.33.1-dev5.0"
+    "@duckdb/duckdb-wasm": "^1.33.1-dev5.0",
+    "esbuild": "^0.27.2",
+    "zustand": "^4.4.7"
   },
   "devDependencies": {
     "puppeteer": "^24.34.0"

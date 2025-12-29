@@ -5,14 +5,34 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Asili - Personal Genomic Risk Assistant</title>
     <script>window.DEBUG_LEVEL = 2;</script>
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    
+    <!-- Mobile debug console -->
+    <script type="module">
+        import { MobileDebug } from './lib/mobile-debug.js';
+        MobileDebug.init();
+    </script>
+    
+    <!-- Preload critical WASM -->
+    <link rel="preload" href="/dist/duckdb-eh.wasm" as="fetch" crossorigin>
+    
+    <!-- Load Chart.js async -->
+    <script>
+        window.loadChartJS = () => {
+            if (window.Chart) return Promise.resolve();
+            return new Promise(resolve => {
+                const s = document.createElement('script');
+                s.src = 'https://cdn.jsdelivr.net/npm/chart.js';
+                s.onload = resolve;
+                document.head.appendChild(s);
+            });
+        };
+    </script>
+    
     <script type="importmap">
     {
         "imports": {
-            "@duckdb/duckdb-wasm": "/node_modules/@duckdb/duckdb-wasm/dist/duckdb-browser.mjs",
-            "apache-arrow": "/node_modules/apache-arrow/Arrow.mjs",
-            "flatbuffers": "/node_modules/flatbuffers/mjs/flatbuffers.js",
-            "tslib": "/node_modules/tslib/tslib.es6.mjs"
+            "@duckdb/duckdb-wasm": "./duckdb-bundle.mjs",
+            "zustand": "/node_modules/zustand/esm/vanilla.mjs"
         }
     }
     </script>

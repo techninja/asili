@@ -18,13 +18,15 @@ initSync({ module: wasmBuffer });
 // Global metadata cache to avoid duplicate API calls
 const globalMetadataCache = new Map();
 
-async function collectPgsMetadata(pgsIds) {
+async function collectPgsMetadata(pgsIds, existingMetadata = {}) {
     const metadata = {};
     const uncachedIds = [];
     
-    // Check global cache first
+    // Check existing manifest metadata first, then global cache
     for (const pgsId of pgsIds) {
-        if (globalMetadataCache.has(pgsId)) {
+        if (existingMetadata[pgsId]) {
+            metadata[pgsId] = existingMetadata[pgsId];
+        } else if (globalMetadataCache.has(pgsId)) {
             metadata[pgsId] = globalMetadataCache.get(pgsId);
         } else {
             uncachedIds.push(pgsId);
@@ -32,7 +34,7 @@ async function collectPgsMetadata(pgsIds) {
     }
     
     if (uncachedIds.length === 0) {
-        console.log(`    All ${pgsIds.length} PGS scores found in cache`);
+        console.log(`    All ${pgsIds.length} PGS scores found in existing metadata`);
         return metadata;
     }
     
@@ -385,19 +387,34 @@ async function needsUpdate(traitName, config) {
     return false;
 }
 
+async function loadExistingManifest() {
+    const manifestPath = path.join(OUTPUT_DIR, 'trait_manifest.json');
+    try {
+        const content = await fs.readFile(manifestPath, 'utf8');
+        return JSON.parse(content);
+    } catch {
+        return { traits: {} };
+    }
+}
+
 export async function generateTraitPack(traitName, config) {
-    // Always collect fresh metadata
-    console.log(`  - Collecting metadata for ${config.pgs_ids.length} PGS scores...`);
-    const pgsMetadata = await collectPgsMetadata(config.pgs_ids);
+    // Load existing manifest to check for existing metadata
+    const existingManifest = await loadExistingManifest();
+    const existingTraitData = existingManifest.traits?.[traitName];
+    const existingMetadata = existingTraitData?.pgs_metadata || {};
+    
+    // Only collect metadata that doesn't exist in manifest
+    console.log(`  - Checking metadata for ${config.pgs_ids.length} PGS scores...`);
+    const pgsMetadata = await collectPgsMetadata(config.pgs_ids, existingMetadata);
     
     const needsFileUpdate = await needsUpdate(traitName, config);
     
     if (!needsFileUpdate) {
-        console.log(`  - Files up to date, updating metadata only`);
+        console.log(`  - Files up to date, metadata check complete`);
         return {
             timestamp: new Date().toISOString(),
-            variant_count: 0, // Will be filled from existing manifest
-            source_hashes: {},
+            variant_count: existingTraitData?.variant_count || 0,
+            source_hashes: existingTraitData?.source_hashes || {},
             pgs_metadata: pgsMetadata,
             metadata_only: true
         };

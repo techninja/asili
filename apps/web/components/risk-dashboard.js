@@ -1,5 +1,6 @@
 import { Debug } from '../lib/debug.js';
 import { MemoryMonitor } from '../lib/memory-monitor.js';
+import { useAppStore } from '../lib/store.js';
 import './pgs-breakdown.js';
 
 export class RiskDashboard extends HTMLElement {
@@ -7,108 +8,189 @@ export class RiskDashboard extends HTMLElement {
         super();
         this.attachShadow({ mode: 'open' });
         this.duckdb = null;
-        this.risks = {};
+        this.geneticDb = null;
         this.availableTraits = [];
-    }
-
-    // Utility logging with timestamps
-    log(...args) {
-        Debug.log(1, 'RiskDashboard', ...args);
-    }
-
-    error(...args) {
-        Debug.error('RiskDashboard', ...args);
+        this.unsubscribe = null;
     }
 
     connectedCallback() {
         this.render();
         this.loadAvailableTraits();
-        document.addEventListener('dna-imported', () => this.loadRisks());
-        document.addEventListener('individual-changed', (e) => {
-            this.log('Individual changed event received:', e.detail);
-            this.renderTraitCards(e.detail);
+        
+        // Subscribe to state changes
+        this.unsubscribe = useAppStore.subscribe((state) => {
+            this.updateTraitCards(state);
         });
     }
 
-    async loadAvailableTraits() {
+    disconnectedCallback() {
+        this.unsubscribe?.();
+    }
+
+    updateTraitCards(state) {
+        if (!this.geneticDb || !state.traitsLoaded) return;
+        
         const grid = this.shadowRoot.getElementById('traitsGrid');
-        grid.innerHTML = '<div class="loading">Loading trait catalog...</div>';
+        if (!grid) return;
+        
+        Debug.log(1, 'RiskDashboard', 'Updating trait cards for individual:', state.selectedIndividual);
+        
+        if (!state.selectedIndividual) {
+            if (state.individuals.length === 0) {
+                grid.innerHTML = '<div class="loading">Add an individual to start analyzing risk</div>';
+            } else {
+                grid.innerHTML = '<div class="loading">Select an individual to view trait analysis</div>';
+            }
+            return;
+        }
+        
+        if (state.uploadState !== 'idle' || !state.individualReady) {
+            grid.innerHTML = '<div class="loading">Individual data is loading...</div>';
+            return;
+        }
+        
+        this.renderTraitCardsForIndividual(state.selectedIndividual, state.duckdbReady);
+    }
+
+    async renderTraitCardsForIndividual(individualId, duckdbReady) {
+        const grid = this.shadowRoot.getElementById('traitsGrid');
+        grid.innerHTML = '';
+        
+        if (this.availableTraits.length === 0) {
+            grid.innerHTML = '<div class="loading">No traits available</div>';
+            return;
+        }
+        
+        // Group traits by family
+        const familyGroups = {};
+        this.availableTraits.forEach(trait => {
+            if (!familyGroups[trait.family]) {
+                familyGroups[trait.family] = [];
+            }
+            familyGroups[trait.family].push(trait);
+        });
+        
+        for (const [familyKey, traits] of Object.entries(familyGroups)) {
+            const family = this.traitCatalog.trait_families[familyKey];
+            
+            // Create family header
+            const familyHeader = document.createElement('div');
+            familyHeader.className = 'family-header';
+            familyHeader.innerHTML = `
+                <h2>${family.name}</h2>
+                <p>${family.description}</p>
+            `;
+            grid.appendChild(familyHeader);
+            
+            // Create family grid
+            const familyGrid = document.createElement('div');
+            familyGrid.className = 'family-grid';
+            
+            for (const trait of traits) {
+                Debug.log(2, 'RiskDashboard', 'Creating card for trait:', trait.name);
+                const cached = await this.geneticDb.getCachedRisk(trait.id, individualId);
+                const card = this.createTraitCard(trait, individualId, cached, duckdbReady);
+                familyGrid.appendChild(card);
+            }
+            
+            grid.appendChild(familyGrid);
+        }
+    }
+
+    createTraitCard(trait, individualId, cached, duckdbReady) {
+        const card = document.createElement('div');
+        card.className = 'trait-card';
+        card.dataset.traitId = trait.id;
+        card.dataset.individualId = individualId;
+        
+        card.innerHTML = `
+            <div class="trait-header">
+                <h3 class="trait-name">${trait.name}</h3>
+                <span class="trait-category">${trait.category}</span>
+            </div>
+            <div class="trait-stats">
+                ${trait.pgs_ids?.length || 0} PGS scores | ${trait.variant_count?.toLocaleString() || 'Unknown'} variants
+            </div>
+            ${cached ? this.renderCachedResult(cached, individualId) : this.renderAnalyzeButton(trait.id, individualId, duckdbReady)}
+        `;
+        
+        return card;
+    }
+
+    async loadAvailableTraits() {
+        Debug.log(1, 'RiskDashboard', 'loadAvailableTraits starting');
+        const grid = this.shadowRoot.getElementById('traitsGrid');
+        if (!grid) {
+            Debug.log(1, 'RiskDashboard', 'No grid found in loadAvailableTraits');
+            return;
+        }
+        
+        grid.innerHTML = '<div class="loading">Loading traits...</div>';
         
         try {
-            const manifestResponse = await fetch('http://localhost:4343/data/trait_manifest.json');
-            const manifest = await manifestResponse.json();
+            Debug.log(2, 'RiskDashboard', 'Fetching trait manifest...');
+            const response = await fetch('/data/trait_manifest.json');
+            Debug.log(1, 'RiskDashboard', 'Fetch response status:', response.status);
+            const manifest = await response.json();
+            Debug.log(2, 'RiskDashboard', 'Manifest loaded, trait_families:', !!manifest.trait_families);
             
-            // Store catalog for family grouping
             this.traitCatalog = manifest;
-            
-            // Convert catalog to flat trait list with manifest data
             this.availableTraits = [];
             
             if (!manifest.trait_families) {
-                throw new Error('Invalid manifest: missing trait_families');
+                throw new Error('Invalid manifest');
             }
             
+            // Flatten trait structure
             Object.entries(manifest.trait_families).forEach(([familyKey, family]) => {
-                if (family.subtypes) {
-                    Object.entries(family.subtypes).forEach(([subtypeKey, subtype]) => {
-                        const traitId = `${familyKey}_${subtypeKey}`;
-                        const manifestData = manifest.traits?.[traitId] || {};
-                        
-                        this.availableTraits.push({
-                            id: traitId,
-                            name: subtype.name,
-                            description: subtype.description,
-                            category: family.category,
-                            family: familyKey,
-                            familyName: family.name,
-                            file_path: manifestData.file_path,
-                            pgs_ids: subtype.pgs_ids,
-                            pgs_metadata: manifestData.pgs_metadata || {},
-                            variant_count: manifestData.variant_count || 0,
-                            last_updated: manifestData.last_updated
+                ['subtypes', 'biomarkers'].forEach(type => {
+                    if (family[type]) {
+                        Object.entries(family[type]).forEach(([key, item]) => {
+                            const traitId = `${familyKey}_${key}`;
+                            const manifestData = manifest.traits?.[traitId] || {};
+                            
+                            this.availableTraits.push({
+                                id: traitId,
+                                name: item.name,
+                                description: item.description || '',
+                                category: family.category,
+                                family: familyKey,
+                                familyName: family.name,
+                                file_path: manifestData.file_path,
+                                pgs_ids: item.pgs_ids,
+                                pgs_metadata: manifestData.pgs_metadata || {},
+                                variant_count: manifestData.variant_count || 0,
+                                last_updated: manifestData.last_updated
+                            });
                         });
-                    });
-                }
-                
-                if (family.biomarkers) {
-                    Object.entries(family.biomarkers).forEach(([biomarkerKey, biomarker]) => {
-                        const traitId = `${familyKey}_${biomarkerKey}`;
-                        const manifestData = manifest.traits?.[traitId] || {};
-                        
-                        this.availableTraits.push({
-                            id: traitId,
-                            name: biomarker.name,
-                            description: biomarker.description || '',
-                            category: family.category,
-                            family: familyKey,
-                            familyName: family.name,
-                            file_path: manifestData.file_path,
-                            pgs_ids: biomarker.pgs_ids,
-                            pgs_metadata: manifestData.pgs_metadata || {},
-                            variant_count: manifestData.variant_count || 0,
-                            last_updated: manifestData.last_updated
-                        });
-                    });
-                }
+                    }
+                });
             });
             
-            this.renderTraitCards();
+            Debug.log(1, 'RiskDashboard', 'Processed traits count:', this.availableTraits.length);
+            useAppStore.getState().setTraitsLoaded(true);
+            
         } catch (error) {
-            this.error('Failed to load trait catalog:', error);
+            Debug.error('RiskDashboard', 'Failed to load traits:', error);
             grid.innerHTML = '<div class="loading">Failed to load traits</div>';
         }
     }
 
     async renderTraitCards(individualId) {
-        this.log('renderTraitCards called with:', individualId);
+        Debug.log(1, 'RiskDashboard', 'renderTraitCards called with:', individualId);
         
         if (!this.geneticDb) {
-            this.log('No geneticDb available, returning');
+            Debug.log(1, 'RiskDashboard', 'No geneticDb available');
             return;
         }
         
         const grid = this.shadowRoot.getElementById('traitsGrid');
-        this.log('Got grid element');
+        if (!grid) {
+            Debug.log(1, 'RiskDashboard', 'No grid element found');
+            return;
+        }
+        
+        Debug.log(2, 'RiskDashboard', 'Grid element found, processing individualId');
         
         // Handle new event format with ready flag
         let actualIndividualId = individualId;
@@ -118,14 +200,15 @@ export class RiskDashboard extends HTMLElement {
             actualIndividualId = individualId.individualId;
             isReady = individualId.ready;
         }
-        this.log('Processed individualId:', actualIndividualId, 'ready:', isReady);
+        Debug.log(2, 'RiskDashboard', 'Processed individualId:', actualIndividualId, 'ready:', isReady);
         
         // Use provided individualId or get from uploader
         if (!actualIndividualId) {
             const uploader = document.querySelector('dna-uploader');
             actualIndividualId = uploader?.selectedIndividual || null;
+            Debug.log(2, 'RiskDashboard', 'Got individualId from uploader:', actualIndividualId);
         }
-        this.log('Final individualId:', actualIndividualId);
+        Debug.log(1, 'RiskDashboard', 'Final individualId:', actualIndividualId);
         
         // Don't show trait cards if no individual selected, not ready, or if importing
         const uploader = document.querySelector('dna-uploader');
@@ -177,9 +260,16 @@ export class RiskDashboard extends HTMLElement {
         }
         this.log('Loading cards shown');
         
-        this.log('About to replace with actual trait cards');
+        Debug.log(2, 'RiskDashboard', 'About to replace with actual trait cards');
         // Group traits by family and render with family headers
         grid.innerHTML = '';
+        
+        Debug.log(1, 'RiskDashboard', 'Available traits count:', this.availableTraits.length);
+        
+        if (this.availableTraits.length === 0) {
+            grid.innerHTML = '<div class="loading">No traits available</div>';
+            return;
+        }
         
         const familyGroups = {};
         this.availableTraits.forEach(trait => {
@@ -206,6 +296,7 @@ export class RiskDashboard extends HTMLElement {
             familyGrid.className = 'family-grid';
             
             for (const trait of traits) {
+                Debug.log(2, 'RiskDashboard', 'Creating card for trait:', trait.name);
                 Debug.log(2, 'RiskDashboard', 'Getting cached risk for:', trait.id);
                 const cacheStart = performance.now();
                 const cached = await this.geneticDb.getCachedRisk(trait.id, actualIndividualId);
@@ -272,11 +363,14 @@ export class RiskDashboard extends HTMLElement {
         `;
     }
 
-    renderAnalyzeButton(traitId, individualId) {
+    renderAnalyzeButton(traitId, individualId, duckdbReady) {
+        const disabled = duckdbReady ? '' : 'disabled';
+        const text = duckdbReady ? 'Calculate Risk' : 'Loading...';
+        
         return `
             <div class="risk-display">
-                <button class="analyze-btn" onclick="this.getRootNode().host.analyzeRisk('${traitId}', '${individualId}', this)">
-                    <span>Calculate Risk</span>
+                <button class="analyze-btn" ${disabled} onclick="this.getRootNode().host.analyzeRisk('${traitId}', '${individualId}', this)">
+                    <span>${text}</span>
                 </button>
             </div>
         `;
@@ -494,50 +588,45 @@ export class RiskDashboard extends HTMLElement {
     }
     
     createCardChart(pgsId, cached) {
-        Debug.log(2, 'RiskDashboard', 'createCardChart start:', pgsId);
-        const startTime = performance.now();
-        
         const canvas = this.shadowRoot.getElementById(`cardChart-${pgsId}`);
         if (!canvas) return;
         
-        // Use pre-computed bins from cache
-        const bins = cached.bins.filter(b => b.count > 0); // Only show bins with data
-        const totalSum = bins.reduce((sum, b) => sum + b.sum, 0);
-        
-        Debug.log(2, 'RiskDashboard', 'Using cached bins:', bins.map(b => `${b.label}: ${b.count} variants`));
-        
-        new Chart(canvas, {
-            type: 'bar',
-            data: {
-                labels: bins.map(b => b.label),
-                datasets: [{
-                    label: 'Variants',
-                    data: bins.map(b => b.count),
-                    backgroundColor: 'rgba(0, 122, 204, 0.8)'
-                }]
-            },
-            options: {
-                responsive: true,
-                plugins: {
-                    legend: { display: false },
-                    tooltip: {
-                        callbacks: {
-                            afterLabel: (context) => {
-                                const bin = bins[context.dataIndex];
-                                const pct = totalSum > 0 ? (bin.sum / totalSum * 100).toFixed(1) : 0;
-                                return `${pct}% of score`;
+        // Load Chart.js only when needed
+        window.loadChartJS().then(() => {
+            const bins = cached.bins.filter(b => b.count > 0);
+            const totalSum = bins.reduce((sum, b) => sum + b.sum, 0);
+            
+            new Chart(canvas, {
+                type: 'bar',
+                data: {
+                    labels: bins.map(b => b.label),
+                    datasets: [{
+                        label: 'Variants',
+                        data: bins.map(b => b.count),
+                        backgroundColor: 'rgba(0, 122, 204, 0.8)'
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    plugins: {
+                        legend: { display: false },
+                        tooltip: {
+                            callbacks: {
+                                afterLabel: (context) => {
+                                    const bin = bins[context.dataIndex];
+                                    const pct = totalSum > 0 ? (bin.sum / totalSum * 100).toFixed(1) : 0;
+                                    return `${pct}% of score`;
+                                }
                             }
                         }
+                    },
+                    scales: {
+                        y: { beginAtZero: true },
+                        x: { ticks: { maxRotation: 45 } }
                     }
-                },
-                scales: {
-                    y: { beginAtZero: true },
-                    x: { ticks: { maxRotation: 45 } }
                 }
-            }
+            });
         });
-        
-        Debug.log(1, 'RiskDashboard', 'createCardChart total time:', performance.now() - startTime, 'ms');
     }
     
     async getUserVariantsForPGS(individualId) {
@@ -654,8 +743,19 @@ export class RiskDashboard extends HTMLElement {
     }
 
     async analyzeRisk(traitId, individualId, buttonElement) {
+        const store = useAppStore.getState();
+        
+        // Wait for DuckDB if still loading
+        if (!store.duckdbReady) {
+            buttonElement.innerHTML = '<span>Finalizing analysis engine...</span>';
+            // Wait for DuckDB to be ready
+            while (!useAppStore.getState().duckdbReady) {
+                await new Promise(resolve => setTimeout(resolve, 100));
+            }
+        }
+        
         if (!this.duckdb || !this.geneticDb) {
-            alert('Please upload your DNA file first');
+            alert('Analysis engine not ready');
             return;
         }
         
@@ -701,7 +801,7 @@ export class RiskDashboard extends HTMLElement {
                 buttonElement.style.setProperty('--progress', `${percent}%`);
             });
             
-            const url = `http://localhost:4343/data/${trait.file_path}`;
+            const url = `/data/${trait.file_path}`;
             const result = await this.duckdb.calculateRisk(url, userDNA, (message, percent) => {
                 const span = buttonElement.querySelector('span');
                 if (span) {
@@ -828,7 +928,7 @@ export class RiskDashboard extends HTMLElement {
         statusCallback?.('Loading trait data...', 30);
         
         // Load the unified trait file to see what variants we need
-        const url = `http://localhost:4343/data/${trait.file_path}`;
+        const url = `/data/${trait.file_path}`;
         await this.duckdb.loadParquet(url, 'temp_trait');
         
         statusCallback?.('Matching variants...', 50);

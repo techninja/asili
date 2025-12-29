@@ -10,13 +10,13 @@ export class DuckDBProvider {
 
     async init() {
         const bundle = {
-            mainModule: '/node_modules/@duckdb/duckdb-wasm/dist/duckdb-eh.wasm',
-            mainWorker: '/node_modules/@duckdb/duckdb-wasm/dist/duckdb-browser-eh.worker.js',
-            pthreadWorker: '/node_modules/@duckdb/duckdb-wasm/dist/duckdb-browser-coi.pthread.worker.js'
+            mainModule: '/dist/duckdb-eh.wasm',
+            mainWorker: '/dist/duckdb-browser-eh.worker.js',
+            pthreadWorker: '/dist/duckdb-browser-coi.pthread.worker.js'
         };
         
         const worker = new Worker(bundle.mainWorker);
-        const logger = new duckdb.VoidLogger(); // Disable logging
+        const logger = new duckdb.VoidLogger();
         
         this.db = new duckdb.AsyncDuckDB(logger, worker);
         await this.db.instantiate(bundle.mainModule, bundle.pthreadWorker);
@@ -29,7 +29,9 @@ export class DuckDBProvider {
 
     async loadParquet(url, tableName, progressCallback) {
         progressCallback?.('Loading parquet file...', 0);
-        await this.query(`CREATE OR REPLACE TABLE ${tableName} AS SELECT * FROM '${url}'`);
+        // Convert relative URLs to absolute for DuckDB worker
+        const absoluteUrl = url.startsWith('/') ? `${window.location.origin}${url}` : url;
+        await this.query(`CREATE OR REPLACE TABLE ${tableName} AS SELECT * FROM '${absoluteUrl}'`);
         progressCallback?.('Parquet loaded', 100);
     }
 
