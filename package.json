@@ -7,7 +7,9 @@
   "scripts": {
     "traits": "node packages/pipeline/manage-traits.js",
     "etl": "docker compose run --rm pipeline pnpm run etl",
-    "start": "docker compose up -d"
+    "start": "docker compose up -d",
+    "test:core": "cd packages/core && node test.js",
+    "build:webapp": "docker build -f apps/web/Dockerfile -t asili-webapp ."
   },
   "dependencies": {
     "ajv": "^8.17.1",

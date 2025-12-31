@@ -1,8 +1,11 @@
-// Debug logging utility
-// Set window.DEBUG_LEVEL = 1 for basic logs, 2 for verbose logs
+/**
+ * Shared debug utility for Asili core package
+ * Provides timestamped logging with configurable levels
+ */
+
 export class Debug {
   static get level() {
-    return window.DEBUG_LEVEL || 0;
+    return (typeof window !== 'undefined' && window.DEBUG_LEVEL) || 0;
   }
 
   static log(level, component, ...args) {

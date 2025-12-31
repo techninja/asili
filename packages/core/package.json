@@ -1,0 +1,15 @@
+{
+  "name": "@asili/core",
+  "version": "0.1.0",
+  "type": "module",
+  "main": "src/index.js",
+  "exports": {
+    ".": "./src/index.js",
+    "./progress": "./src/progress/index.js",
+    "./interfaces": "./src/interfaces/index.js"
+  },
+  "dependencies": {},
+  "peerDependencies": {
+    "@duckdb/duckdb-wasm": "^1.33.1-dev5.0"
+  }
+}

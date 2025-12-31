@@ -13,7 +13,8 @@
   "dependencies": {
     "@duckdb/duckdb-wasm": "^1.33.1-dev5.0",
     "esbuild": "^0.27.2",
-    "zustand": "^4.4.7"
+    "zustand": "^4.4.7",
+    "@asili/core": "file:../../packages/core"
   },
   "devDependencies": {
     "puppeteer": "^24.34.0"

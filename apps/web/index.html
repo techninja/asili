@@ -6,12 +6,6 @@
     <title>Asili - Personal Genomic Risk Assistant</title>
     <script>window.DEBUG_LEVEL = 2;</script>
     
-    <!-- Mobile debug console -->
-    <script type="module">
-        import { MobileDebug } from './lib/mobile-debug.js';
-        MobileDebug.init();
-    </script>
-    
     <!-- Preload critical WASM -->
     <link rel="preload" href="/dist/duckdb-eh.wasm" as="fetch" crossorigin>
     
@@ -32,7 +26,9 @@
     {
         "imports": {
             "@duckdb/duckdb-wasm": "./duckdb-bundle.mjs",
-            "zustand": "/node_modules/zustand/esm/vanilla.mjs"
+            "zustand": "/node_modules/zustand/esm/vanilla.mjs",
+            "@asili/core": "/packages/core/src/index.js",
+            "@asili/debug": "/packages/core/src/utils/debug.js"
         }
     }
     </script>

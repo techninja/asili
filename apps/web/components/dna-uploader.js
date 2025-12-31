@@ -1,18 +1,25 @@
-import { Debug } from '../lib/debug.js';
+import { Debug } from '@asili/debug';
 import { useAppStore } from '../lib/store.js';
+import { AsiliProcessor } from '../lib/asili-processor.js';
+import { PROGRESS_STAGES } from '../../packages/core/src/index.js';
+import './progress-bar.js';
 
 export class DNAUploader extends HTMLElement {
     constructor() {
         super();
         this.attachShadow({ mode: 'open' });
-        this.geneticDb = null;
+        this.processor = null;
         this.selectedFile = null;
         this.unsubscribe = null;
+        this.progressUnsubscribe = null;
     }
 
-    connectedCallback() {
+    async connectedCallback() {
         this.render();
         this.setupEventListeners();
+        
+        // Initialize processor
+        await this.initializeProcessor();
         
         // Subscribe to state changes
         this.unsubscribe = useAppStore.subscribe((state) => {
@@ -22,20 +29,39 @@ export class DNAUploader extends HTMLElement {
         setTimeout(() => this.loadIndividuals(), 100);
     }
 
+
+
+    async initializeProcessor() {
+        try {
+            this.processor = new AsiliProcessor();
+            await this.processor.initialize();
+            Debug.log('DNAUploader', 'Asili processor initialized');
+        } catch (error) {
+            Debug.error('DNAUploader', 'Failed to initialize processor:', error);
+        }
+    }
+
     disconnectedCallback() {
         this.unsubscribe?.();
+        this.progressUnsubscribe?.();
+        this.processor?.cleanup();
     }
 
     async loadIndividuals() {
-        if (!this.geneticDb) return;
-        const individuals = await this.geneticDb.getIndividuals();
-        const store = useAppStore.getState();
+        if (!this.processor?.storage) return;
         
-        store.setIndividuals(individuals);
-        
-        // Auto-select first individual if none selected
-        if (individuals.length > 0 && !store.selectedIndividual && store.uploadState === 'idle') {
-            store.setSelectedIndividual(individuals[0].id);
+        try {
+            const individuals = await this.processor.storage.getIndividuals();
+            const store = useAppStore.getState();
+            
+            store.setIndividuals(individuals);
+            
+            // Auto-select first individual if none selected
+            if (individuals.length > 0 && !store.selectedIndividual && store.uploadState === 'idle') {
+                store.setSelectedIndividual(individuals[0].id);
+            }
+        } catch (error) {
+            Debug.error('DNAUploader', 'Failed to load individuals:', error);
         }
     }
 
@@ -93,6 +119,8 @@ export class DNAUploader extends HTMLElement {
                 .primary { background: #007acc; }
                 .secondary { background: #f0f0f0; color: #333; border: 1px solid #ccc; }
                 input[type="file"] { display: none; }
+                .progress-section { margin: 15px 0; }
+                .hidden { display: none; }
             </style>
             <div class="dataset-selector">
                 <label>Individual: </label>
@@ -102,6 +130,10 @@ export class DNAUploader extends HTMLElement {
                 <button id="actionButton">+ Add Individual</button>
             </div>
             <div class="stats" id="stats">Loading...</div>
+            
+            <div class="progress-section">
+                <progress-bar id="progressBar" class="hidden"></progress-bar>
+            </div>
             
             <div class="upload-section" id="uploadSection">
                 <div class="file-info" id="fileInfo" style="display: none;"></div>
@@ -161,6 +193,7 @@ export class DNAUploader extends HTMLElement {
     async importDataset() {
         const nameField = this.shadowRoot.getElementById('nameField');
         const stats = this.shadowRoot.getElementById('stats');
+        const progressBar = this.shadowRoot.getElementById('progressBar');
         const name = nameField.value.trim();
         
         if (!name) {
@@ -168,41 +201,58 @@ export class DNAUploader extends HTMLElement {
             return;
         }
         
+        if (!this.processor) {
+            alert('Processor not initialized. Please wait and try again.');
+            return;
+        }
+        
         const store = useAppStore.getState();
         store.setUploadState('importing');
         
+        // Show progress bar
+        progressBar.classList.remove('hidden');
+        
+        // Subscribe to progress updates
+        this.progressUnsubscribe = this.processor.onProgress((status) => {
+            if (progressBar && typeof progressBar.setStatus === 'function') {
+                progressBar.setStatus(status);
+            }
+            
+            // Update stats with current progress
+            if (status.message) {
+                stats.textContent = status.message;
+            }
+        });
+        
         try {
             const individualId = `${Date.now()}_${name.replace(/\s+/g, '_')}`;
-            await this.geneticDb.addIndividual(individualId, name, 'family');
             
-            const text = await this.selectedFile.text();
+            // Import DNA using Asili Core
+            const result = await this.processor.importDNA(this.selectedFile, individualId, name);
             
-            // Hide upload UI
-            this.shadowRoot.getElementById('uploadSection').style.display = 'none';
+            // Clean up
             this.selectedFile = null;
             nameField.value = '';
             this.shadowRoot.getElementById('fileInput').value = '';
-            
-            stats.textContent = 'Processing DNA file...';
-            
-            const count = await this.geneticDb.importData(text, individualId, (current, total) => {
-                stats.textContent = `Importing ${current.toLocaleString()}/${total.toLocaleString()} variants...`;
-            });
+            progressBar.classList.add('hidden');
             
             // Update store with new individual
             await this.loadIndividuals();
-            store.setSelectedIndividual(individualId, false); // Not ready yet
+            store.setSelectedIndividual(individualId, true);
             store.setUploadState('idle');
             
-            // Mark as ready after import
-            store.setIndividualReady(true);
+            stats.textContent = `Import complete - ${result.variantCount.toLocaleString()} variants stored`;
             
-            stats.textContent = `${count.toLocaleString()} variants loaded`;
+            Debug.log('DNAUploader', 'Import completed successfully', result);
             
         } catch (error) {
             Debug.error('DNAUploader', 'Import error:', error);
-            useAppStore.getState().setUploadState('idle');
+            store.setUploadState('idle');
+            progressBar.classList.add('hidden');
             stats.textContent = `Error: ${error.message}`;
+        } finally {
+            this.progressUnsubscribe?.();
+            this.progressUnsubscribe = null;
         }
     }
 
@@ -216,26 +266,43 @@ export class DNAUploader extends HTMLElement {
         store.setUploadState('deleting');
         
         try {
-            stats.textContent = 'Deleting cached results...';
+            stats.textContent = 'Deleting individual data...';
             
-            const transaction = this.geneticDb.db.transaction(['risk_cache', 'pgs_details', 'snps', 'individuals', 'individual_metadata'], 'readwrite');
+            // Use Asili core storage for deletion
+            const storage = this.processor.storage;
             
-            // Delete all data for individual
-            const stores = ['risk_cache', 'pgs_details', 'snps'];
-            stores.forEach(storeName => {
-                const objectStore = transaction.objectStore(storeName);
-                const cursor = objectStore.openCursor();
-                cursor.onsuccess = (e) => {
-                    const result = e.target.result;
-                    if (result) {
-                        if (result.value.individualId === individualId) result.delete();
-                        result.continue();
-                    }
-                };
-            });
+            // Clear cached risk scores
+            await this.processor.clearCachedResults(individualId);
             
+            // Delete from core storage (this will handle all stores)
+            const db = await storage._getDB();
+            const transaction = db.transaction(['variants', 'individuals', 'risk_scores'], 'readwrite');
+            
+            // Delete variants
+            const variantStore = transaction.objectStore('variants');
+            const variantIndex = variantStore.index('individualId');
+            const variantRequest = variantIndex.openCursor(individualId);
+            variantRequest.onsuccess = (e) => {
+                const cursor = e.target.result;
+                if (cursor) {
+                    cursor.delete();
+                    cursor.continue();
+                }
+            };
+            
+            // Delete individual
             transaction.objectStore('individuals').delete(individualId);
-            transaction.objectStore('individual_metadata').delete(individualId);
+            
+            // Delete risk scores
+            const riskStore = transaction.objectStore('risk_scores');
+            const riskRequest = riskStore.openCursor();
+            riskRequest.onsuccess = (e) => {
+                const cursor = e.target.result;
+                if (cursor && cursor.value.individualId === individualId) {
+                    cursor.delete();
+                }
+                if (cursor) cursor.continue();
+            };
             
             await new Promise((resolve) => {
                 transaction.oncomplete = resolve;

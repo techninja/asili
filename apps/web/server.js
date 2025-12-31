@@ -62,6 +62,8 @@ createServer(async (req, res) => {
     filePath = join(__dirname, filePath);
   } else if (filePath.startsWith('/node_modules/')) {
     filePath = join(__dirname, filePath);
+  } else if (filePath.startsWith('/packages/')) {
+    filePath = join(__dirname, '../../', filePath);
   } else {
     filePath = join(__dirname, filePath);
   }
