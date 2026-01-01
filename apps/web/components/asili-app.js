@@ -1,5 +1,5 @@
 import { AsiliProcessor } from '../lib/asili-processor.js';
-import { DNAUploader } from './dna-uploader.js';
+import { IndividualManager } from './individual-manager.js';
 import { RiskDashboard } from './risk-dashboard.js';
 import { ProgressBar } from './progress-bar.js';
 import { useAppStore } from '../lib/store.js';
@@ -35,7 +35,7 @@ class AsiliApp extends HTMLElement {
                     <h1>Asili</h1>
                     <p>Your personal genomic risk assistant</p>
                 </header>
-                <dna-uploader id="uploader"></dna-uploader>
+                <individual-manager></individual-manager>
                 <risk-dashboard class="dashboard"></risk-dashboard>
             </div>
         `;

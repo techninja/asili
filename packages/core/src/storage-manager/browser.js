@@ -90,9 +90,9 @@ export class BrowserStorageManager extends StorageManager {
   }
 
   // Individual management
-  async addIndividual(id, name, relationship = 'self') {
+  async addIndividual(id, name, relationship = 'self', emoji = '👤') {
     const db = await this._getDB();
-    const individual = { id, name, relationship, createdAt: Date.now() };
+    const individual = { id, name, relationship, emoji, status: 'importing', createdAt: Date.now() };
     
     return new Promise((resolve, reject) => {
       const transaction = db.transaction(['individuals'], 'readwrite');
@@ -101,6 +101,30 @@ export class BrowserStorageManager extends StorageManager {
       const request = store.put(individual);
       request.onsuccess = () => resolve(individual);
       request.onerror = () => reject(request.error);
+    });
+  }
+
+  async updateIndividual(id, updates) {
+    const db = await this._getDB();
+    
+    return new Promise((resolve, reject) => {
+      const transaction = db.transaction(['individuals'], 'readwrite');
+      const store = transaction.objectStore('individuals');
+      
+      const getRequest = store.get(id);
+      getRequest.onsuccess = () => {
+        const individual = getRequest.result;
+        if (!individual) {
+          reject(new Error('Individual not found'));
+          return;
+        }
+        
+        const updated = { ...individual, ...updates };
+        const putRequest = store.put(updated);
+        putRequest.onsuccess = () => resolve(updated);
+        putRequest.onerror = () => reject(putRequest.error);
+      };
+      getRequest.onerror = () => reject(getRequest.error);
     });
   }
 
@@ -243,6 +267,95 @@ export class BrowserStorageManager extends StorageManager {
       const request = store.getAllKeys();
       request.onsuccess = () => resolve(request.result);
       request.onerror = () => reject(request.error);
+    });
+  }
+
+  async deleteIndividual(individualId, progressCallback) {
+    const db = await this._getDB();
+    
+    return new Promise(async (resolve, reject) => {
+      try {
+        progressCallback?.('Counting items to delete...', 0);
+        
+        // Count total items first
+        let totalVariants = 0;
+        let totalRiskScores = 0;
+        
+        const countTransaction = db.transaction(['variants', 'risk_scores'], 'readonly');
+        
+        // Count variants
+        const variantIndex = countTransaction.objectStore('variants').index('individualId');
+        const variantCountRequest = variantIndex.count(individualId);
+        variantCountRequest.onsuccess = () => {
+          totalVariants = variantCountRequest.result;
+        };
+        
+        // Count risk scores
+        const riskStore = countTransaction.objectStore('risk_scores');
+        const riskCountRequest = riskStore.openCursor();
+        riskCountRequest.onsuccess = (e) => {
+          const cursor = e.target.result;
+          if (cursor) {
+            if (cursor.value.individualId === individualId) {
+              totalRiskScores++;
+            }
+            cursor.continue();
+          }
+        };
+        
+        countTransaction.oncomplete = () => {
+          const totalItems = totalVariants + totalRiskScores + 1; // +1 for individual record
+          let deletedItems = 0;
+          
+          const deleteTransaction = db.transaction(['variants', 'individuals', 'risk_scores'], 'readwrite');
+          
+          // Delete variants in batches
+          const variantStore = deleteTransaction.objectStore('variants');
+          const variantIndex = variantStore.index('individualId');
+          const variantRequest = variantIndex.openCursor(individualId);
+          
+          let batchCount = 0;
+          variantRequest.onsuccess = (e) => {
+            const cursor = e.target.result;
+            if (cursor) {
+              cursor.delete();
+              deletedItems++;
+              batchCount++;
+              
+              if (batchCount % 10000 === 0) {
+                const percent = Math.round((deletedItems / totalItems) * 100);
+                progressCallback?.(`${deletedItems}/${totalItems} ${percent}%`, percent);
+              }
+              cursor.continue();
+            }
+          };
+          
+          // Delete individual
+          deleteTransaction.objectStore('individuals').delete(individualId);
+          deletedItems++;
+          
+          // Delete risk scores
+          const riskStore = deleteTransaction.objectStore('risk_scores');
+          const riskRequest = riskStore.openCursor();
+          riskRequest.onsuccess = (e) => {
+            const cursor = e.target.result;
+            if (cursor && cursor.value.individualId === individualId) {
+              cursor.delete();
+              deletedItems++;
+            }
+            if (cursor) cursor.continue();
+          };
+          
+          deleteTransaction.oncomplete = () => {
+            progressCallback?.(`${totalItems}/${totalItems} 100%`, 100);
+            resolve();
+          };
+          deleteTransaction.onerror = () => reject(deleteTransaction.error);
+        };
+        
+      } catch (error) {
+        reject(error);
+      }
     });
   }
 

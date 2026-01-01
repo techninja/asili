@@ -4,6 +4,9 @@ export * from './interfaces/index.js';
 // Progress tracking
 export * from './progress/index.js';
 
+// Utilities
+export { Debug } from './utils/debug.js';
+
 // Browser implementations
 export { BrowserGenomicProcessor } from './genomic-processor/browser.js';
 export { BrowserStorageManager } from './storage-manager/browser.js';

@@ -145,7 +145,7 @@ export class AsiliProcessor {
   }
 
   // Import DNA file and store variants
-  async importDNA(dnaFile, individualId, individualName) {
+  async importDNA(dnaFile, individualId, individualName, emoji = '👤', progressCallback) {
     if (!this.storage) {
       throw new Error('Storage not initialized');
     }
@@ -153,11 +153,11 @@ export class AsiliProcessor {
     try {
       // Add individual if not exists
       if (individualId && individualName) {
-        await this.storage.addIndividual(individualId, individualName);
+        await this.storage.addIndividual(individualId, individualName, 'self', emoji);
       }
       
       // Parse and store DNA file
-      const dnaData = await this.parseDNAFile(dnaFile, individualId);
+      const dnaData = await this.parseDNAFile(dnaFile, individualId, progressCallback);
       
       return {
         individualId,
@@ -247,7 +247,7 @@ export class AsiliProcessor {
     }
   }
 
-  async parseDNAFile(file, individualId) {
+  async parseDNAFile(file, individualId, progressCallback) {
     Debug.log(1, 'AsiliProcessor', `Starting DNA file parsing: ${file.name} (${file.size} bytes)`);
     this.progressTracker.setStage(PROGRESS_STAGES.PROCESSING_DNA, 'Parsing DNA file...');
     
@@ -285,7 +285,9 @@ export class AsiliProcessor {
       // Update progress periodically
       if (i % 10000 === 0) {
         const progress = Math.round((i / dataLines.length) * 100);
-        this.progressTracker.setProgress(progress, `Parsed ${variants.length} variants`);
+        const message = `Parsed ${variants.length} variants`;
+        this.progressTracker.setProgress(progress, message);
+        progressCallback?.(message, progress);
       }
     }
     
@@ -296,7 +298,9 @@ export class AsiliProcessor {
       Debug.log(2, 'AsiliProcessor', `Storing variants for individual: ${individualId}`);
       await this.storage.storeVariants(individualId, variants, (current, total) => {
         const progress = Math.round((current / total) * 100);
-        this.progressTracker.setProgress(progress, `Stored ${current}/${total} variants`);
+        const message = `Stored ${current}/${total} variants`;
+        this.progressTracker.setProgress(progress, message);
+        progressCallback?.(message, progress);
       });
     }
     

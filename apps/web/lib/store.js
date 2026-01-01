@@ -6,6 +6,9 @@ export const useAppStore = createStore((set, get) => ({
   individualReady: true,
   individuals: [],
   uploadState: 'idle', // idle, importing, deleting
+  uploadProgress: '',
+  importingIndividual: null, // { name, emoji } for the individual being imported
+  cancelImport: false,
   duckdbReady: false,
   traitsLoaded: false,
   
@@ -16,7 +19,9 @@ export const useAppStore = createStore((set, get) => ({
   
   setIndividuals: (individuals) => set({ individuals }),
   
-  setUploadState: (state) => set({ uploadState: state }),
+  setUploadState: (state, progress = '', importingIndividual = null) => set({ uploadState: state, uploadProgress: progress, importingIndividual }),
+  
+  setCancelImport: () => set({ cancelImport: true }),
   
   setDuckDBReady: (ready) => set({ duckdbReady: ready }),
   

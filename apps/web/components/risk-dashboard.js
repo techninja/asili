@@ -84,16 +84,16 @@ export class RiskDashboard extends HTMLElement {
         const grid = this.shadowRoot.getElementById('traitsGrid');
         if (!grid || this.availableTraits.length === 0) return;
         
-        Debug.log(1, 'RiskDashboard', 'Updating trait cards for individual:', state.selectedIndividual);
-        
-        if (!state.selectedIndividual) {
+        if (!state.selectedIndividual || !state.individualReady) {
             if (state.individuals.length === 0) {
-                grid.innerHTML = '<div class="loading">Add an individual to start analyzing risk</div>';
+                grid.innerHTML = '<div class="loading">Import DNA data to start analyzing genomic risk</div>';
             } else {
-                grid.innerHTML = '<div class="loading">Select an individual to view trait analysis</div>';
+                grid.innerHTML = '<div class="loading">Select an individual to view genomic risk analysis</div>';
             }
             return;
         }
+        
+        Debug.log(1, 'RiskDashboard', 'Updating trait cards for individual:', state.selectedIndividual);
         
         if (state.uploadState !== 'idle' || !state.individualReady) {
             grid.innerHTML = '<div class="loading">Individual data is loading...</div>';
