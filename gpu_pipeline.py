@@ -1,0 +1,266 @@
+#!/usr/bin/env python3
+"""
+GPU Memory Buffer for Genomic Pipeline
+Uses 21GB GPU memory as massive parallel processing buffer
+"""
+
+import cupy as cp
+import numpy as np
+import pandas as pd
+import gzip
+import time
+import json
+import sys
+from pathlib import Path
+
+class GPUGenomicBuffer:
+    def __init__(self):
+        self.gpu_count = 3
+        self.memory_per_gpu = 6 * 1024**3  # 6GB per GPU
+        self.total_gpu_memory = 21 * 1024**3  # 21GB total
+        
+        # Initialize all GPUs
+        for i in range(self.gpu_count):
+            cp.cuda.Device(i).use()
+            mempool = cp.get_default_memory_pool()
+            mempool.set_limit(size=self.memory_per_gpu)
+    
+    def process_pgs_files_batch(self, pgs_files, output_path):
+        """Process multiple PGS files using GPU as massive buffer"""
+        print(f"🚀 GPU Buffer: Processing {len(pgs_files)} files...")
+        
+        # Phase 1: Load all files into GPU memory buffers
+        gpu_chunks = []
+        total_variants = 0
+        
+        for gpu_id in range(self.gpu_count):
+            cp.cuda.Device(gpu_id).use()
+            gpu_chunks.append([])
+        
+        # Distribute files across GPUs
+        for i, pgs_file in enumerate(pgs_files):
+            gpu_id = i % self.gpu_count
+            cp.cuda.Device(gpu_id).use()
+            
+            print(f"   Loading {pgs_file['pgs_id']} -> GPU {gpu_id}")
+            
+            # Load and parse file
+            variants = self._load_pgs_file(pgs_file['path'])
+            if variants is None:
+                continue
+                
+            # Convert to GPU arrays
+            gpu_variants = self._to_gpu_format(variants, pgs_file['pgs_id'])
+            gpu_chunks[gpu_id].append(gpu_variants)
+            total_variants += len(gpu_variants['chr'])
+        
+        print(f"   Loaded {total_variants} variants across {self.gpu_count} GPUs")
+        
+        # Phase 2: Parallel processing on each GPU
+        processed_chunks = []
+        for gpu_id in range(self.gpu_count):
+            if not gpu_chunks[gpu_id]:
+                continue
+                
+            cp.cuda.Device(gpu_id).use()
+            print(f"   GPU {gpu_id}: Processing {len(gpu_chunks[gpu_id])} files...")
+            
+            # Combine all files on this GPU
+            combined = self._combine_gpu_chunks(gpu_chunks[gpu_id])
+            
+            # Generate variant IDs in parallel
+            variant_ids = self._generate_variant_ids_gpu(combined)
+            
+            # Filter and deduplicate
+            filtered = self._filter_and_dedupe_gpu(combined, variant_ids)
+            
+            processed_chunks.append(filtered)
+            print(f"   GPU {gpu_id}: {len(filtered['variant_id'])} unique variants")
+        
+        # Phase 3: Final merge on GPU 0
+        cp.cuda.Device(0).use()
+        print("   Final merge and sort...")
+        
+        final_result = self._merge_final_gpu(processed_chunks)
+        
+        # Phase 4: Export to parquet
+        self._export_to_parquet(final_result, output_path)
+        
+        return len(final_result['variant_id'])
+    
+    def _load_pgs_file(self, file_path):
+        """Load PGS file and extract key columns"""
+        try:
+            with gzip.open(file_path, 'rt') as f:
+                lines = f.readlines()
+            
+            # Find header
+            header_idx = None
+            for i, line in enumerate(lines):
+                if not line.startswith('#') and line.strip():
+                    header_idx = i
+                    break
+            
+            if header_idx is None:
+                return None
+                
+            header = lines[header_idx].strip().split('\t')
+            data_lines = [line.strip().split('\t') for line in lines[header_idx+1:] 
+                         if line.strip() and not line.startswith('#')]
+            
+            if len(data_lines) < 100:
+                return None
+            
+            # Extract relevant columns
+            df = pd.DataFrame(data_lines, columns=header)
+            
+            # Standardize format
+            if 'chr_name' in df.columns and 'chr_position' in df.columns:
+                return {
+                    'chr': df['chr_name'].str.replace('chr', '').values,
+                    'pos': pd.to_numeric(df['chr_position'], errors='coerce').values,
+                    'effect_allele': df['effect_allele'].values,
+                    'other_allele': df.get('other_allele', [''] * len(df)).values,
+                    'weight': pd.to_numeric(df['effect_weight'], errors='coerce').values
+                }
+            elif 'rsID' in df.columns:
+                return {
+                    'rsid': df['rsID'].values,
+                    'effect_allele': df['effect_allele'].values,
+                    'weight': pd.to_numeric(df['effect_weight'], errors='coerce').values
+                }
+            
+            return None
+            
+        except Exception as e:
+            print(f"Error loading {file_path}: {e}")
+            return None
+    
+    def _to_gpu_format(self, variants, pgs_id):
+        """Convert variants to GPU arrays"""
+        gpu_variants = {}
+        
+        for key, values in variants.items():
+            if key in ['chr', 'pos']:
+                # Numeric arrays
+                gpu_variants[key] = cp.array(values, dtype=cp.int32)
+            else:
+                # Keep strings on CPU for now (GPU string ops limited)
+                gpu_variants[key] = values
+        
+        gpu_variants['pgs_id'] = pgs_id
+        return gpu_variants
+    
+    def _combine_gpu_chunks(self, chunks):
+        """Combine multiple files on same GPU"""
+        if len(chunks) == 1:
+            return chunks[0]
+        
+        combined = {}
+        for key in chunks[0].keys():
+            if key == 'pgs_id':
+                continue
+            
+            if isinstance(chunks[0][key], cp.ndarray):
+                # GPU arrays - concatenate
+                arrays = [chunk[key] for chunk in chunks]
+                combined[key] = cp.concatenate(arrays)
+            else:
+                # CPU arrays - concatenate
+                arrays = [chunk[key] for chunk in chunks]
+                combined[key] = np.concatenate(arrays)
+        
+        return combined
+    
+    def _generate_variant_ids_gpu(self, variants):
+        """Generate variant IDs using GPU parallel processing"""
+        if 'chr' in variants and 'pos' in variants:
+            # Position-based IDs: chr:pos:effect:other
+            # Use GPU for numeric operations, CPU for string concat
+            chr_pos = variants['chr'] * 1000000000 + variants['pos']
+            return cp.asnumpy(chr_pos)  # Convert back for string operations
+        else:
+            # rsID-based
+            return variants.get('rsid', np.array([]))
+    
+    def _filter_and_dedupe_gpu(self, variants, variant_ids):
+        """Filter and deduplicate using GPU sorting"""
+        # Filter valid weights
+        if isinstance(variants['weight'], cp.ndarray):
+            weight_mask = cp.abs(variants['weight']) > 0.001
+        else:
+            weight_mask = np.abs(variants['weight']) > 0.001
+        
+        # Apply filter
+        filtered = {}
+        for key, values in variants.items():
+            if isinstance(values, cp.ndarray):
+                filtered[key] = values[weight_mask]
+            else:
+                filtered[key] = values[weight_mask]
+        
+        filtered_ids = variant_ids[cp.asnumpy(weight_mask) if isinstance(weight_mask, cp.ndarray) else weight_mask]
+        
+        # GPU-accelerated deduplication
+        if len(filtered_ids) > 0:
+            unique_ids, unique_indices = cp.unique(cp.array(filtered_ids), return_index=True)
+            unique_indices = cp.asnumpy(unique_indices)
+            
+            # Keep only unique variants
+            for key, values in filtered.items():
+                if isinstance(values, cp.ndarray):
+                    filtered[key] = cp.asnumpy(values[unique_indices])
+                else:
+                    filtered[key] = values[unique_indices]
+            
+            filtered['variant_id'] = cp.asnumpy(unique_ids)
+        
+        return filtered
+    
+    def _merge_final_gpu(self, chunks):
+        """Final merge of all GPU results"""
+        if len(chunks) == 1:
+            return chunks[0]
+        
+        # Combine all chunks
+        all_variant_ids = np.concatenate([chunk['variant_id'] for chunk in chunks])
+        all_weights = np.concatenate([chunk['weight'] for chunk in chunks])
+        
+        # Final GPU deduplication
+        gpu_ids = cp.array(all_variant_ids)
+        gpu_weights = cp.array(all_weights)
+        
+        unique_ids, unique_indices = cp.unique(gpu_ids, return_index=True)
+        unique_weights = gpu_weights[unique_indices]
+        
+        return {
+            'variant_id': cp.asnumpy(unique_ids),
+            'weight': cp.asnumpy(unique_weights)
+        }
+    
+    def _export_to_parquet(self, data, output_path):
+        """Export final result to parquet"""
+        df = pd.DataFrame(data)
+        df.to_parquet(output_path, compression='snappy')
+        print(f"   Exported {len(df)} variants to {output_path}")
+
+def main():
+    if len(sys.argv) < 3:
+        print("Usage: python gpu_pipeline.py <pgs_files.json> <output.parquet>")
+        return
+    
+    pgs_files_path = sys.argv[1]
+    output_path = sys.argv[2]
+    
+    # Load PGS file list
+    with open(pgs_files_path) as f:
+        pgs_files = json.load(f)
+    
+    # Process with GPU buffer
+    buffer = GPUGenomicBuffer()
+    variant_count = buffer.process_pgs_files_batch(pgs_files, output_path)
+    
+    print(f"✅ Processed {variant_count} variants using 21GB GPU buffer")
+
+if __name__ == "__main__":
+    main()
