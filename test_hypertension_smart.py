@@ -197,7 +197,7 @@ def main():
     print(f"\n🎯 Created {len(batches)} smart batches:")
     for i, batch in enumerate(batches, 1):
         batch_variants = sum(p['variants'] for p in batch)
-        status = "✅ DONE" if i in completed_batches else "⏳ TODO"
+        status = "✅ DONE" if i in completed_batches else "🚧 Import Ready"
         print(f"   Batch {i}: {len(batch)} files, {batch_variants:,} variants {status}")
     
     # Process remaining batches
@@ -211,6 +211,8 @@ def main():
         try:
             # Write batch to temp file
             batch_file = f'temp_batch_{batch_num}.json'
+            batch_output = f'batch_{batch_num}.parquet'
+            
             with open(batch_file, 'w') as f:
                 json.dump(batch, f)
             
