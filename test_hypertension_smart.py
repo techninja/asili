@@ -255,15 +255,27 @@ def main():
         if result.returncode == 0:
             print(result.stdout.strip())
             print("   ✅ Chunked merge successful!")
+        else:
+            print(f"❌ Chunked merge failed with code {result.returncode}")
+            if result.stderr:
+                print(f"   Error: {result.stderr}")
+            if result.stdout:
+                print(f"   Output: {result.stdout}")
+        
+        # Check if final file was created regardless of subprocess return code
+        if os.path.exists('hypertension_smart.parquet'):
+            file_size = os.path.getsize('hypertension_smart.parquet')
+            print(f"\n🎯 Final file created: {file_size/1024**2:.1f}MB")
             
             # Cleanup individual batch files
             for batch_num in completed_batches:
                 result_file = f'batch_{batch_num}_result.parquet'
                 if os.path.exists(result_file):
                     os.unlink(result_file)
-            os.unlink(progress_file)
+            if os.path.exists(progress_file):
+                os.unlink(progress_file)
         else:
-            print(f"❌ Chunked merge failed: {result.stderr}")
+            print("❌ Final parquet file not found")
 
 if __name__ == "__main__":
     main()
