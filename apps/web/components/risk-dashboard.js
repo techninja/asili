@@ -112,42 +112,37 @@ export class RiskDashboard extends HTMLElement {
             return;
         }
         
-        // Group traits by family
-        const familyGroups = {};
+        // Group traits by category
+        const categoryGroups = {};
         this.availableTraits.forEach(trait => {
-            if (!familyGroups[trait.category]) {
-                familyGroups[trait.category] = [];
+            if (!categoryGroups[trait.category]) {
+                categoryGroups[trait.category] = [];
             }
-            familyGroups[trait.category].push(trait);
+            categoryGroups[trait.category].push(trait);
         });
         
-        const traitFamilies = this.processor.getTraitFamilies();
-        
-        for (const [familyKey, traits] of Object.entries(familyGroups)) {
-            const family = traitFamilies[familyKey];
-            if (!family) continue;
-            
-            // Create family header
-            const familyHeader = document.createElement('div');
-            familyHeader.className = 'family-header';
-            familyHeader.innerHTML = `
-                <h2>${family.name}</h2>
-                <p>${family.description}</p>
+        for (const [categoryName, traits] of Object.entries(categoryGroups)) {
+            // Create category header
+            const categoryHeader = document.createElement('div');
+            categoryHeader.className = 'family-header';
+            categoryHeader.innerHTML = `
+                <h2>${categoryName}</h2>
+                <p>${traits.length} trait${traits.length > 1 ? 's' : ''} available</p>
             `;
-            grid.appendChild(familyHeader);
+            grid.appendChild(categoryHeader);
             
-            // Create family grid
-            const familyGrid = document.createElement('div');
-            familyGrid.className = 'family-grid';
+            // Create category grid
+            const categoryGrid = document.createElement('div');
+            categoryGrid.className = 'family-grid';
             
             for (const trait of traits) {
                 Debug.log(2, 'RiskDashboard', 'Creating card for trait:', trait.name);
                 const cached = await this.processor.getCachedResult(individualId, trait.id);
                 const card = this.createTraitCard(trait, individualId, cached);
-                familyGrid.appendChild(card);
+                categoryGrid.appendChild(card);
             }
             
-            grid.appendChild(familyGrid);
+            grid.appendChild(categoryGrid);
         }
     }
 

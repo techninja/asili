@@ -62,17 +62,29 @@ export class AsiliProcessor {
         throw new Error('Invalid manifest: missing trait_families');
       }
       
+      // Group traits by disease category using MONDO hierarchy
+      const categoryMap = {
+        'MONDO:0000400': 'Metabolic Disorders', // diabetes mellitus
+        'MONDO:0005147': 'Metabolic Disorders', // Type 1 diabetes
+        'MONDO:0005148': 'Metabolic Disorders', // Type 2 diabetes
+        'MONDO:0001645': 'Cardiovascular Disease', // coronary artery disease
+        'MONDO:0000712': 'Cardiovascular Disease', // stroke
+        'MONDO:0007254': 'Cancer', // breast cancer
+        'MONDO:0008903': 'Cancer'  // prostate cancer
+      };
+      
       Object.entries(this.traitManifest.trait_families).forEach(([familyKey, family]) => {
         if (family.subtypes) {
           Object.entries(family.subtypes).forEach(([subtypeKey, subtype]) => {
             const traitId = `${familyKey}_${subtypeKey}`;
             const manifestData = this.traitManifest.traits?.[traitId] || {};
+            const category = categoryMap[subtypeKey] || 'Other Conditions';
             
             this.availableTraits.push({
               id: traitId,
               name: subtype.name,
               description: subtype.description,
-              category: family.category,
+              category: category,
               family: familyKey,
               familyName: family.name,
               file_path: manifestData.file_path,
@@ -88,12 +100,13 @@ export class AsiliProcessor {
           Object.entries(family.biomarkers).forEach(([biomarkerKey, biomarker]) => {
             const traitId = `${familyKey}_${biomarkerKey}`;
             const manifestData = this.traitManifest.traits?.[traitId] || {};
+            const category = 'Biomarkers';
             
             this.availableTraits.push({
               id: traitId,
               name: biomarker.name,
               description: biomarker.description || '',
-              category: family.category,
+              category: category,
               family: familyKey,
               familyName: family.name,
               file_path: manifestData.file_path,

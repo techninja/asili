@@ -3,51 +3,56 @@ import path from 'path';
 import { fileURLToPath } from 'url';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
-const CACHE_DIR = '/cache';
-const API_CACHE_FILE = path.join(CACHE_DIR, 'pgs-api-cache.json');
+const CACHE_DIR = path.resolve(__dirname, '../../cache');
+const API_CACHE_DIR = path.join(CACHE_DIR, 'api');
 const PGS_FILES_DIR = path.join(CACHE_DIR, 'pgs_files');
-const RATE_LIMIT = 100; // requests per minute
+const RATE_LIMIT = 30; // requests per minute
 const RATE_WINDOW = 60 * 1000; // 1 minute in ms
 
 class PGSApiClient {
     constructor() {
         this.requestTimes = [];
-        this.cache = null;
     }
 
-    async loadCache() {
-        if (this.cache) return this.cache;
-        
-        // Ensure cache directory exists
-        await fs.mkdir(CACHE_DIR, { recursive: true });
-        
+    async ensureCacheDir() {
+        await fs.mkdir(API_CACHE_DIR, { recursive: true });
+        await fs.mkdir(PGS_FILES_DIR, { recursive: true });
+    }
+
+    getCacheFilePath(url) {
+        // Create hash from full URL including query parameters
+        const urlObj = new URL(url);
+        const pathWithQuery = urlObj.pathname + urlObj.search;
+        // Replace special characters for filesystem safety
+        const safePath = pathWithQuery.replace(/[^a-zA-Z0-9]/g, '_');
+        return path.join(API_CACHE_DIR, `${safePath}.json`);
+    }
+
+    async loadFromCache(url) {
+        const filePath = this.getCacheFilePath(url);
         try {
-            const data = await fs.readFile(API_CACHE_FILE, 'utf8');
-            this.cache = JSON.parse(data);
-        } catch {
-            this.cache = { requests: {}, lastCleanup: Date.now() };
-        }
-        
-        // Clean old cache entries (older than 24 hours)
-        const now = Date.now();
-        if (now - this.cache.lastCleanup > 24 * 60 * 60 * 1000) {
-            const cutoff = now - 24 * 60 * 60 * 1000;
-            for (const [key, entry] of Object.entries(this.cache.requests)) {
-                if (entry.timestamp < cutoff) {
-                    delete this.cache.requests[key];
-                }
+            const data = await fs.readFile(filePath, 'utf8');
+            const cached = JSON.parse(data);
+            
+            // Check if cache is less than 1 hour old
+            const age = Date.now() - cached.timestamp;
+            if (age < 60 * 60 * 1000) {
+                return cached.data;
             }
-            this.cache.lastCleanup = now;
-            await this.saveCache();
-        }
-        
-        return this.cache;
+        } catch {}
+        return null;
     }
 
-    async saveCache() {
-        if (this.cache) {
-            await fs.writeFile(API_CACHE_FILE, JSON.stringify(this.cache, null, 2));
-        }
+    async saveToCache(url, data) {
+        const filePath = this.getCacheFilePath(url);
+        await fs.mkdir(path.dirname(filePath), { recursive: true });
+        
+        const cached = {
+            data,
+            timestamp: Date.now()
+        };
+        
+        await fs.writeFile(filePath, JSON.stringify(cached, null, 2));
     }
 
     async waitForRateLimit() {
@@ -70,65 +75,97 @@ class PGSApiClient {
         this.requestTimes.push(now);
     }
 
-    async fetchWithCache(url, cacheKey) {
-        const cache = await this.loadCache();
+    async fetchWithCache(url, cacheKey, retries = 3) {
+        await this.ensureCacheDir();
         
         // Check cache first
-        if (cache.requests[cacheKey]) {
-            const entry = cache.requests[cacheKey];
-            const age = Date.now() - entry.timestamp;
-            
-            // Use cache if less than 1 hour old
-            if (age < 60 * 60 * 1000) {
-                return entry.data;
-            }
+        const cachedData = await this.loadFromCache(url);
+        if (cachedData) {
+            console.log(`CACHED - ${url}`);
+            return cachedData;
         }
         
         // Rate limit before making request
         await this.waitForRateLimit();
         
-        try {
-            const response = await fetch(url, {
-                headers: { 'accept': 'application/json' }
-            });
-            
-            if (!response.ok) {
-                throw new Error(`HTTP ${response.status}`);
+        for (let attempt = 1; attempt <= retries; attempt++) {
+            try {
+                console.log(`REQUEST - ${url}`);
+                const response = await fetch(url, {
+                    headers: { 'accept': 'application/json' }
+                });
+                
+                if (!response.ok) {
+                    let responseText = '';
+                    try {
+                        responseText = await response.text();
+                    } catch {}
+                    
+                    console.log(`HTTP ${response.status} ${response.statusText} - ${url}`);
+                    console.log(`Response: ${responseText.substring(0, 500)}`);
+                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                }
+                
+                const data = await response.json();
+                console.log(`OK - ${url}`);
+                
+                // Cache the result
+                await this.saveToCache(url, data);
+                return data;
+                
+            } catch (error) {
+                console.log(`RETRY ${attempt}/${retries} - ${url}`);
+                console.log(`Error: ${error.message}`);
+                console.log(`Error code: ${error.code || 'none'}`);
+                console.log(`Error cause: ${error.cause || 'none'}`);
+                
+                const isNetworkError = error.message.includes('fetch failed') || 
+                                     error.message.includes('ECONNRESET') ||
+                                     error.message.includes('ENOTFOUND') ||
+                                     error.message.includes('ETIMEDOUT');
+                
+                if (attempt === retries) {
+                    console.log(`FINAL FAILURE after ${retries} attempts`);
+                    throw error;
+                }
+                
+                const backoffTime = isNetworkError ? 30000 * attempt : 5000 * attempt;
+                console.log(`Backing off ${backoffTime/1000}s...`);
+                await new Promise(resolve => setTimeout(resolve, backoffTime));
             }
-            
-            const data = await response.json();
-            
-            // Cache the result
-            cache.requests[cacheKey] = {
-                data,
-                timestamp: Date.now()
-            };
-            
-            await this.saveCache();
-            return data;
-            
-        } catch (error) {
-            console.log(`API request failed: ${error.message}`);
-            throw error;
         }
     }
 
     async searchTraits(query) {
-        const cacheKey = `trait_search_${query}`;
         const url = `https://www.pgscatalog.org/rest/trait/search?term=${encodeURIComponent(query)}&exact=0&include_children=1`;
-        return this.fetchWithCache(url, cacheKey);
+        return this.fetchWithCache(url);
+    }
+
+    async searchTraitsByMondo(mondoId) {
+        const url = `https://www.pgscatalog.org/rest/trait/search?term=${encodeURIComponent(mondoId)}&exact=1`;
+        return this.fetchWithCache(url);
+    }
+
+    async getTraitInfo(traitId) {
+        // Convert MONDO:ID format to EFO_ID format for API
+        const apiTraitId = traitId.replace('MONDO:', 'EFO_');
+        const url = `https://www.pgscatalog.org/rest/trait/${apiTraitId}`;
+        return this.fetchWithCache(url);
+    }
+
+    async getScoresByTrait(mondoId) {
+        const url = `https://www.pgscatalog.org/rest/score/search?trait_id=${encodeURIComponent(mondoId)}`;
+        return this.fetchWithCache(url);
     }
 
     async getScore(pgsId) {
-        const cacheKey = `score_${pgsId}`;
         const url = `https://www.pgscatalog.org/rest/score/${pgsId}`;
-        return this.fetchWithCache(url, cacheKey);
+        return this.fetchWithCache(url);
     }
 
     async getScoreFile(pgsId) {
-        const cacheKey = `score_file_${pgsId}`;
         const url = `https://www.pgscatalog.org/rest/score/${pgsId}/scoring_file/`;
-        return this.fetchWithCache(url, cacheKey);
+        return this.fetchWithCache(url);
     }
 
     async downloadPGSFile(pgsId, downloadUrl) {

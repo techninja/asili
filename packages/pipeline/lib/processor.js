@@ -8,6 +8,7 @@ import pgsApiClient from '../pgs-api-client.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const OUTPUT_DIR = '/output';
+const TEMP_SQL_DIR = path.join(OUTPUT_DIR, 'temp_sql');
 const gunzipAsync = promisify(gunzip);
 
 // Initialize WASM module synchronously with new API
@@ -17,6 +18,8 @@ initSync({ module: wasmBuffer });
 
 // Global metadata cache to avoid duplicate API calls
 const globalMetadataCache = new Map();
+
+import { updateOutputManifest } from './manifest.js';
 
 async function collectPgsMetadata(pgsIds, existingMetadata = {}) {
     const metadata = {};
@@ -43,6 +46,7 @@ async function collectPgsMetadata(pgsIds, existingMetadata = {}) {
     // Process sequentially to avoid rate limits
     for (let i = 0; i < uncachedIds.length; i++) {
         const pgsId = uncachedIds[i];
+        console.log(`      Processing ${pgsId} (${i+1}/${uncachedIds.length})...`);
         
         try {
             const scoreData = await pgsApiClient.getScore(pgsId);
@@ -54,8 +58,13 @@ async function collectPgsMetadata(pgsIds, existingMetadata = {}) {
             
             metadata[pgsId] = pgsMetadata;
             globalMetadataCache.set(pgsId, pgsMetadata);
+            console.log(`      ✓ ${pgsId}: ${scoreData.trait_reported || 'Unknown trait'}`);
+            
+            // Save metadata to manifest after each successful fetch
+            await updateOutputManifest({ metadata_update: { pgs_metadata: metadata } });
+            
         } catch (error) {
-            console.log(`      Warning: Could not get metadata for ${pgsId}: ${error.message}`);
+            console.log(`      ⚠ ${pgsId}: ${error.message}`);
             const fallbackMetadata = {
                 name: pgsId,
                 trait: 'Unknown',
@@ -63,6 +72,9 @@ async function collectPgsMetadata(pgsIds, existingMetadata = {}) {
             };
             metadata[pgsId] = fallbackMetadata;
             globalMetadataCache.set(pgsId, fallbackMetadata);
+            
+            // Save metadata to manifest even for failed fetches
+            await updateOutputManifest({ metadata_update: { pgs_metadata: metadata } });
         }
         
         // Add delay between requests
@@ -77,14 +89,57 @@ async function collectPgsMetadata(pgsIds, existingMetadata = {}) {
 async function streamProcessWithDuckDB(traitName, config) {
     console.log(`  - ${traitName}: Streaming process with DuckDB...`);
     
-    const outputPath = path.join(OUTPUT_DIR, `${traitName}_hg38.parquet`);
-    const dbPath = path.join(OUTPUT_DIR, `${traitName}.duckdb`);
+    const safeFileName = traitName.replace(':', '_');
+    const outputPath = path.join(OUTPUT_DIR, `${safeFileName}_hg38.parquet`);
+    const dbPath = path.join(OUTPUT_DIR, `${safeFileName}.duckdb`);
     const { execSync } = await import('child_process');
     
+    // Check if we can resume from existing database
+    let resuming = false;
+    console.log(`    Checking for existing database: ${dbPath}`);
+    
     try {
+        await fs.access(dbPath);
+        console.log(`    Database file exists, checking contents...`);
+        
+        const checkSQL = `SELECT COUNT(*) as count, COUNT(DISTINCT pgs_id) as pgs_count FROM pgs_staging;`;
+        const checkFile = path.join(OUTPUT_DIR, 'check.sql');
+        await fs.writeFile(checkFile, checkSQL);
+        
+        const result = execSync(`duckdb ${dbPath} < ${checkFile}`, { 
+            cwd: OUTPUT_DIR,
+            stdio: 'pipe',
+            encoding: 'utf8'
+        });
+        
+        const existingVariants = parseInt(result.match(/│\s*(\d+)\s*│/)?.[1] || '0');
+        const existingPgsCount = parseInt(result.match(/│\s*\d+\s*│\s*(\d+)\s*│/)?.[1] || '0');
+        
+        await fs.unlink(checkFile);
+        
+        console.log(`    Database contains ${existingVariants} variants from ${existingPgsCount} PGS scores`);
+        
+        if (existingVariants > 0) {
+            console.log(`    ✓ Resuming from existing database`);
+            resuming = true;
+        } else {
+            console.log(`    Database is empty, starting fresh`);
+        }
+    } catch (error) {
+        console.log(`    No existing database found: ${error.message}`);
+    }
+    
+    if (!resuming) {
+        // Clear and recreate temp SQL directory
+        try {
+            await fs.rm(TEMP_SQL_DIR, { recursive: true, force: true });
+        } catch {}
+        await fs.mkdir(TEMP_SQL_DIR, { recursive: true });
+        
         // Initialize DuckDB with staging schema
         const initSQL = `
-            CREATE TABLE IF NOT EXISTS pgs_staging (
+            DROP TABLE IF EXISTS pgs_staging;
+            CREATE TABLE pgs_staging (
                 variant_id VARCHAR,
                 chr_name VARCHAR,
                 chr_position BIGINT,
@@ -104,18 +159,54 @@ async function streamProcessWithDuckDB(traitName, config) {
         const initFile = path.join(OUTPUT_DIR, 'init.sql');
         await fs.writeFile(initFile, initSQL);
         
+        console.log(`    Initializing DuckDB database...`);
         execSync(`duckdb ${dbPath} < ${initFile}`, { 
             cwd: OUTPUT_DIR,
             stdio: 'pipe' 
         });
+        console.log(`    ✓ Database initialized`);
         
         await fs.unlink(initFile);
         
+    } else {
+        console.log(`    Resuming from existing database...`);
+    }
+    
+    try {
         let totalVariants = 0;
         const pgsIds = [];
         
         // Stream each PGS file directly into DuckDB
         for (const pgsId of config.pgs_ids) {
+            // Check if this PGS is already processed
+            if (resuming) {
+                console.log(`        Checking if ${pgsId} already processed...`);
+                
+                const checkSQL = `SELECT COUNT(*) as count FROM pgs_staging WHERE pgs_id = '${pgsId}';`;
+                const checkFile = path.join(OUTPUT_DIR, 'check_pgs.sql');
+                await fs.writeFile(checkFile, checkSQL);
+                
+                const result = execSync(`duckdb ${dbPath} < ${checkFile}`, { 
+                    cwd: OUTPUT_DIR,
+                    stdio: 'pipe',
+                    encoding: 'utf8'
+                });
+                
+                const existingCount = parseInt(result.match(/│\s*(\d+)\s*│/)?.[1] || '0');
+                await fs.unlink(checkFile);
+                
+                console.log(`        ${pgsId}: ${existingCount} variants found in database`);
+                
+                if (existingCount > 0) {
+                    console.log(`        ✓ Skipping ${pgsId} (already processed)`);
+                    totalVariants += existingCount;
+                    pgsIds.push(pgsId);
+                    continue;
+                } else {
+                    console.log(`        Processing ${pgsId} (not in database)`);
+                }
+            }
+            
             console.log(`        Streaming ${pgsId} into DuckDB...`);
             
             try {
@@ -188,15 +279,23 @@ async function streamProcessWithDuckDB(traitName, config) {
                 
                 let formatType, variantIdSQL, chrNameSQL, chrPosSQL, effectAlleleSQL, otherAlleleSQL, effectWeightSQL;
                 
-                if (columns.includes('chr_name') && columns.includes('chr_position')) {
-                    // STANDARD_SNP format
+                if (columns.includes('chr_name') && columns.includes('chr_position') && columns.includes('rsID')) {
+                    // STANDARD_SNP format with rsID
                     formatType = 'STANDARD_SNP';
                     chrNameSQL = `REPLACE(chr_name, 'chr', '')`;
                     chrPosSQL = `TRY_CAST(chr_position AS BIGINT)`;
                     effectAlleleSQL = `effect_allele`;
                     otherAlleleSQL = `other_allele`;
                     effectWeightSQL = `TRY_CAST(effect_weight AS DOUBLE)`;
-                    // Build variant ID using raw column names
+                    variantIdSQL = `CONCAT(REPLACE(chr_name, 'chr', ''), ':', COALESCE(chr_position::TEXT, ''), ':', effect_allele, ':', other_allele)`;
+                } else if (columns.includes('chr_name') && columns.includes('chr_position') && !columns.includes('rsID')) {
+                    // STANDARD_SNP format without rsID (chr:pos format)
+                    formatType = 'STANDARD_SNP_NO_RSID';
+                    chrNameSQL = `REPLACE(chr_name, 'chr', '')`;
+                    chrPosSQL = `TRY_CAST(chr_position AS BIGINT)`;
+                    effectAlleleSQL = `effect_allele`;
+                    otherAlleleSQL = `other_allele`;
+                    effectWeightSQL = `TRY_CAST(effect_weight AS DOUBLE)`;
                     variantIdSQL = `CONCAT(REPLACE(chr_name, 'chr', ''), ':', COALESCE(chr_position::TEXT, ''), ':', effect_allele, ':', other_allele)`;
                 } else if (columns.includes('rsID') && columns.includes('is_haplotype')) {
                     // HLA_ALLELE format
@@ -232,65 +331,97 @@ async function streamProcessWithDuckDB(traitName, config) {
                 
                 console.log(`        Detected ${formatType} format`);
                 
-                // Create explicit column mapping for DuckDB (using column positions)
-                const columnMappings = columns.map((col, idx) => `column${idx} AS ${col}`).join(', ');
+                // Build direct column references based on actual column positions
+                const getColumnRef = (colName) => {
+                    const idx = columns.indexOf(colName);
+                    return idx !== -1 ? `column${idx}` : "''";
+                };
                 
                 // Create explicit column definitions for DuckDB
                 const columnDefs = columns.map((col, idx) => `'column${idx}': 'VARCHAR'`).join(', ');
                 
-                // Create SQL with format-specific column mappings using column positions
-                let variantIdExpression;
-                if (formatType === 'STANDARD_SNP') {
-                    const otherAlleleRef = columns.includes('other_allele') ? 'mapped.other_allele' : "''";
-                    variantIdExpression = `CONCAT(REPLACE(mapped.chr_name, 'chr', ''), ':', COALESCE(mapped.chr_position::TEXT, ''), ':', mapped.effect_allele, ':', ${otherAlleleRef})`;
-                } else {
-                    variantIdExpression = `mapped.rsID`;
-                }
+                // Create format-specific column expressions using direct column references
+                let variantIdExpression, chrNameExpression, chrPosExpression, effectAlleleExpression, otherAlleleExpression, effectWeightExpression;
                 
-                const otherAlleleSelect = columns.includes('other_allele') ? 'mapped.other_allele' : "''";
+                if (formatType === 'STANDARD_SNP' || formatType === 'STANDARD_SNP_NO_RSID') {
+                    const chrNameCol = getColumnRef('chr_name');
+                    const chrPosCol = getColumnRef('chr_position');
+                    const effectAlleleCol = getColumnRef('effect_allele');
+                    const otherAlleleCol = getColumnRef('other_allele');
+                    const effectWeightCol = getColumnRef('effect_weight');
+                    
+                    variantIdExpression = `CONCAT(REPLACE(${chrNameCol}, 'chr', ''), ':', COALESCE(${chrPosCol}::TEXT, ''), ':', ${effectAlleleCol}, ':', ${otherAlleleCol})`;
+                    chrNameExpression = `REPLACE(${chrNameCol}, 'chr', '')`;
+                    chrPosExpression = `TRY_CAST(${chrPosCol} AS BIGINT)`;
+                    effectAlleleExpression = effectAlleleCol;
+                    otherAlleleExpression = otherAlleleCol;
+                    effectWeightExpression = `TRY_CAST(${effectWeightCol} AS DOUBLE)`;
+                } else if (formatType === 'HLA_ALLELE') {
+                    const rsIdCol = getColumnRef('rsID');
+                    const effectAlleleCol = getColumnRef('effect_allele');
+                    const effectWeightCol = getColumnRef('effect_weight');
+                    
+                    variantIdExpression = `CASE WHEN ${rsIdCol} IS NOT NULL AND ${rsIdCol} != '' THEN ${rsIdCol} ELSE ${effectAlleleCol} END`;
+                    chrNameExpression = "''";
+                    chrPosExpression = "NULL";
+                    effectAlleleExpression = effectAlleleCol;
+                    otherAlleleExpression = "''";
+                    effectWeightExpression = `TRY_CAST(${effectWeightCol} AS DOUBLE)`;
+                } else {
+                    // Fallback for other formats
+                    const rsIdCol = getColumnRef('rsID');
+                    const effectWeightCol = getColumnRef('effect_weight');
+                    variantIdExpression = rsIdCol;
+                    chrNameExpression = "''";
+                    chrPosExpression = "NULL";
+                    effectAlleleExpression = getColumnRef('effect_allele');
+                    otherAlleleExpression = getColumnRef('other_allele');
+                    effectWeightExpression = `TRY_CAST(${effectWeightCol} AS DOUBLE)`;
+                }
                 
                 const importSQL = `
                     INSERT INTO pgs_staging 
                     SELECT 
                         ${variantIdExpression} as variant_id,
-                        ${chrNameSQL} as chr_name,
-                        ${chrPosSQL} as chr_position,
-                        mapped.effect_allele as effect_allele,
-                        ${otherAlleleSelect} as other_allele,
-                        ${effectWeightSQL} as effect_weight,
+                        ${chrNameExpression} as chr_name,
+                        ${chrPosExpression} as chr_position,
+                        ${effectAlleleExpression} as effect_allele,
+                        ${otherAlleleExpression} as other_allele,
+                        ${effectWeightExpression} as effect_weight,
                         '${pgsId}' as pgs_id,
-                        '${config.source_family}' as source_family,
-                        '${config.source_type}' as source_type,
-                        '${config.source_subtype}' as source_subtype,
+                        '${config.source_family || traitName}' as source_family,
+                        '${config.source_type || 'trait'}' as source_type,
+                        '${config.source_subtype || 'mondo'}' as source_subtype,
                         ${config.weight || 1.0} as source_weight,
                         'log_odds' as weight_type,
                         '${formatType}' as format_type
-                    FROM (
-                        SELECT ${columnMappings}
-                        FROM read_csv('${dataOnlyPath}', delim='\t', header=false, columns={${columnDefs}})
-                    ) mapped
-                    WHERE mapped.effect_allele IS NOT NULL 
-                      AND mapped.effect_allele != ''
-                      AND mapped.effect_weight IS NOT NULL
-                      AND mapped.effect_weight != '';
+                    FROM read_csv('${dataOnlyPath}', delim='\t', header=false, columns={${columnDefs}})
+                    WHERE ${effectAlleleExpression} IS NOT NULL 
+                      AND ${effectAlleleExpression} != ''
+                      AND ${getColumnRef('effect_weight')} IS NOT NULL
+                      AND ${getColumnRef('effect_weight')} != '';
                 `;
                 
-                const sqlFile = path.join(OUTPUT_DIR, `import_${pgsId}.sql`);
+                const sqlFile = path.join(TEMP_SQL_DIR, `import_${pgsId}.sql`);
                 await fs.writeFile(sqlFile, importSQL);
                 
+                console.log(`        Importing ${pgsId} data into DuckDB...`);
                 try {
                     execSync(`duckdb ${dbPath} < ${sqlFile}`, { 
                         cwd: OUTPUT_DIR,
-                        stdio: 'pipe' 
+                        stdio: 'pipe',
+                        encoding: 'utf8'
                     });
+                    console.log(`        ✓ Import complete`);
                 } catch (error) {
-                    console.log(`        INSERT failed: ${error.message}`);
-                    throw error;
+                    console.log(`        INSERT ERROR: ${error.message}`);
+                    console.log(`        STDERR: ${error.stderr}`);
+                    console.log(`        STDOUT: ${error.stdout}`);
                 }
                 
                 // Get count
                 const countSQL = `SELECT COUNT(*) as count FROM pgs_staging WHERE pgs_id = '${pgsId}';`;
-                const countFile = path.join(OUTPUT_DIR, 'count.sql');
+                const countFile = path.join(TEMP_SQL_DIR, `count_${pgsId}.sql`);
                 await fs.writeFile(countFile, countSQL);
                 
                 const result = execSync(`duckdb ${dbPath} < ${countFile}`, { 
@@ -301,11 +432,9 @@ async function streamProcessWithDuckDB(traitName, config) {
                 
                 const variantCount = parseInt(result.match(/│\s*(\d+)\s*│/)?.[1] || '0');
                 console.log(`        Added ${variantCount} variants`);
+                
                 totalVariants += variantCount;
                 pgsIds.push(pgsId);
-                
-                // Cleanup
-                await fs.unlink(sqlFile);
                 await fs.unlink(countFile);
                 
             } catch (error) {
@@ -328,63 +457,122 @@ async function streamProcessWithDuckDB(traitName, config) {
         const exportFile = path.join(OUTPUT_DIR, 'export.sql');
         await fs.writeFile(exportFile, exportSQL);
         
-        // Ensure output directory permissions
+        console.log(`    Exporting to Parquet (${totalVariants} variants)...`);
+        
         try {
-            await fs.chmod(OUTPUT_DIR, 0o755);
+            execSync(`duckdb ${dbPath} < ${exportFile}`, { 
+                cwd: OUTPUT_DIR,
+                stdio: 'pipe'
+            });
+            console.log(`    ✓ Export complete`);
         } catch (error) {
-            console.log(`    Warning: Could not set directory permissions: ${error.message}`);
+            console.log(`    Export ERROR: ${error.message}`);
+            throw error;
         }
         
-        execSync(`duckdb ${dbPath} < ${exportFile}`, { 
-            cwd: OUTPUT_DIR,
-            stdio: 'pipe' 
-        });
+        // Verify the parquet file was created
+        try {
+            const stats = await fs.stat(outputPath);
+            console.log(`    ✓ Parquet file created: ${stats.size} bytes`);
+        } catch (error) {
+            console.log(`    ⚠ Could not verify parquet file: ${error.message}`);
+            throw new Error(`Parquet export failed: ${error.message}`);
+        }
         
         // Cleanup
         await fs.unlink(exportFile);
-        await fs.unlink(dbPath);
+        
+        // Clean up any remaining temp files
+        try {
+            const files = await fs.readdir(OUTPUT_DIR);
+            for (const file of files) {
+                if (file.includes(safeFileName) && (file.endsWith('.sql') || file.endsWith('.tsv') || file.endsWith('_data.tsv'))) {
+                    await fs.unlink(path.join(OUTPUT_DIR, file));
+                }
+            }
+        } catch {}
+        
+        // Only remove DB after successful completion
+        try {
+            await fs.unlink(dbPath);
+        } catch {}
         
         console.log(`  - Created unified file (${totalVariants} variants)`);
         return { 
             totalVariants, 
-            fileName: `${traitName}_hg38.parquet`,
+            fileName: `${safeFileName}_hg38.parquet`,
             pgsIds
         };
         
     } catch (error) {
         console.log(`  - DuckDB streaming failed: ${error.message}`);
+        
+        // Clean up on failure but keep DB for debugging
+        try {
+            const files = await fs.readdir(OUTPUT_DIR);
+            for (const file of files) {
+                if (file.includes(safeFileName) && (file.endsWith('.sql') || file.endsWith('.tsv') || file.endsWith('_data.tsv'))) {
+                    await fs.unlink(path.join(OUTPUT_DIR, file));
+                }
+            }
+        } catch {}
+        
         throw error;
     }
 }
 
 async function needsUpdate(traitName, config) {
-    // Get file hashes from PGS API for validation
-    const expectedHashes = new Map();
-    for (const pgsId of config.pgs_ids) {
-        try {
-            const scoreData = await pgsApiClient.getScore(pgsId);
-            if (scoreData.ftp_scoring_file) {
-                expectedHashes.set(pgsId, {
-                    url: scoreData.ftp_scoring_file,
-                    date_released: scoreData.date_release
-                });
-            }
-        } catch (error) {
-            console.log(`    Warning: Could not get file info for ${pgsId}`);
-        }
-    }
+    console.log(`    Checking if ${traitName} needs update...`);
     
     // Check if file exists
-    const filePath = path.join(OUTPUT_DIR, `${traitName}_hg38.parquet`);
+    const safeFileName = traitName.replace(':', '_');
+    const filePath = path.join(OUTPUT_DIR, `${safeFileName}_hg38.parquet`);
     try {
-        await fs.stat(filePath);
+        const stats = await fs.stat(filePath);
+        console.log(`    Output file exists: ${filePath} (${stats.size} bytes)`);
+        
+        // Check if file is too small (likely corrupted)
+        if (stats.size < 10000) {
+            console.log(`    File too small (${stats.size} bytes), will regenerate`);
+            return true;
+        }
+        
+        // Check variant count against expected
+        if (config.expected_variants) {
+            try {
+                const verifySQL = `SELECT COUNT(*) as total FROM '${filePath}';`;
+                const verifyFile = path.join(OUTPUT_DIR, 'verify_count.sql');
+                await fs.writeFile(verifyFile, verifySQL);
+                
+                const { execSync } = await import('child_process');
+                const result = execSync(`duckdb < ${verifyFile}`, { 
+                    cwd: OUTPUT_DIR,
+                    stdio: 'pipe',
+                    encoding: 'utf8'
+                });
+                
+                const actualVariants = parseInt(result.match(/│\s*(\d+)\s*│/)?.[1] || '0');
+                await fs.unlink(verifyFile);
+                
+                if (actualVariants !== config.expected_variants) {
+                    console.log(`    Variant count mismatch: expected ${config.expected_variants}, found ${actualVariants}, will regenerate`);
+                    return true;
+                }
+                
+                console.log(`    File valid (${actualVariants} variants match expected), skipping generation`);
+                return false;
+            } catch (error) {
+                console.log(`    Could not verify variant count: ${error.message}, will regenerate`);
+                return true;
+            }
+        }
+        
+        console.log(`    File exists, skipping generation`);
+        return false;
     } catch {
-        console.log(`  - ${traitName}: No file found, will download`);
+        console.log(`    No output file found, will generate`);
         return true;
     }
-    
-    console.log(`  - ${traitName}: File exists, skipping`);
-    return false;
 }
 
 async function loadExistingManifest() {
@@ -393,15 +581,17 @@ async function loadExistingManifest() {
         const content = await fs.readFile(manifestPath, 'utf8');
         return JSON.parse(content);
     } catch {
-        return { traits: {} };
+        return { trait_families: {} };
     }
 }
 
 export async function generateTraitPack(traitName, config) {
     // Load existing manifest to check for existing metadata
     const existingManifest = await loadExistingManifest();
-    const existingTraitData = existingManifest.traits?.[traitName];
-    const existingMetadata = existingTraitData?.pgs_metadata || {};
+    const traitFamily = Object.values(existingManifest.trait_families || {}).find(family => 
+        family.traits && family.traits[traitName]
+    );
+    const existingMetadata = traitFamily?.traits?.[traitName]?.pgs_metadata || {};
     
     // Only collect metadata that doesn't exist in manifest
     console.log(`  - Checking metadata for ${config.pgs_ids.length} PGS scores...`);
@@ -411,10 +601,12 @@ export async function generateTraitPack(traitName, config) {
     
     if (!needsFileUpdate) {
         console.log(`  - Files up to date, metadata check complete`);
+        const safeFileName = traitName.replace(':', '_');
         return {
             timestamp: new Date().toISOString(),
-            variant_count: existingTraitData?.variant_count || 0,
-            source_hashes: existingTraitData?.source_hashes || {},
+            variant_count: config.expected_variants || 0,
+            fileName: `${safeFileName}_hg38.parquet`,
+            source_hashes: {},
             pgs_metadata: pgsMetadata,
             metadata_only: true
         };

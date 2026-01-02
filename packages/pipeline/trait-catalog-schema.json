@@ -1,64 +1,31 @@
 {
   "$schema": "http://json-schema.org/draft-07/schema#",
-  "title": "Asili Trait Catalog Schema",
+  "title": "Asili MONDO-Centered Trait Catalog Schema",
   "type": "object",
-  "required": ["trait_families"],
+  "required": ["traits"],
   "properties": {
-    "trait_families": {
+    "traits": {
       "type": "object",
       "patternProperties": {
-        "^[a-z_]+$": {
-          "$ref": "#/definitions/TraitFamily"
+        "^MONDO:[0-9]{7}$": {
+          "$ref": "#/definitions/Trait"
         }
       },
       "additionalProperties": false
     }
   },
   "definitions": {
-    "TraitFamily": {
+    "Trait": {
       "type": "object",
-      "required": ["name", "description", "category"],
+      "required": ["title", "mondo_id", "pgs_ids", "expected_variants", "last_updated"],
       "properties": {
-        "name": {
+        "title": {
           "type": "string",
           "minLength": 1
         },
-        "description": {
+        "mondo_id": {
           "type": "string",
-          "minLength": 1
-        },
-        "category": {
-          "type": "string",
-          "enum": ["metabolic", "cardiovascular", "neurological", "physical", "psychiatric", "immunological"]
-        },
-        "subtypes": {
-          "type": "object",
-          "patternProperties": {
-            "^[a-z_0-9]+$": {
-              "$ref": "#/definitions/Subtype"
-            }
-          },
-          "additionalProperties": false
-        },
-        "biomarkers": {
-          "type": "object",
-          "patternProperties": {
-            "^[a-z_0-9]+$": {
-              "$ref": "#/definitions/Biomarker"
-            }
-          },
-          "additionalProperties": false
-        }
-      },
-      "additionalProperties": false
-    },
-    "Subtype": {
-      "type": "object",
-      "required": ["name", "pgs_ids", "description", "weight"],
-      "properties": {
-        "name": {
-          "type": "string",
-          "minLength": 1
+          "pattern": "^MONDO:[0-9]{7}$"
         },
         "pgs_ids": {
           "type": "array",
@@ -66,40 +33,19 @@
             "type": "string",
             "pattern": "^PGS[0-9]{6}$"
           },
-          "minItems": 1,
           "uniqueItems": true
         },
-        "description": {
-          "type": "string",
-          "minLength": 1
+        "expected_variants": {
+          "type": "integer",
+          "minimum": 0
         },
-        "weight": {
-          "type": "number",
-          "minimum": 0,
-          "maximum": 1
-        }
-      },
-      "additionalProperties": false
-    },
-    "Biomarker": {
-      "type": "object",
-      "required": ["name", "pgs_ids"],
-      "properties": {
-        "name": {
-          "type": "string",
-          "minLength": 1
+        "estimated_unique_variants": {
+          "type": "integer",
+          "minimum": 0
         },
-        "pgs_ids": {
-          "type": "array",
-          "items": {
-            "type": "string",
-            "pattern": "^PGS[0-9]{6}$"
-          },
-          "minItems": 1,
-          "uniqueItems": true
-        },
-        "description": {
-          "type": "string"
+        "last_updated": {
+          "type": ["string", "null"],
+          "format": "date-time"
         }
       },
       "additionalProperties": false

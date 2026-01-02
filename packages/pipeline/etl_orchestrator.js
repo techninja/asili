@@ -28,22 +28,28 @@ async function main() {
         
         // Process each trait
         for (const [traitName, config] of Object.entries(traitConfigs)) {
+            const displayName = `${config.name || config.title || traitName} (${config.mondo_id || traitName})`;
+            const traitStartTime = Date.now();
+            
             try {
-                console.log(`🔄 Processing: ${traitName}`);
+                console.log(`🔄 Processing: ${displayName}`);
                 const result = await generateTraitPack(traitName, config);
                 await updateOutputManifest({ [traitName]: result });
                 
+                const traitDuration = Math.round((Date.now() - traitStartTime) / 1000);
+                
                 if (result.metadata_only) {
-                    console.log(`✅ Updated metadata for ${traitName}`);
+                    console.log(`   ✅ Updated metadata for ${displayName} (${traitDuration}s)`);
                 } else {
-                    console.log(`✅ Generated ${traitName} (${result.variant_count} variants)`);
+                    console.log(`   ✅ Generated ${displayName} (${result.variant_count} variants, ${traitDuration}s)`);
                 }
                 
                 processedCount++;
                 console.log('');
                 
             } catch (error) {
-                console.error(`❌ Error processing ${traitName}: ${error.message}`);
+                const traitDuration = Math.round((Date.now() - traitStartTime) / 1000);
+                console.error(`   ❌ Error processing ${displayName}: ${error.message} (${traitDuration}s)`);
                 errorCount++;
                 console.log('');
             }

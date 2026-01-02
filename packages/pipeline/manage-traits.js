@@ -121,305 +121,235 @@ async function refreshTraitData() {
     
     const catalog = await loadCatalog();
     
-    if (Object.keys(catalog.trait_families).length === 0) {
-        console.log(chalk.yellow('No trait families to refresh'));
+    if (Object.keys(catalog.traits).length === 0) {
+        console.log(chalk.yellow('No traits to refresh'));
         return;
     }
     
-    console.log(chalk.blue('Refreshing and expanding PGS data from catalog...'));
-    
-    for (const [familyKey, family] of Object.entries(catalog.trait_families)) {
-        console.log(chalk.gray(`Processing ${family.name}...`));
-        
-        // Refresh subtypes
-        for (const [subtypeKey, subtype] of Object.entries(family.subtypes || {})) {
-            console.log(chalk.gray(`  Refreshing ${subtype.name}...`));
-            
-            // Search for additional PGS scores for this trait
-            const searchResults = await searchPGS(subtype.name);
-            const existingIds = new Set(subtype.pgs_ids);
-            const newIds = [];
-            
-            // Find new PGS IDs not already in the list, matching by EFO ID if available
-            for (const result of searchResults) {
-                if (!existingIds.has(result.id)) {
-                    // If we have EFO IDs, only add PGS scores from the same trait
-                    if (subtype.trait_efo_id && result.trait_efo && subtype.trait_efo_id !== result.trait_efo) {
-                        continue; // Skip PGS scores from different traits
-                    }
-                    newIds.push(result.id);
-                }
-            }
-            
-            if (newIds.length > 0) {
-                console.log(chalk.blue(`    Found ${newIds.length} additional PGS scores: ${newIds.join(', ')}`));
-                subtype.pgs_ids = [...subtype.pgs_ids, ...newIds];
-            }
-            
-            // Update variant counts for all PGS IDs - but don't store in canonical
-            let totalVariants = 0;
-            for (const pgsId of subtype.pgs_ids) {
-                try {
-                    const data = await pgsApiClient.getScore(pgsId);
-                    if (data.variants_number) {
-                        totalVariants += data.variants_number;
-                    }
-                    console.log(chalk.green(`    ✓ ${pgsId}: ${data.variants_number?.toLocaleString()} variants`));
-                } catch (error) {
-                    console.log(chalk.yellow(`    ⚠ ${pgsId}: ${error.message}`));
-                }
-            }
-            
-            console.log(chalk.blue(`    Total variants: ${totalVariants.toLocaleString()}`));
-        }
-        
-        // Refresh biomarkers
-        for (const [biomarkerKey, biomarker] of Object.entries(family.biomarkers || {})) {
-            console.log(chalk.gray(`  Refreshing ${biomarker.name}...`));
-            
-            // Search for additional PGS scores for this biomarker
-            const searchResults = await searchPGS(biomarker.name);
-            const existingIds = new Set(biomarker.pgs_ids);
-            const newIds = [];
-            
-            for (const result of searchResults) {
-                if (!existingIds.has(result.id)) {
-                    // If we have EFO IDs, only add PGS scores from the same trait
-                    if (biomarker.trait_efo_id && result.trait_efo && biomarker.trait_efo_id !== result.trait_efo) {
-                        continue; // Skip PGS scores from different traits
-                    }
-                    newIds.push(result.id);
-                }
-            }
-            
-            if (newIds.length > 0) {
-                console.log(chalk.blue(`    Found ${newIds.length} additional PGS scores: ${newIds.join(', ')}`));
-                biomarker.pgs_ids = [...biomarker.pgs_ids, ...newIds];
-            }
-            
-            let totalVariants = 0;
-            for (const pgsId of biomarker.pgs_ids) {
-                try {
-                    const data = await pgsApiClient.getScore(pgsId);
-                    if (data.variants_number) {
-                        totalVariants += data.variants_number;
-                    }
-                    console.log(chalk.green(`    ✓ ${pgsId}: ${data.variants_number?.toLocaleString()} variants`));
-                } catch (error) {
-                    console.log(chalk.yellow(`    ⚠ ${pgsId}: ${error.message}`));
-                }
-            }
-            
-            console.log(chalk.blue(`    Total variants: ${totalVariants.toLocaleString()}`));
-        }
+    // Check for --fresh flag
+    const fresh = process.argv.includes('--fresh');
+    if (fresh) {
+        console.log(chalk.yellow('Fresh mode: ignoring last_updated dates'));
     }
     
-    await saveCatalog(catalog);
-    console.log(chalk.green('\n✓ Trait data refreshed and expanded from PGS Catalog'));
+    console.log(chalk.blue('Refreshing PGS data for MONDO traits...'));
+    
+    const oneMonthAgo = new Date();
+    oneMonthAgo.setMonth(oneMonthAgo.getMonth() - 1);
+    
+    for (const [mondoId, trait] of Object.entries(catalog.traits)) {
+        // Ensure internal mondo_id matches the key (key is authoritative)
+        trait.mondo_id = mondoId;
+        
+        // Skip if updated within last month AND has PGS IDs (unless fresh mode)
+        if (!fresh && trait.last_updated && trait.pgs_ids.length > 0) {
+            const lastUpdate = new Date(trait.last_updated);
+            if (lastUpdate > oneMonthAgo) {
+                console.log(chalk.gray(`Skipping ${trait.title} (updated ${lastUpdate.toDateString()})`));
+                continue;
+            }
+        }
+        
+        console.log(chalk.gray(`Processing ${trait.title} (${mondoId})...`));
+        
+        // Use direct trait info API to get associated PGS IDs
+        let allPgsIds = [];
+        let traitTitle = trait.title; // Keep existing title as fallback
+        
+        try {
+            const traitInfo = await pgsApiClient.getTraitInfo(mondoId);
+            if (traitInfo.associated_pgs_ids && traitInfo.associated_pgs_ids.length > 0) {
+                console.log(chalk.blue(`  Found ${traitInfo.associated_pgs_ids.length} PGS scores via trait info API`));
+                allPgsIds = traitInfo.associated_pgs_ids.filter(id => id.match(/^PGS[0-9]{6}$/));
+                
+                // Update title from API if available
+                if (traitInfo.label && traitInfo.label.trim()) {
+                    traitTitle = traitInfo.label.trim();
+                    console.log(chalk.green(`  Updated title: ${traitTitle}`));
+                }
+            }
+        } catch (error) {
+            console.log(chalk.yellow(`  Trait info API failed: ${error.message}`));
+        }
+        
+        // Fallback: try direct PGS score search
+        if (allPgsIds.length === 0) {
+            try {
+                const directResults = await pgsApiClient.getScoresByTrait(mondoId);
+                if (directResults.results && directResults.results.length > 0) {
+                    console.log(chalk.blue(`  Found ${directResults.results.length} PGS scores via direct search`));
+                    allPgsIds = directResults.results.map(score => score.id).filter(id => id.match(/^PGS[0-9]{6}$/));
+                }
+            } catch (error) {
+                console.log(chalk.yellow(`  Direct search failed: ${error.message}`));
+            }
+        }
+        
+        // Fallback: try trait search if direct search failed
+        if (allPgsIds.length === 0) {
+            console.log(chalk.yellow(`  No direct results, trying trait search...`));
+            const titleResults = await searchPGS(trait.title);
+            allPgsIds = titleResults.map(r => r.id).filter(id => id && id.match(/^PGS[0-9]{6}$/));
+        }
+        
+        // Compare with existing IDs
+        const existingIds = new Set(trait.pgs_ids);
+        const newIds = allPgsIds.filter(id => !existingIds.has(id));
+        
+        if (newIds.length > 0) {
+            console.log(chalk.blue(`  Found ${newIds.length} additional PGS scores`));
+            trait.pgs_ids = [...trait.pgs_ids, ...newIds];
+        } else if (allPgsIds.length > 0) {
+            console.log(chalk.blue(`  Confirmed ${allPgsIds.length} existing PGS scores`));
+            // Update the list to match what the API returns (in case some were removed)
+            trait.pgs_ids = allPgsIds;
+        }
+        
+        // Validate existing PGS IDs and calculate unique variant count
+        let totalVariants = 0;
+        let uniqueVariants = 0;
+        const variantSet = new Set();
+        
+        for (const pgsId of trait.pgs_ids) {
+            try {
+                const data = await pgsApiClient.getScore(pgsId);
+                if (data.variants_number) {
+                    totalVariants += data.variants_number;
+                    
+                    // For unique count estimation, we'd need to actually process the files
+                    // For now, use a rough estimate based on typical overlap patterns
+                    const estimatedUnique = Math.floor(data.variants_number * 0.7); // Assume 30% overlap
+                    uniqueVariants += estimatedUnique;
+                }
+                console.log(chalk.green(`  ✓ ${pgsId}: ${data.variants_number?.toLocaleString()} variants`));
+            } catch (error) {
+                console.log(chalk.yellow(`  ⚠ ${pgsId}: ${error.message}`));
+            }
+        }
+        
+        console.log(chalk.blue(`  Total variants: ${totalVariants.toLocaleString()} (estimated unique: ${uniqueVariants.toLocaleString()})`));
+        
+        // Store both total and estimated unique for validation
+        trait.expected_variants = totalVariants;
+        trait.estimated_unique_variants = uniqueVariants;
+        trait.title = traitTitle; // Update title from API
+        
+        // Update timestamp and save after each trait
+        trait.last_updated = new Date().toISOString();
+        await saveCatalog(catalog);
+        console.log(chalk.green(`  ✓ Updated ${trait.title}`));
+    }
+    
+    console.log(chalk.green('\n✓ Trait data refresh complete'));
 }
 
-async function addTraitFamily() {
-    console.log(chalk.cyan('\n=== Add Trait to Family ===\n'));
+async function addTrait() {
+    console.log(chalk.cyan('\n=== Add New Trait ===\n'));
     
     const catalog = await loadCatalog();
     
-    // Select family
-    const familyChoices = Object.entries(catalog.trait_families).map(([key, family]) => ({
-        title: family.name,
-        value: key
-    }));
-    
-    const { familyKey } = await prompts({
-        type: 'select',
-        name: 'familyKey',
-        message: 'Select trait family:',
-        choices: familyChoices
+    // Get MONDO ID from user
+    const { mondoId } = await prompts({
+        type: 'text',
+        name: 'mondoId',
+        message: 'Enter MONDO ID (e.g., MONDO:0005015):',
+        validate: value => {
+            if (!/^MONDO:[0-9]{7}$/.test(value)) {
+                return 'Please enter a valid MONDO ID format (MONDO:0000000)';
+            }
+            if (catalog.traits[value]) {
+                return 'This MONDO ID already exists in the catalog';
+            }
+            return true;
+        }
     });
     
-    if (!familyKey) return;
+    if (!mondoId) return;
     
-    // Select subtype or biomarker
-    const { itemType } = await prompts({
-        type: 'select',
-        name: 'itemType',
-        message: 'Add to:',
-        choices: [
-            { title: 'Subtype (main risk factor)', value: 'subtype' },
-            { title: 'Biomarker (supporting measurement)', value: 'biomarker' }
-        ]
+    // Get trait title
+    const { title } = await prompts({
+        type: 'text',
+        name: 'title',
+        message: 'Enter trait title:',
+        validate: value => value.length > 0 || 'Title cannot be empty'
     });
     
-    if (!itemType) return;
+    if (!title) return;
     
     // Search for PGS scores
-    const { searchQuery } = await prompts({
-        type: 'text',
-        name: 'searchQuery',
-        message: 'Search for trait (e.g., "diabetes", "alzheimer"):',
-        validate: value => value.length > 2 || 'Please enter at least 3 characters'
-    });
-    
-    const results = await searchPGS(searchQuery);
+    const results = await searchPGS(title);
     
     if (results.length === 0) {
-        console.log(chalk.yellow('No results found. Try a different search term.'));
-        return;
-    }
-    
-    // Select multiple PGS scores
-    const choices = results.map((result, index) => ({
-        title: `${chalk.bold(result.name)} (${result.id})`,
-        description: `${result.variant_count?.toLocaleString() || 'Unknown'} variants | ${result.description?.substring(0, 80) || 'No description'}`,
-        value: result.id,
-        selected: false
-    }));
-    
-    if (choices.length === 0) {
-        console.log(chalk.yellow('No PGS scores found for selection.'));
-        return;
-    }
-    
-    console.log(chalk.cyan(`\nFound ${choices.length} PGS scores:`));
-    choices.forEach((choice, i) => {
-        console.log(`${i + 1}. ${choice.title}`);
-        console.log(`   ${chalk.gray(choice.description)}`);
-    });
-    
-    // Add "Select All" option
-    const { selectAll } = await prompts({
-        type: 'confirm',
-        name: 'selectAll',
-        message: `Select all ${choices.length} PGS scores for this trait?`,
-        initial: false
-    });
-    
-    let selectedPgsIds;
-    if (selectAll) {
-        selectedPgsIds = choices.map(c => c.value);
-        console.log(chalk.green(`Selected all ${selectedPgsIds.length} PGS scores`));
+        console.log(chalk.yellow('No PGS scores found. Adding trait with empty PGS list.'));
+        catalog.traits[mondoId] = {
+            title,
+            mondo_id: mondoId,
+            pgs_ids: [],
+            last_updated: new Date().toISOString()
+        };
     } else {
-        const selection = await prompts({
-            type: 'multiselect',
-            name: 'selectedPgsIds',
-            message: 'Select specific PGS scores (space to select, enter to confirm):',
-            choices,
-            hint: '- Space to select. Return to submit'
+        // Select PGS scores
+        const choices = results.map(result => ({
+            title: `${result.name} (${result.id})`,
+            description: `${result.variant_count?.toLocaleString() || 'Unknown'} variants`,
+            value: result.id
+        }));
+        
+        const { selectAll } = await prompts({
+            type: 'confirm',
+            name: 'selectAll',
+            message: `Select all ${choices.length} PGS scores?`,
+            initial: true
         });
-        selectedPgsIds = selection.selectedPgsIds;
+        
+        let selectedPgsIds;
+        if (selectAll) {
+            selectedPgsIds = choices.map(c => c.value);
+        } else {
+            const selection = await prompts({
+                type: 'multiselect',
+                name: 'selectedPgsIds',
+                message: 'Select PGS scores:',
+                choices
+            });
+            selectedPgsIds = selection.selectedPgsIds || [];
+        }
+        
+        catalog.traits[mondoId] = {
+            title,
+            mondo_id: mondoId,
+            pgs_ids: selectedPgsIds,
+            last_updated: new Date().toISOString()
+        };
     }
-    
-    if (!selectedPgsIds || selectedPgsIds.length === 0) return;
-    
-    // Use metadata from first result to auto-populate fields
-    const firstResult = results.find(r => selectedPgsIds.includes(r.id));
-    const traitName = firstResult.name;
-    const traitDescription = firstResult.description;
-    
-    // Calculate total variant count from selected PGS scores
-    const selectedResults = results.filter(r => selectedPgsIds.includes(r.id));
-    const totalVariants = selectedResults.reduce((sum, result) => sum + (result.variant_count || 0), 0);
-    
-    // Generate key from trait name
-    const suggestedKey = traitName.toLowerCase().replace(/[^a-z0-9]/g, '_').replace(/_+/g, '_');
-    
-    console.log(chalk.cyan(`\nAuto-detected trait: ${chalk.bold(traitName)}`));
-    console.log(chalk.gray(`Description: ${traitDescription}`));
-    console.log(chalk.gray(`Suggested key: ${suggestedKey}`));
-    
-    // Check for key collision
-    const targetSection = itemType === 'subtype' ? 'subtypes' : 'biomarkers';
-    const existingKeys = Object.keys(catalog.trait_families[familyKey][targetSection] || {});
-    
-    let finalKey = suggestedKey;
-    if (existingKeys.includes(suggestedKey)) {
-        console.log(chalk.yellow(`\n⚠ Key collision detected: '${suggestedKey}' already exists`));
-        const { customKey } = await prompts({
-            type: 'text',
-            name: 'customKey',
-            message: 'Enter a different key:',
-            initial: `${suggestedKey}_2`,
-            validate: value => {
-                if (existingKeys.includes(value)) return 'Key already exists';
-                if (!/^[a-z_]+$/.test(value)) return 'Use lowercase letters and underscores only';
-                return true;
-            }
-        });
-        if (!customKey) return;
-        finalKey = customKey;
-    }
-    
-    // Confirm the auto-detected information
-    const { confirmed } = await prompts({
-        type: 'confirm',
-        name: 'confirmed',
-        message: `Add '${traitName}' with ${selectedPgsIds.length} PGS scores?`,
-        initial: true
-    });
-    
-    if (!confirmed) return;
-    
-    // Add to catalog
-    if (!catalog.trait_families[familyKey][targetSection]) {
-        catalog.trait_families[familyKey][targetSection] = {};
-    }
-    
-    const newItem = {
-        name: traitName,
-        pgs_ids: selectedPgsIds,
-        description: traitDescription
-    };
-    
-    // Default weight for subtypes
-    if (itemType === 'subtype') {
-        newItem.weight = 1.0;
-    }
-    
-    catalog.trait_families[familyKey][targetSection][finalKey] = newItem;
     
     await saveCatalog(catalog);
-    
-    console.log(chalk.green(`\n✓ Added ${itemType}: ${traitName}`));
-    console.log(chalk.gray(`  Key: ${finalKey}`));
-    console.log(chalk.gray(`  PGS IDs: ${selectedPgsIds.join(', ')}`));
-    console.log(chalk.gray(`  Description: ${traitDescription}`));
-    console.log(chalk.gray(`  Variant count: ${totalVariants.toLocaleString()}`));
+    console.log(chalk.green(`\n✓ Added trait: ${title} (${mondoId})`));
 }
 
 async function listTraits() {
     const catalog = await loadCatalog();
     
-    console.log(chalk.cyan('\n=== Current Trait Families ===\n'));
+    console.log(chalk.cyan('\n=== Current Traits ===\n'));
     
-    if (Object.keys(catalog.trait_families).length === 0) {
-        console.log(chalk.yellow('No trait families in catalog'));
+    if (Object.keys(catalog.traits).length === 0) {
+        console.log(chalk.yellow('No traits in catalog'));
         return;
     }
 
-    Object.entries(catalog.trait_families).forEach(([familyName, familyData]) => {
-        console.log(chalk.bold.blue(`${familyData.name} (${familyName})`));
-        console.log(`   ${chalk.gray(familyData.description)}`);
-        
-        // Show subtypes
-        Object.entries(familyData.subtypes || {}).forEach(([subtypeName, subtypeData]) => {
-            console.log(`   ${chalk.green('▸')} ${subtypeData.name} ${chalk.gray(`(${subtypeData.pgs_ids.join(', ')})`)}`);
-            if (subtypeData.variant_count) {
-                console.log(`     ${chalk.blue(subtypeData.variant_count.toLocaleString())} variants`);
-            }
-        });
-        
-        // Show biomarkers if present
-        if (familyData.biomarkers) {
-            Object.entries(familyData.biomarkers).forEach(([biomarkerName, biomarkerData]) => {
-                console.log(`   ${chalk.yellow('◦')} ${biomarkerData.name} ${chalk.gray(`(${biomarkerData.pgs_ids.join(', ')})`)}`);
-            });
+    Object.entries(catalog.traits).forEach(([mondoId, trait]) => {
+        console.log(chalk.bold.blue(`${trait.title} (${mondoId})`));
+        if (trait.pgs_ids.length > 0) {
+            console.log(`   ${chalk.green('PGS IDs:')} ${trait.pgs_ids.join(', ')}`);
+        } else {
+            console.log(`   ${chalk.yellow('No PGS scores assigned')}`);
         }
-        
         console.log();
     });
 }
 
 async function freshStart() {
-    const freshCatalog = { trait_families: {} };
+    const freshCatalog = { traits: {} };
     await saveCatalog(freshCatalog);
     console.log(chalk.green('✓ Catalog reset to empty state'));
 }
@@ -445,7 +375,7 @@ async function main() {
             await listTraits();
             break;
         case 'add':
-            await addTraitFamily();
+            await addTrait();
             break;
         case 'refresh':
             await refreshTraitData();

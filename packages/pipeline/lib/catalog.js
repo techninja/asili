@@ -13,38 +13,16 @@ export async function loadTraitCatalog() {
 export function getTraitConfigs(catalog) {
     const configs = {};
     
-    for (const [familyName, familyData] of Object.entries(catalog.trait_families)) {
-        // Process subtypes
-        for (const [subtypeName, subtypeData] of Object.entries(familyData.subtypes || {})) {
-            const key = `${familyName}_${subtypeName}`;
-            configs[key] = {
-                pgs_ids: subtypeData.pgs_ids,
-                name: subtypeData.name,
-                description: subtypeData.description,
-                category: familyData.category,
-                source_family: familyName,
-                source_type: 'subtype',
-                source_subtype: subtypeName,
-                weight: subtypeData.weight || 1.0
-            };
-        }
-        
-        // Process biomarkers
-        if (familyData.biomarkers) {
-            for (const [biomarkerName, biomarkerData] of Object.entries(familyData.biomarkers)) {
-                const key = `${familyName}_${biomarkerName}`;
-                configs[key] = {
-                    pgs_ids: biomarkerData.pgs_ids,
-                    name: biomarkerData.name,
-                    description: biomarkerData.description || '',
-                    category: familyData.category,
-                    source_family: familyName,
-                    source_type: 'biomarker',
-                    source_subtype: biomarkerName,
-                    weight: 1.0
-                };
-            }
-        }
+    for (const [mondoId, trait] of Object.entries(catalog.traits)) {
+        // Use the key as the authoritative MONDO ID
+        configs[mondoId] = {
+            pgs_ids: trait.pgs_ids,
+            name: trait.title,
+            mondo_id: mondoId, // Use key, not trait.mondo_id
+            expected_variants: trait.expected_variants,
+            description: trait.description || '',
+            weight: 1.0
+        };
     }
     
     return configs;
