@@ -293,16 +293,24 @@ class GPUGenomicBuffer:
                 
                 # Keep only unique variants
                 for key, values in filtered.items():
-                    if hasattr(values, '__len__') and len(values) > 0:
-                        filtered[key] = values[unique_indices_cpu]
+                    try:
+                        if len(values) > 0:
+                            filtered[key] = values[unique_indices_cpu]
+                    except TypeError:
+                        # Scalar value, skip indexing
+                        pass
                 
                 filtered['variant_id'] = unique_ids.get()
             except ValueError:  # String variant IDs
                 unique_ids, unique_indices = np.unique(filtered_ids, return_index=True)
                 
                 for key, values in filtered.items():
-                    if hasattr(values, '__len__') and len(values) > 0:
-                        filtered[key] = values[unique_indices]
+                    try:
+                        if len(values) > 0:
+                            filtered[key] = values[unique_indices]
+                    except TypeError:
+                        # Scalar value, skip indexing
+                        pass
                 
                 filtered['variant_id'] = unique_ids
         else:
