@@ -1,6 +1,8 @@
 #!/bin/bash
 # Minimal CUDA setup for Ubuntu + 3x GTX 1080 Ti
 
+set -e  # Exit on error
+
 echo "🚀 Setting up CUDA for genomic processing..."
 
 # Check NVIDIA drivers
@@ -13,21 +15,32 @@ fi
 echo "✅ NVIDIA drivers detected"
 nvidia-smi --query-gpu=name,memory.total --format=csv,noheader
 
-# Install CUDA toolkit if needed
-if ! nvcc --version &> /dev/null; then
-    echo "📦 Installing CUDA toolkit..."
-    wget https://developer.download.nvidia.com/compute/cuda/repos/ubuntu2204/x86_64/cuda-keyring_1.0-1_all.deb
-    sudo dpkg -i cuda-keyring_1.0-1_all.deb
-    sudo apt-get update
-    sudo apt-get -y install cuda-toolkit-11-8
-    echo 'export PATH=/usr/local/cuda/bin:$PATH' >> ~/.bashrc
-    export PATH=/usr/local/cuda/bin:$PATH
+# Install Python3 and venv if missing
+if ! command -v python3 &> /dev/null; then
+    echo "📦 Installing Python3..."
+    sudo apt update
+    sudo apt install -y python3 python3-pip python3-venv
 fi
 
-# Install Python packages
-echo "📦 Installing Python CUDA packages..."
-pip3 install cupy-cuda11x cudf-cu11 --extra-index-url=https://pypi.nvidia.com
+# Create virtual environment
+if [ ! -d "cuda-env" ]; then
+    echo "📦 Creating virtual environment..."
+    python3 -m venv cuda-env
+fi
+
+# Activate virtual environment
+source cuda-env/bin/activate
+
+# Upgrade pip
+pip install --upgrade pip
+
+# Install CUDA packages (skip toolkit, just runtime)
+echo "📦 Installing CUDA Python packages..."
+pip install cupy-cuda11x
+pip install cudf-cu11 --extra-index-url=https://pypi.nvidia.com
 
 echo "✅ Setup complete!"
 echo ""
-echo "🧪 Test with: python3 test_cuda_simple.py"
+echo "🧪 Test with:"
+echo "   source cuda-env/bin/activate"
+echo "   python3 test_cuda_simple.py"
