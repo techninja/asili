@@ -274,7 +274,11 @@ class GPUGenomicBuffer:
                         gpu_values = cp.array(values)
                         filtered[key] = gpu_values[weight_mask].get()
                     except ValueError:  # Unsupported dtype (strings)
-                        filtered[key] = np.array(values)[weight_mask_cpu]
+                        values_array = np.array(values)
+                        if values_array.ndim == 0:
+                            filtered[key] = values_array if weight_mask_cpu.any() else np.array([])
+                        else:
+                            filtered[key] = values_array[weight_mask_cpu]
             else:
                 filtered[key] = np.array([])
         
