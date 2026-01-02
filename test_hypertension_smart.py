@@ -244,38 +244,26 @@ def main():
             print(f"   ❌ Batch {batch_num} failed: {e}")
             raise e  # Terminate on batch failure
     
-    # Final merge
+    # Final merge using chunked approach to avoid memory exhaustion
     if completed_batches or all_results:
-        print(f"\n🔄 Loading and merging {len(completed_batches)} completed batches...")
+        print(f"\n🔄 Starting chunked merge for {len(completed_batches)} completed batches...")
         
-        # Load all batch results for final merge
-        final_results = []
-        for batch_num in completed_batches:
-            result_file = f'batch_{batch_num}_result.parquet'
-            if os.path.exists(result_file):
-                df = pd.read_parquet(result_file)
-                final_results.append(df)
-                print(f"   ✓ Loaded batch {batch_num}: {len(df):,} variants")
+        # Run chunked merge as subprocess to isolate memory
+        cmd = [sys.executable, 'chunked_merge.py']
+        result = subprocess.run(cmd, capture_output=True, text=True)
         
-        # Add any new results from this run
-        final_results.extend(all_results)
-        
-        final_df = pd.concat(final_results, ignore_index=True)
-        final_df = final_df.drop_duplicates('variant_id')
-        
-        final_df.to_parquet('hypertension_smart.parquet', compression='snappy')
-        
-        print(f"\n🎯 Final Results:")
-        print(f"   Unique variants: {len(final_df):,}")
-        print(f"   File size: {os.path.getsize('hypertension_smart.parquet')/1024**2:.1f}MB")
-        print("   ✅ Smart batching successful!")
-        
-        # Cleanup individual batch files
-        for batch_num in completed_batches:
-            result_file = f'batch_{batch_num}_result.parquet'
-            if os.path.exists(result_file):
-                os.unlink(result_file)
-        os.unlink(progress_file)
+        if result.returncode == 0:
+            print(result.stdout.strip())
+            print("   ✅ Chunked merge successful!")
+            
+            # Cleanup individual batch files
+            for batch_num in completed_batches:
+                result_file = f'batch_{batch_num}_result.parquet'
+                if os.path.exists(result_file):
+                    os.unlink(result_file)
+            os.unlink(progress_file)
+        else:
+            print(f"❌ Chunked merge failed: {result.stderr}")
 
 if __name__ == "__main__":
     main()
