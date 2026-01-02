@@ -125,13 +125,13 @@ def process_large_file_in_chunks(pgs_info, max_chunk_size=1000000):
     print(f"   📦 Split into {len(chunks)} chunks")
     return chunks
 
-def create_smart_batches(pgs_info, max_variants_per_batch=500000):
+def create_smart_batches(pgs_info, max_variants_per_batch=250000):
     """Create batches based on variant count, with file chunking for large files"""
     # First, chunk any large files
     processed_files = []
     for pgs in pgs_info:
-        if pgs['variants'] > 2000000:  # Chunk files > 2M variants
-            chunks = process_large_file_in_chunks(pgs, max_chunk_size=1000000)
+        if pgs['variants'] > 1000000:  # Chunk files > 1M variants
+            chunks = process_large_file_in_chunks(pgs, max_chunk_size=500000)
             processed_files.extend(chunks)
         else:
             processed_files.append(pgs)
@@ -175,14 +175,7 @@ def main():
             progress = json.load(f)
             completed_batches = set(progress.get('completed_batches', []))
             print(f"📂 Found {len(completed_batches)} completed batches")
-            
-            # Load existing results
-            for batch_num in completed_batches:
-                result_file = f'batch_{batch_num}_result.parquet'
-                if os.path.exists(result_file):
-                    df = pd.read_parquet(result_file)
-                    all_results.append(df)
-                    print(f"   ✓ Loaded batch {batch_num}: {len(df):,} variants")
+            # Don't load results into memory yet - wait until final merge
     
     # Download and analyze all files
     print("📊 Analyzing PGS files...")
@@ -192,7 +185,7 @@ def main():
     print(f"\n📈 Total: {len(pgs_info)} files, {total_variants:,} variants")
     
     # Create smart batches
-    batches = create_smart_batches(pgs_info, max_variants_per_batch=500000)
+    batches = create_smart_batches(pgs_info, max_variants_per_batch=250000)
     
     print(f"\n🎯 Created {len(batches)} smart batches:")
     for i, batch in enumerate(batches, 1):
@@ -252,9 +245,22 @@ def main():
             raise e  # Terminate on batch failure
     
     # Final merge
-    if all_results:
-        print(f"\n🔄 Merging {len(all_results)} batches...")
-        final_df = pd.concat(all_results, ignore_index=True)
+    if completed_batches or all_results:
+        print(f"\n🔄 Loading and merging {len(completed_batches)} completed batches...")
+        
+        # Load all batch results for final merge
+        final_results = []
+        for batch_num in completed_batches:
+            result_file = f'batch_{batch_num}_result.parquet'
+            if os.path.exists(result_file):
+                df = pd.read_parquet(result_file)
+                final_results.append(df)
+                print(f"   ✓ Loaded batch {batch_num}: {len(df):,} variants")
+        
+        # Add any new results from this run
+        final_results.extend(all_results)
+        
+        final_df = pd.concat(final_results, ignore_index=True)
         final_df = final_df.drop_duplicates('variant_id')
         
         final_df.to_parquet('hypertension_smart.parquet', compression='snappy')
