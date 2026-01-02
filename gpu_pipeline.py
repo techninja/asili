@@ -248,32 +248,31 @@ class GPUGenomicBuffer:
         # Filter valid weights
         if isinstance(variants['weight'], cp.ndarray):
             weight_mask = cp.abs(variants['weight']) > 0.001
+            weight_mask_cpu = weight_mask.get()
         else:
             weight_mask = np.abs(variants['weight']) > 0.001
+            weight_mask_cpu = weight_mask
         
         # Apply filter
         filtered = {}
         for key, values in variants.items():
             if isinstance(values, cp.ndarray):
-                filtered[key] = values[weight_mask]
+                filtered[key] = values[weight_mask].get()
             else:
-                filtered[key] = values[weight_mask]
+                filtered[key] = values[weight_mask_cpu]
         
-        filtered_ids = variant_ids[cp.asnumpy(weight_mask) if isinstance(weight_mask, cp.ndarray) else weight_mask]
+        filtered_ids = variant_ids[weight_mask_cpu]
         
         # GPU-accelerated deduplication
         if len(filtered_ids) > 0:
             unique_ids, unique_indices = cp.unique(cp.array(filtered_ids), return_index=True)
-            unique_indices = cp.asnumpy(unique_indices)
+            unique_indices_cpu = unique_indices.get()
             
             # Keep only unique variants
             for key, values in filtered.items():
-                if isinstance(values, cp.ndarray):
-                    filtered[key] = cp.asnumpy(values[unique_indices])
-                else:
-                    filtered[key] = values[unique_indices]
+                filtered[key] = values[unique_indices_cpu]
             
-            filtered['variant_id'] = cp.asnumpy(unique_ids)
+            filtered['variant_id'] = unique_ids.get()
         
         return filtered
     
