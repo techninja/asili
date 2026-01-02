@@ -251,14 +251,14 @@ class GPUGenomicBuffer:
         if len(variant_ids) == 0:
             return {'variant_id': np.array([]), 'weight': np.array([])}
         
-        # Filter valid weights on GPU
+        # Filter only for valid (non-null) weights, no threshold
         if isinstance(variants['weight'], cp.ndarray) and variants['weight'].size > 0:
-            weight_mask = cp.abs(variants['weight']) > 0.001
+            weight_mask = ~cp.isnan(variants['weight'])  # Only filter NaN
         else:
             weight_array = np.array(variants['weight']) if not isinstance(variants['weight'], np.ndarray) else variants['weight']
             if weight_array.size == 0:
                 return {'variant_id': np.array([]), 'weight': np.array([])}
-            weight_mask = cp.array(np.abs(weight_array) > 0.001)
+            weight_mask = cp.array(~np.isnan(weight_array))  # Only filter NaN
         
         weight_mask_cpu = weight_mask.get() if isinstance(weight_mask, cp.ndarray) else weight_mask
         filtered_count = np.sum(weight_mask_cpu)
