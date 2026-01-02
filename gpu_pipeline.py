@@ -258,35 +258,49 @@ class GPUGenomicBuffer:
                 return {'variant_id': np.array([]), 'weight': np.array([])}
             weight_mask = cp.array(np.abs(weight_array) > 0.001)
         
-        # Apply filter consistently
+        weight_mask_cpu = weight_mask.get() if isinstance(weight_mask, cp.ndarray) else weight_mask
+        
+        # Apply filter (handle strings on CPU)
         filtered = {}
         for key, values in variants.items():
             if isinstance(values, cp.ndarray) and values.size > 0:
                 filtered[key] = values[weight_mask].get()
             elif hasattr(values, '__len__') and len(values) > 0:
-                gpu_values = cp.array(values)
-                filtered[key] = gpu_values[weight_mask].get()
+                # Handle strings on CPU
+                if isinstance(values, np.ndarray) and values.dtype == object:
+                    filtered[key] = values[weight_mask_cpu]
+                else:
+                    try:
+                        gpu_values = cp.array(values)
+                        filtered[key] = gpu_values[weight_mask].get()
+                    except ValueError:  # Unsupported dtype (strings)
+                        filtered[key] = np.array(values)[weight_mask_cpu]
             else:
                 filtered[key] = np.array([])
         
-        # Filter variant IDs
-        if len(variant_ids) > 0:
-            gpu_variant_ids = cp.array(variant_ids)
-            filtered_ids = gpu_variant_ids[weight_mask].get()
-        else:
-            filtered_ids = np.array([])
+        # Filter variant IDs on CPU
+        filtered_ids = np.array(variant_ids)[weight_mask_cpu] if len(variant_ids) > 0 else np.array([])
         
-        # GPU-accelerated deduplication
+        # GPU-accelerated deduplication for numeric IDs
         if len(filtered_ids) > 0:
-            unique_ids, unique_indices = cp.unique(cp.array(filtered_ids), return_index=True)
-            unique_indices_cpu = unique_indices.get()
-            
-            # Keep only unique variants
-            for key, values in filtered.items():
-                if len(values) > 0:
-                    filtered[key] = values[unique_indices_cpu]
-            
-            filtered['variant_id'] = unique_ids.get()
+            try:
+                unique_ids, unique_indices = cp.unique(cp.array(filtered_ids), return_index=True)
+                unique_indices_cpu = unique_indices.get()
+                
+                # Keep only unique variants
+                for key, values in filtered.items():
+                    if len(values) > 0:
+                        filtered[key] = values[unique_indices_cpu]
+                
+                filtered['variant_id'] = unique_ids.get()
+            except ValueError:  # String variant IDs
+                unique_ids, unique_indices = np.unique(filtered_ids, return_index=True)
+                
+                for key, values in filtered.items():
+                    if len(values) > 0:
+                        filtered[key] = values[unique_indices]
+                
+                filtered['variant_id'] = unique_ids
         else:
             filtered['variant_id'] = np.array([])
         
