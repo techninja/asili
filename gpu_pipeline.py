@@ -98,8 +98,13 @@ class GPUGenomicBuffer:
     def _load_pgs_file(self, file_path):
         """Load PGS file with exact format detection from original pipeline"""
         try:
-            with gzip.open(file_path, 'rt') as f:
-                lines = f.readlines()
+            # Check if it's a chunk file (uncompressed) or regular gzipped file
+            if '.chunk_' in file_path:
+                with open(file_path, 'r') as f:
+                    lines = f.readlines()
+            else:
+                with gzip.open(file_path, 'rt') as f:
+                    lines = f.readlines()
             
             # Find header (skip comments)
             header_idx = None
