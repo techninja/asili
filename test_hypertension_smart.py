@@ -10,8 +10,9 @@ import json
 import os
 import time
 import pandas as pd
+import subprocess
+import sys
 from pathlib import Path
-from gpu_pipeline import GPUGenomicBuffer
 
 HYPERTENSION_PGS_IDS = [
     "PGS000706", "PGS001320", "PGS001838", "PGS002047", "PGS002296",
@@ -208,27 +209,41 @@ def main():
         print(f"\n🚀 Processing Batch {batch_num}: {batch_variants:,} variants")
         
         try:
-            buffer = GPUGenomicBuffer()
-            batch_output = f'batch_{batch_num}.parquet'
+            # Write batch to temp file
+            batch_file = f'temp_batch_{batch_num}.json'
+            with open(batch_file, 'w') as f:
+                json.dump(batch, f)
+            
+            # Run batch in subprocess to prevent memory leaks
+            cmd = [sys.executable, 'batch_runner.py', batch_file, str(batch_num), batch_output]
             
             start_time = time.time()
-            result_count = buffer.process_pgs_files_batch(batch, batch_output)
+            result = subprocess.run(cmd, capture_output=True, text=True, timeout=1200)
             batch_time = time.time() - start_time
             
-            print(f"   ✅ {result_count:,} unique variants in {batch_time:.1f}s")
+            # Cleanup temp file
+            if os.path.exists(batch_file):
+                os.unlink(batch_file)
             
-            # Save results permanently
-            if os.path.exists(batch_output):
-                df = pd.read_parquet(batch_output)
-                result_file = f'batch_{batch_num}_result.parquet'
-                df.to_parquet(result_file, compression='snappy')
-                all_results.append(df)
-                os.unlink(batch_output)
+            if result.returncode == 0:
+                print(f"   ✅ Batch completed in {batch_time:.1f}s")
+                print(result.stdout.strip())
                 
-                # Update progress
-                completed_batches.add(batch_num)
-                with open(progress_file, 'w') as f:
-                    json.dump({'completed_batches': list(completed_batches)}, f)
+                # Load results
+                if os.path.exists(batch_output):
+                    df = pd.read_parquet(batch_output)
+                    result_file = f'batch_{batch_num}_result.parquet'
+                    df.to_parquet(result_file, compression='snappy')
+                    all_results.append(df)
+                    os.unlink(batch_output)
+                    
+                    # Update progress
+                    completed_batches.add(batch_num)
+                    with open(progress_file, 'w') as f:
+                        json.dump({'completed_batches': list(completed_batches)}, f)
+            else:
+                print(f"   ❌ Subprocess failed: {result.stderr}")
+                raise Exception(f"Batch {batch_num} subprocess failed")
             
         except Exception as e:
             print(f"   ❌ Batch {batch_num} failed: {e}")
