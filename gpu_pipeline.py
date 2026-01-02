@@ -89,12 +89,12 @@ class GPUGenomicBuffer:
         return len(final_result['variant_id'])
     
     def _load_pgs_file(self, file_path):
-        """Load PGS file and extract key columns"""
+        """Load PGS file with exact format detection from original pipeline"""
         try:
             with gzip.open(file_path, 'rt') as f:
                 lines = f.readlines()
             
-            # Find header
+            # Find header (skip comments)
             header_idx = None
             for i, line in enumerate(lines):
                 if not line.startswith('#') and line.strip():
@@ -105,47 +105,101 @@ class GPUGenomicBuffer:
                 return None
                 
             header = lines[header_idx].strip().split('\t')
-            data_lines = [line.strip().split('\t') for line in lines[header_idx+1:] 
-                         if line.strip() and not line.startswith('#')]
+            columns = header
+            
+            # Extract data lines (skip comments)
+            data_lines = []
+            for line in lines[header_idx+1:]:
+                if line.strip() and not line.startswith('#'):
+                    parts = line.strip().split('\t')
+                    if len(parts) == len(header):  # Handle column mismatches
+                        data_lines.append(parts)
             
             if len(data_lines) < 100:
                 return None
             
-            # Extract relevant columns
+            # Format detection (exact match to original pipeline)
+            if 'chr_name' in columns and 'chr_position' in columns and 'rsID' in columns:
+                format_type = 'STANDARD_SNP'
+            elif 'chr_name' in columns and 'chr_position' in columns and 'rsID' not in columns:
+                format_type = 'STANDARD_SNP_NO_RSID'
+            elif 'rsID' in columns and 'is_haplotype' in columns:
+                format_type = 'HLA_ALLELE'
+            elif 'rsID' in columns and 'chr_name' not in columns and 'is_haplotype' not in columns:
+                format_type = 'RSID_ONLY'
+            elif 'rsID' in columns and 'chr_name' in columns and 'chr_position' not in columns:
+                format_type = 'RSID_CHR'
+            else:
+                print(f"Unsupported format - columns: {', '.join(columns)}")
+                return None
+            
+            print(f"        Detected {format_type} format")
+            
+            # Create DataFrame
             df = pd.DataFrame(data_lines, columns=header)
             
-            # Standardize format
-            if 'chr_name' in df.columns and 'chr_position' in df.columns:
+            # Process based on format (matching original logic)
+            if format_type in ['STANDARD_SNP', 'STANDARD_SNP_NO_RSID']:
+                # Clean chromosome names and convert to numeric
+                chr_clean = df['chr_name'].str.replace('chr', '')
+                chr_numeric = []
+                for c in chr_clean:
+                    if c == 'X': chr_numeric.append(23)
+                    elif c == 'Y': chr_numeric.append(24)
+                    elif c in ['MT', 'M']: chr_numeric.append(25)
+                    else:
+                        try: chr_numeric.append(int(c))
+                        except: chr_numeric.append(0)
+                
+                # Convert positions
+                pos_numeric = []
+                for p in df['chr_position']:
+                    try: pos_numeric.append(int(p))
+                    except: pos_numeric.append(0)
+                
                 return {
-                    'chr': df['chr_name'].str.replace('chr', '').values,
-                    'pos': pd.to_numeric(df['chr_position'], errors='coerce').values,
+                    'format_type': format_type,
+                    'chr': np.array(chr_numeric, dtype=np.int32),
+                    'pos': np.array(pos_numeric, dtype=np.int32),
                     'effect_allele': df['effect_allele'].values,
                     'other_allele': df.get('other_allele', [''] * len(df)).values,
-                    'weight': pd.to_numeric(df['effect_weight'], errors='coerce').values
-                }
-            elif 'rsID' in df.columns:
-                return {
-                    'rsid': df['rsID'].values,
-                    'effect_allele': df['effect_allele'].values,
-                    'weight': pd.to_numeric(df['effect_weight'], errors='coerce').values
+                    'weight': pd.to_numeric(df['effect_weight'], errors='coerce').fillna(0).values
                 }
             
-            return None
+            elif format_type == 'HLA_ALLELE':
+                return {
+                    'format_type': format_type,
+                    'rsid': df['rsID'].values,
+                    'effect_allele': df['effect_allele'].values,
+                    'weight': pd.to_numeric(df['effect_weight'], errors='coerce').fillna(0).values
+                }
+            
+            else:  # RSID_ONLY, RSID_CHR
+                return {
+                    'format_type': format_type,
+                    'rsid': df['rsID'].values,
+                    'effect_allele': df['effect_allele'].values,
+                    'other_allele': df.get('other_allele', [''] * len(df)).values,
+                    'weight': pd.to_numeric(df['effect_weight'], errors='coerce').fillna(0).values
+                }
             
         except Exception as e:
             print(f"Error loading {file_path}: {e}")
             return None
     
     def _to_gpu_format(self, variants, pgs_id):
-        """Convert variants to GPU arrays"""
+        """Convert variants to GPU arrays with proper type handling"""
         gpu_variants = {}
         
         for key, values in variants.items():
-            if key in ['chr', 'pos']:
-                # Numeric arrays
+            if key in ['chr', 'pos'] and isinstance(values[0], (int, np.integer)):
+                # Numeric arrays - safe for GPU
                 gpu_variants[key] = cp.array(values, dtype=cp.int32)
+            elif key == 'weight':
+                # Float weights
+                gpu_variants[key] = cp.array(values, dtype=cp.float32)
             else:
-                # Keep strings on CPU for now (GPU string ops limited)
+                # Keep strings on CPU
                 gpu_variants[key] = values
         
         gpu_variants['pgs_id'] = pgs_id
