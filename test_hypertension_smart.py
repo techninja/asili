@@ -248,8 +248,8 @@ def main():
     if completed_batches or all_results:
         print(f"\n🔄 Starting chunked merge for {len(completed_batches)} completed batches...")
         
-        # Run chunked merge as subprocess to isolate memory
-        cmd = [sys.executable, 'chunked_merge.py']
+        # Run DuckDB merge instead of chunked pandas approach
+        cmd = [sys.executable, 'duckdb_merge.py']
         result = subprocess.run(cmd, capture_output=True, text=True)
         
         if result.returncode == 0:
