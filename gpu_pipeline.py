@@ -217,12 +217,18 @@ class GPUGenomicBuffer:
             
             if isinstance(chunks[0][key], cp.ndarray):
                 # GPU arrays - concatenate
-                arrays = [chunk[key] for chunk in chunks]
-                combined[key] = cp.concatenate(arrays)
+                arrays = [chunk[key] for chunk in chunks if len(chunk[key]) > 0]
+                if arrays:
+                    combined[key] = cp.concatenate(arrays)
+                else:
+                    combined[key] = cp.array([], dtype=chunks[0][key].dtype)
             else:
                 # CPU arrays - concatenate
-                arrays = [chunk[key] for chunk in chunks]
-                combined[key] = np.concatenate(arrays)
+                arrays = [chunk[key] for chunk in chunks if len(chunk[key]) > 0]
+                if arrays:
+                    combined[key] = np.concatenate(arrays)
+                else:
+                    combined[key] = np.array([], dtype=chunks[0][key].dtype)
         
         return combined
     
