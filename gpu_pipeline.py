@@ -179,7 +179,7 @@ class GPUGenomicBuffer:
                     'format_type': format_type,
                     'rsid': df['rsID'].values,
                     'effect_allele': df['effect_allele'].values,
-                    'other_allele': df.get('other_allele', [''] * len(df)).values,
+                    'other_allele': df.get('other_allele', pd.Series([''] * len(df))).values,
                     'weight': pd.to_numeric(df['effect_weight'], errors='coerce').fillna(0).values
                 }
             
@@ -320,12 +320,21 @@ class GPUGenomicBuffer:
     
     def _merge_final_gpu(self, chunks):
         """Final merge of all GPU results"""
+        if not chunks:
+            return {'variant_id': np.array([]), 'weight': np.array([])}
+        
         if len(chunks) == 1:
             return chunks[0]
         
+        # Filter out empty chunks
+        valid_chunks = [chunk for chunk in chunks if len(chunk.get('variant_id', [])) > 0]
+        
+        if not valid_chunks:
+            return {'variant_id': np.array([]), 'weight': np.array([])}
+        
         # Combine all chunks
-        all_variant_ids = np.concatenate([chunk['variant_id'] for chunk in chunks])
-        all_weights = np.concatenate([chunk['weight'] for chunk in chunks])
+        all_variant_ids = np.concatenate([chunk['variant_id'] for chunk in valid_chunks])
+        all_weights = np.concatenate([chunk['weight'] for chunk in valid_chunks])
         
         # Final GPU deduplication
         gpu_ids = cp.array(all_variant_ids)
