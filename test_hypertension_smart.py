@@ -204,6 +204,7 @@ def main():
             
         except Exception as e:
             print(f"   ❌ Batch {batch_num} failed: {e}")
+            raise e  # Terminate on batch failure
     
     # Final merge
     if all_results:

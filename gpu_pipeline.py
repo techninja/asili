@@ -192,10 +192,10 @@ class GPUGenomicBuffer:
         gpu_variants = {}
         
         for key, values in variants.items():
-            if key in ['chr', 'pos'] and isinstance(values[0], (int, np.integer)):
+            if key in ['chr', 'pos'] and len(values) > 0 and isinstance(values[0], (int, np.integer)):
                 # Numeric arrays - safe for GPU
                 gpu_variants[key] = cp.array(values, dtype=cp.int32)
-            elif key == 'weight':
+            elif key == 'weight' and len(values) > 0:
                 # Float weights
                 gpu_variants[key] = cp.array(values, dtype=cp.float32)
             else:
