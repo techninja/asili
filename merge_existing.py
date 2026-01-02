@@ -17,12 +17,12 @@ print(f"🦆 Merging {len(completed_batches)} completed batches with DuckDB...")
 # Create connection
 conn = duckdb.connect(':memory:')
 
-# Build union query
+# Build union query with explicit column selection
 union_parts = []
 for batch_num in sorted(completed_batches):
     result_file = f'batch_{batch_num}_result.parquet'
     if os.path.exists(result_file):
-        union_parts.append(f"SELECT * FROM '{result_file}'")
+        union_parts.append(f"SELECT variant_id, weight FROM '{result_file}'")
 
 print(f"   Found {len(union_parts)} batch files")
 
