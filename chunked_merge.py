@@ -8,6 +8,10 @@ import pandas as pd
 import os
 import json
 import sys
+import warnings
+
+# Suppress pandas FutureWarning about concatenation
+warnings.filterwarnings('ignore', category=FutureWarning)
 
 def chunked_merge(completed_batches, chunk_size=10):
     """Merge batch results in chunks to avoid memory exhaustion"""
