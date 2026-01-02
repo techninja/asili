@@ -245,6 +245,8 @@ class GPUGenomicBuffer:
     
     def _filter_and_dedupe_gpu(self, variants, variant_ids):
         """Filter and deduplicate using GPU sorting"""
+        print(f"        Input: {len(variant_ids)} variant IDs")
+        
         # Check if we have any data
         if len(variant_ids) == 0:
             return {'variant_id': np.array([]), 'weight': np.array([])}
@@ -259,6 +261,8 @@ class GPUGenomicBuffer:
             weight_mask = cp.array(np.abs(weight_array) > 0.001)
         
         weight_mask_cpu = weight_mask.get() if isinstance(weight_mask, cp.ndarray) else weight_mask
+        filtered_count = np.sum(weight_mask_cpu)
+        print(f"        After weight filter: {filtered_count} variants")
         
         # Apply filter (handle strings on CPU)
         filtered = {}
@@ -287,9 +291,11 @@ class GPUGenomicBuffer:
         
         # GPU-accelerated deduplication for numeric IDs
         if len(filtered_ids) > 0:
+            print(f"        Before deduplication: {len(filtered_ids)} variants")
             try:
                 unique_ids, unique_indices = cp.unique(cp.array(filtered_ids), return_index=True)
                 unique_indices_cpu = unique_indices.get()
+                print(f"        After deduplication: {len(unique_ids)} unique variants")
                 
                 # Keep only unique variants
                 for key, values in filtered.items():
