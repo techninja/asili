@@ -52,7 +52,14 @@ class GPUGenomicBuffer:
             # Convert to GPU arrays
             gpu_variants = self._to_gpu_format(variants, pgs_file['pgs_id'])
             gpu_chunks[gpu_id].append(gpu_variants)
-            total_variants += len(gpu_variants['chr'])
+            
+            # Count variants based on format
+            if 'chr' in gpu_variants:
+                total_variants += len(gpu_variants['chr'])
+            elif 'rsid' in gpu_variants:
+                total_variants += len(gpu_variants['rsid'])
+            else:
+                total_variants += len(gpu_variants.get('weight', []))
         
         print(f"   Loaded {total_variants} variants across {self.gpu_count} GPUs")
         
@@ -234,14 +241,18 @@ class GPUGenomicBuffer:
     
     def _generate_variant_ids_gpu(self, variants):
         """Generate variant IDs using GPU parallel processing"""
-        if 'chr' in variants and 'pos' in variants:
+        if 'chr' in variants and 'pos' in variants and len(variants['chr']) > 0:
             # Position-based IDs: chr:pos:effect:other
             # Use GPU for numeric operations, CPU for string concat
             chr_pos = variants['chr'] * 1000000000 + variants['pos']
             return cp.asnumpy(chr_pos)  # Convert back for string operations
-        else:
+        elif 'rsid' in variants and len(variants['rsid']) > 0:
             # rsID-based
-            return variants.get('rsid', np.array([]))
+            return variants['rsid']
+        else:
+            # Fallback to weight array length
+            weight_len = len(variants.get('weight', []))
+            return np.arange(weight_len) if weight_len > 0 else np.array([])
     
     def _filter_and_dedupe_gpu(self, variants, variant_ids):
         """Filter and deduplicate using GPU sorting"""
