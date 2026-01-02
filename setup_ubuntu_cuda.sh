@@ -25,10 +25,11 @@ fi
 # Create virtual environment
 if [ ! -d "cuda-env" ]; then
     echo "📦 Creating virtual environment..."
-    python3 -m venv cuda-env
+    python3 -m venv cuda-env --upgrade-deps
 fi
 
 # Activate virtual environment
+echo "🔧 Activating virtual environment..."
 source cuda-env/bin/activate
 
 # Upgrade pip
