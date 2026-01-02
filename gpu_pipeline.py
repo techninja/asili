@@ -245,23 +245,27 @@ class GPUGenomicBuffer:
     
     def _filter_and_dedupe_gpu(self, variants, variant_ids):
         """Filter and deduplicate using GPU sorting"""
-        # Filter valid weights
+        # Filter valid weights on GPU
         if isinstance(variants['weight'], cp.ndarray):
             weight_mask = cp.abs(variants['weight']) > 0.001
-            weight_mask_cpu = weight_mask.get()
         else:
-            weight_mask = np.abs(variants['weight']) > 0.001
-            weight_mask_cpu = weight_mask
+            weight_mask = cp.array(np.abs(variants['weight']) > 0.001)
         
-        # Apply filter
+        # Apply filter consistently on GPU
         filtered = {}
         for key, values in variants.items():
             if isinstance(values, cp.ndarray):
-                filtered[key] = values[weight_mask].get()
+                filtered_gpu = values[weight_mask]
+                filtered[key] = filtered_gpu.get()
             else:
-                filtered[key] = values[weight_mask_cpu]
+                # Convert CPU array to GPU for consistent indexing
+                gpu_values = cp.array(values)
+                filtered_gpu = gpu_values[weight_mask]
+                filtered[key] = filtered_gpu.get()
         
-        filtered_ids = variant_ids[weight_mask_cpu]
+        # Filter variant IDs
+        gpu_variant_ids = cp.array(variant_ids)
+        filtered_ids = gpu_variant_ids[weight_mask].get()
         
         # GPU-accelerated deduplication
         if len(filtered_ids) > 0:
