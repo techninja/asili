@@ -22,6 +22,15 @@ if ! command -v python3 &> /dev/null; then
     sudo apt install -y python3 python3-pip python3-venv
 fi
 
+# Install CUDA runtime libraries for CuPy
+echo "📦 Installing CUDA runtime libraries..."
+sudo apt update
+sudo apt install -y cuda-nvrtc-11-8 cuda-cudart-11-8
+
+# Add to library path
+echo 'export LD_LIBRARY_PATH=/usr/local/cuda-11.8/lib64:$LD_LIBRARY_PATH' >> ~/.bashrc
+export LD_LIBRARY_PATH=/usr/local/cuda-11.8/lib64:$LD_LIBRARY_PATH
+
 # Create virtual environment
 if [ ! -d "cuda-env" ]; then
     echo "📦 Creating virtual environment..."
@@ -35,13 +44,12 @@ source cuda-env/bin/activate
 # Upgrade pip
 pip install --upgrade pip
 
-# Install CUDA packages (skip toolkit, just runtime)
-echo "📦 Installing CUDA Python packages..."
+# Install CUDA packages (CuPy only - cuDF not supported on GTX 1070 Ti)
+echo "📦 Installing CuPy (cuDF not supported on Compute 6.1)..."
 pip install cupy-cuda11x
-pip install cudf-cu11 --extra-index-url=https://pypi.nvidia.com
 
 echo "✅ Setup complete!"
 echo ""
 echo "🧪 Test with:"
 echo "   source cuda-env/bin/activate"
-echo "   python3 test_cuda_simple.py"
+echo "   python3 test_cupy_numeric.py"
