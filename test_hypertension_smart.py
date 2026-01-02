@@ -267,6 +267,13 @@ def main():
             file_size = os.path.getsize('hypertension_smart.parquet')
             print(f"\n🎯 Final file created: {file_size/1024**2:.1f}MB")
             
+            # Validate the final file
+            print("📊 Validating final parquet file...")
+            validate_cmd = [sys.executable, 'validate_parquet.py', 'hypertension_smart.parquet']
+            validate_result = subprocess.run(validate_cmd, capture_output=True, text=True)
+            if validate_result.stdout:
+                print(validate_result.stdout.strip())
+            
             # Cleanup individual batch files
             for batch_num in completed_batches:
                 result_file = f'batch_{batch_num}_result.parquet'
