@@ -76,9 +76,9 @@ def main():
     print("📈 Expected: ~39M unique variants")
     print("")
     
-    # Download first 10 files for testing (full set would be huge)
-    test_pgs_ids = HYPERTENSION_PGS_IDS[:10]
-    print(f"🧪 Testing with first {len(test_pgs_ids)} files...")
+    # Download all files for full test
+    test_pgs_ids = HYPERTENSION_PGS_IDS
+    print(f"🧪 Processing all {len(test_pgs_ids)} files...")
     
     # Download files
     print("📥 Downloading PGS files...")
@@ -92,7 +92,7 @@ def main():
                 'path': file_path
             })
         
-        time.sleep(0.5)  # Rate limiting
+        time.sleep(0.2)  # Rate limiting
     
     if not pgs_files:
         print("❌ No files downloaded successfully")
