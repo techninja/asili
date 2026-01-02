@@ -289,43 +289,42 @@ class GPUGenomicBuffer:
         # Filter variant IDs on CPU
         filtered_ids = np.array(variant_ids)[weight_mask_cpu] if len(variant_ids) > 0 else np.array([])
         
-        # GPU-accelerated deduplication for numeric IDs
+        # GPU-accelerated sorting (no deduplication like CPU pipeline)
         if len(filtered_ids) > 0:
-            print(f"        Before deduplication: {len(filtered_ids)} variants")
+            print(f"        Before sorting: {len(filtered_ids)} variants")
             try:
-                unique_ids, unique_indices = cp.unique(cp.array(filtered_ids), return_index=True)
-                unique_indices_cpu = unique_indices.get()
-                print(f"        After deduplication: {len(unique_ids)} unique variants")
+                # Sort but don't deduplicate (match CPU pipeline)
+                sorted_indices = cp.argsort(cp.array(filtered_ids))
+                sorted_indices_cpu = sorted_indices.get()
                 
-                # Keep only unique variants
+                # Keep all variants, just sorted
                 for key, values in filtered.items():
                     try:
                         if len(values) > 0:
-                            filtered[key] = values[unique_indices_cpu]
+                            filtered[key] = values[sorted_indices_cpu]
                     except TypeError:
-                        # Scalar value, skip indexing
                         pass
                 
-                filtered['variant_id'] = unique_ids.get()
+                filtered['variant_id'] = np.array(filtered_ids)[sorted_indices_cpu]
+                print(f"        After sorting: {len(filtered['variant_id'])} variants")
             except ValueError:  # String variant IDs
-                unique_ids, unique_indices = np.unique(filtered_ids, return_index=True)
+                sorted_indices = np.argsort(filtered_ids)
                 
                 for key, values in filtered.items():
                     try:
                         if len(values) > 0:
-                            filtered[key] = values[unique_indices]
+                            filtered[key] = values[sorted_indices]
                     except TypeError:
-                        # Scalar value, skip indexing
                         pass
                 
-                filtered['variant_id'] = unique_ids
+                filtered['variant_id'] = filtered_ids[sorted_indices]
         else:
             filtered['variant_id'] = np.array([])
         
         return filtered
     
     def _merge_final_gpu(self, chunks):
-        """Final merge of all GPU results"""
+        """Final merge of all GPU results - sort only, no deduplication"""
         if not chunks:
             return {'variant_id': np.array([]), 'weight': np.array([])}
         
@@ -338,20 +337,16 @@ class GPUGenomicBuffer:
         if not valid_chunks:
             return {'variant_id': np.array([]), 'weight': np.array([])}
         
-        # Combine all chunks
+        # Combine all chunks (keep duplicates like CPU pipeline)
         all_variant_ids = np.concatenate([chunk['variant_id'] for chunk in valid_chunks])
         all_weights = np.concatenate([chunk['weight'] for chunk in valid_chunks])
         
-        # Final GPU deduplication
-        gpu_ids = cp.array(all_variant_ids)
-        gpu_weights = cp.array(all_weights)
-        
-        unique_ids, unique_indices = cp.unique(gpu_ids, return_index=True)
-        unique_weights = gpu_weights[unique_indices]
+        # Sort by variant ID (match CPU pipeline ORDER BY)
+        sort_indices = np.argsort(all_variant_ids)
         
         return {
-            'variant_id': cp.asnumpy(unique_ids),
-            'weight': cp.asnumpy(unique_weights)
+            'variant_id': all_variant_ids[sort_indices],
+            'weight': all_weights[sort_indices]
         }
     
     def _export_to_parquet(self, data, output_path):
