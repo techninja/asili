@@ -240,19 +240,28 @@ class GPUGenomicBuffer:
         return combined
     
     def _generate_variant_ids_gpu(self, variants):
-        """Generate variant IDs using GPU parallel processing"""
+        """Generate variant IDs using GPU parallel processing - always return strings"""
         if 'chr' in variants and 'pos' in variants and len(variants['chr']) > 0:
-            # Position-based IDs: chr:pos:effect:other
-            # Use GPU for numeric operations, CPU for string concat
-            chr_pos = variants['chr'] * 1000000000 + variants['pos']
-            return cp.asnumpy(chr_pos)  # Convert back for string operations
+            # Position-based IDs: chr:pos:effect:other - convert to strings
+            chr_array = cp.asnumpy(variants['chr']) if isinstance(variants['chr'], cp.ndarray) else variants['chr']
+            pos_array = cp.asnumpy(variants['pos']) if isinstance(variants['pos'], cp.ndarray) else variants['pos']
+            effect_array = variants['effect_allele']
+            other_array = variants['other_allele']
+            
+            # Create string variant IDs
+            variant_ids = []
+            for i in range(len(chr_array)):
+                variant_id = f"{chr_array[i]}:{pos_array[i]}:{effect_array[i]}:{other_array[i]}"
+                variant_ids.append(variant_id)
+            return np.array(variant_ids, dtype=str)
         elif 'rsid' in variants and len(variants['rsid']) > 0:
-            # rsID-based
-            return variants['rsid']
+            # rsID-based - ensure strings
+            rsids = variants['rsid']
+            return np.array(rsids, dtype=str)
         else:
             # Fallback to weight array length
             weight_len = len(variants.get('weight', []))
-            return np.arange(weight_len) if weight_len > 0 else np.array([])
+            return np.array([f"var_{i}" for i in range(weight_len)], dtype=str) if weight_len > 0 else np.array([], dtype=str)
     
     def _filter_and_dedupe_gpu(self, variants, variant_ids):
         """Filter and deduplicate using GPU sorting"""
@@ -337,7 +346,7 @@ class GPUGenomicBuffer:
     def _merge_final_gpu(self, chunks):
         """Final merge of all GPU results - sort only, no deduplication"""
         if not chunks:
-            return {'variant_id': np.array([]), 'weight': np.array([])}
+            return {'variant_id': np.array([], dtype=str), 'weight': np.array([])}
         
         if len(chunks) == 1:
             return chunks[0]
@@ -346,11 +355,14 @@ class GPUGenomicBuffer:
         valid_chunks = [chunk for chunk in chunks if len(chunk.get('variant_id', [])) > 0]
         
         if not valid_chunks:
-            return {'variant_id': np.array([]), 'weight': np.array([])}
+            return {'variant_id': np.array([], dtype=str), 'weight': np.array([])}
         
         # Combine all chunks (keep duplicates like CPU pipeline)
         all_variant_ids = np.concatenate([chunk['variant_id'] for chunk in valid_chunks])
         all_weights = np.concatenate([chunk['weight'] for chunk in valid_chunks])
+        
+        # Ensure variant IDs are strings
+        all_variant_ids = np.array(all_variant_ids, dtype=str)
         
         # Sort by variant ID (match CPU pipeline ORDER BY)
         sort_indices = np.argsort(all_variant_ids)

@@ -164,6 +164,25 @@ def main():
     print("🧬 Smart Batched Hypertension GPU Processing")
     print("=" * 60)
     
+    # Check for existing progress
+    progress_file = 'batch_progress.json'
+    completed_batches = set()
+    all_results = []
+    
+    if os.path.exists(progress_file):
+        with open(progress_file) as f:
+            progress = json.load(f)
+            completed_batches = set(progress.get('completed_batches', []))
+            print(f"📂 Found {len(completed_batches)} completed batches")
+            
+            # Load existing results
+            for batch_num in completed_batches:
+                result_file = f'batch_{batch_num}_result.parquet'
+                if os.path.exists(result_file):
+                    df = pd.read_parquet(result_file)
+                    all_results.append(df)
+                    print(f"   ✓ Loaded batch {batch_num}: {len(df):,} variants")
+    
     # Download and analyze all files
     print("📊 Analyzing PGS files...")
     pgs_info = download_and_size_pgs_files()
@@ -177,12 +196,14 @@ def main():
     print(f"\n🎯 Created {len(batches)} smart batches:")
     for i, batch in enumerate(batches, 1):
         batch_variants = sum(p['variants'] for p in batch)
-        print(f"   Batch {i}: {len(batch)} files, {batch_variants:,} variants")
+        status = "✅ DONE" if i in completed_batches else "⏳ TODO"
+        print(f"   Batch {i}: {len(batch)} files, {batch_variants:,} variants {status}")
     
-    # Process each batch
-    all_results = []
-    
+    # Process remaining batches
     for batch_num, batch in enumerate(batches, 1):
+        if batch_num in completed_batches:
+            continue
+            
         batch_variants = sum(p['variants'] for p in batch)
         print(f"\n🚀 Processing Batch {batch_num}: {batch_variants:,} variants")
         
@@ -196,11 +217,18 @@ def main():
             
             print(f"   ✅ {result_count:,} unique variants in {batch_time:.1f}s")
             
-            # Load results
+            # Save results permanently
             if os.path.exists(batch_output):
                 df = pd.read_parquet(batch_output)
+                result_file = f'batch_{batch_num}_result.parquet'
+                df.to_parquet(result_file, compression='snappy')
                 all_results.append(df)
                 os.unlink(batch_output)
+                
+                # Update progress
+                completed_batches.add(batch_num)
+                with open(progress_file, 'w') as f:
+                    json.dump({'completed_batches': list(completed_batches)}, f)
             
         except Exception as e:
             print(f"   ❌ Batch {batch_num} failed: {e}")
@@ -218,6 +246,13 @@ def main():
         print(f"   Unique variants: {len(final_df):,}")
         print(f"   File size: {os.path.getsize('hypertension_smart.parquet')/1024**2:.1f}MB")
         print("   ✅ Smart batching successful!")
+        
+        # Cleanup individual batch files
+        for batch_num in completed_batches:
+            result_file = f'batch_{batch_num}_result.parquet'
+            if os.path.exists(result_file):
+                os.unlink(result_file)
+        os.unlink(progress_file)
 
 if __name__ == "__main__":
     main()
