@@ -87,8 +87,8 @@ class GenomicOrchestrator:
         with open(batch_file, 'w') as f:
             json.dump(batch_files, f)
         
-        # Run GPU pipeline subprocess
-        cmd = [sys.executable, "gpu_pipeline.py", batch_file, output_file]
+        # Run DuckDB processor subprocess (no GPU/pandas)
+        cmd = [sys.executable, "duckdb_processor.py", batch_file, output_file]
         result = subprocess.run(cmd, capture_output=True, text=True, timeout=600)
         
         # Cleanup batch file
