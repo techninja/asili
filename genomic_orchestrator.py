@@ -97,7 +97,12 @@ class GenomicOrchestrator:
         if result.returncode == 0 and os.path.exists(output_file):
             return True
         else:
-            print(f"   Batch {batch_num} failed: {result.stderr}")
+            print(f"   Batch {batch_num} failed:")
+            print(f"   Return code: {result.returncode}")
+            if result.stdout:
+                print(f"   Stdout: {result.stdout}")
+            if result.stderr:
+                print(f"   Stderr: {result.stderr}")
             return False
     
     def merge_results(self, completed_batches):
@@ -120,7 +125,12 @@ class GenomicOrchestrator:
             print(result.stdout.strip())
             return True
         else:
-            print(f"Merge failed: {result.stderr}")
+            print(f"Merge failed:")
+            print(f"Return code: {result.returncode}")
+            if result.stdout:
+                print(f"Stdout: {result.stdout}")
+            if result.stderr:
+                print(f"Stderr: {result.stderr}")
             return False
     
     def run_pipeline(self, pgs_ids):
