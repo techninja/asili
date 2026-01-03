@@ -17,14 +17,14 @@ def duckdb_merge(completed_batches):
     # Create DuckDB connection
     conn = duckdb.connect(':memory:')
     
-    # Build UNION ALL query for all batch files
+    # Build UNION ALL query with explicit column selection
     batch_nums = sorted(completed_batches)
     union_parts = []
     
     for batch_num in batch_nums:
         result_file = f'batch_{batch_num}_result.parquet'
         if os.path.exists(result_file):
-            union_parts.append(f"SELECT * FROM '{result_file}'")
+            union_parts.append(f"SELECT variant_id, weight FROM '{result_file}'")
     
     if not union_parts:
         print("❌ No batch files found")
@@ -38,7 +38,7 @@ def duckdb_merge(completed_batches):
     # Execute merge with deduplication
     merge_query = f"""
     COPY (
-        SELECT DISTINCT * FROM ({union_query})
+        SELECT DISTINCT variant_id, weight FROM ({union_query})
         ORDER BY variant_id
     ) TO 'hypertension_smart.parquet' (FORMAT PARQUET, COMPRESSION SNAPPY)
     """
