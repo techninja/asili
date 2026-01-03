@@ -185,7 +185,7 @@ def main():
         "PGS005144", "PGS005153"
     ]
     
-    orchestrator = GenomicOrchestrator(trait_name="hypertension", max_variants_per_batch=50000)
+    orchestrator = GenomicOrchestrator(trait_name="hypertension", max_variants_per_batch=25000)
     orchestrator.run_pipeline(pgs_ids)
 
 if __name__ == "__main__":
