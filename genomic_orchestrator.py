@@ -28,37 +28,49 @@ class GenomicOrchestrator:
         with open(self.progress_file, 'w') as f:
             json.dump(progress, f)
     
+    def get_actual_variant_count(self, file_path):
+        """Count variants without loading full file into memory"""
+        try:
+            import gzip
+            with gzip.open(file_path, 'rt') as f:
+                count = 0
+                for line in f:
+                    if not line.startswith('#') and line.strip():
+                        count += 1
+                return max(0, count - 1)  # Subtract header
+        except:
+            return 50000  # Conservative fallback
+    
     def create_batches(self, pgs_ids):
-        """Create batch file lists - only file paths, no data loading"""
-        print(f"📦 Creating batches for {len(pgs_ids)} PGS files...")
+        """Create batch file lists with actual variant counts"""
+        print(f"📦 Analyzing {len(pgs_ids)} PGS files...")
         
-        # Get file sizes without loading data
+        # Get actual variant counts
         file_info = []
         for pgs_id in pgs_ids:
             cache_path = Path("pgs_cache") / f"{pgs_id}.txt.gz"
             if cache_path.exists():
-                # Estimate variants from file size (rough heuristic)
-                file_size = cache_path.stat().st_size
-                estimated_variants = min(file_size // 100, 2000000)  # Cap at 2M
+                variant_count = self.get_actual_variant_count(cache_path)
                 file_info.append({
                     "pgs_id": pgs_id,
                     "path": str(cache_path),
-                    "estimated_variants": estimated_variants
+                    "variants": variant_count
                 })
+                print(f"   {pgs_id}: {variant_count:,} variants")
         
-        # Create batches based on estimated variant counts
+        # Create batches based on actual variant counts
         batches = []
         current_batch = []
         current_count = 0
         
         for file in file_info:
-            if current_count + file["estimated_variants"] > self.max_variants_per_batch and current_batch:
+            if current_count + file["variants"] > self.max_variants_per_batch and current_batch:
                 batches.append(current_batch)
                 current_batch = []
                 current_count = 0
             
             current_batch.append(file)
-            current_count += file["estimated_variants"]
+            current_count += file["variants"]
         
         if current_batch:
             batches.append(current_batch)
@@ -173,7 +185,7 @@ def main():
         "PGS005144", "PGS005153"
     ]
     
-    orchestrator = GenomicOrchestrator(trait_name="hypertension", max_variants_per_batch=100000)
+    orchestrator = GenomicOrchestrator(trait_name="hypertension", max_variants_per_batch=50000)
     orchestrator.run_pipeline(pgs_ids)
 
 if __name__ == "__main__":
