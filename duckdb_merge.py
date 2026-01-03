@@ -66,10 +66,10 @@ def duckdb_merge(completed_batches):
         conn.close()
 
 if __name__ == "__main__":
-    # Load progress file
-    with open('batch_progress.json') as f:
-        progress = json.load(f)
-        completed_batches = set(progress.get('completed_batches', []))
+    # Load merge input from orchestrator
+    with open('merge_input.json') as f:
+        merge_data = json.load(f)
+        completed_batches = set(merge_data.get('completed_batches', []))
     
     success = duckdb_merge(completed_batches)
     sys.exit(0 if success else 1)
