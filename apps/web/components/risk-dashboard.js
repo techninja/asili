@@ -100,28 +100,137 @@ export class RiskDashboard extends HTMLElement {
             return;
         }
         
-        this.renderTraitCardsForIndividual(state.selectedIndividual);
+        this.filterTraits(state.selectedIndividual);
     }
 
     async renderTraitCardsForIndividual(individualId) {
         const grid = this.shadowRoot.getElementById('traitsGrid');
-        grid.innerHTML = '';
         
         if (this.availableTraits.length === 0) {
             grid.innerHTML = '<div class="loading">No traits available</div>';
             return;
         }
         
-        // Group traits by category
-        const categoryGroups = {};
+        // Apply filters and render
+        this.filterTraits(individualId);
+    }
+
+    populateCategoryFilter() {
+        const categorySelect = this.shadowRoot.getElementById('categorySelect');
+        if (!categorySelect) return;
+        
+        // Get all unique categories
+        const categories = new Set();
         this.availableTraits.forEach(trait => {
-            if (!categoryGroups[trait.category]) {
-                categoryGroups[trait.category] = [];
-            }
-            categoryGroups[trait.category].push(trait);
+            trait.categories?.forEach(cat => categories.add(cat));
         });
         
-        for (const [categoryName, traits] of Object.entries(categoryGroups)) {
+        // Sort categories, but put "Other Conditions" last
+        const sortedCategories = Array.from(categories).sort((a, b) => {
+            if (a === 'Other Conditions') return 1;
+            if (b === 'Other Conditions') return -1;
+            return a.localeCompare(b);
+        });
+        
+        // Clear existing options (except "All Categories")
+        while (categorySelect.children.length > 1) {
+            categorySelect.removeChild(categorySelect.lastChild);
+        }
+        
+        // Add category options
+        sortedCategories.forEach(category => {
+            const option = document.createElement('option');
+            option.value = category;
+            option.textContent = category;
+            categorySelect.appendChild(option);
+        });
+    }
+
+    filterTraits(individualId = null) {
+        const grid = this.shadowRoot.getElementById('traitsGrid');
+        const searchInput = this.shadowRoot.getElementById('searchInput');
+        const categorySelect = this.shadowRoot.getElementById('categorySelect');
+        const sortSelect = this.shadowRoot.getElementById('sortSelect');
+        const filterStats = this.shadowRoot.getElementById('filterStats');
+        
+        if (!grid || !searchInput || !categorySelect || !sortSelect) return;
+        
+        const searchTerm = searchInput.value.toLowerCase().trim();
+        const selectedCategory = categorySelect.value;
+        const sortBy = sortSelect.value;
+        
+        // Filter traits
+        let filteredTraits = this.availableTraits.filter(trait => {
+            // Search filter
+            const matchesSearch = !searchTerm || 
+                trait.name.toLowerCase().includes(searchTerm) ||
+                trait.description?.toLowerCase().includes(searchTerm) ||
+                trait.categories?.some(cat => cat.toLowerCase().includes(searchTerm));
+            
+            // Category filter
+            const matchesCategory = !selectedCategory || 
+                trait.categories?.includes(selectedCategory);
+            
+            return matchesSearch && matchesCategory;
+        });
+        
+        // Sort traits
+        filteredTraits.sort((a, b) => {
+            switch (sortBy) {
+                case 'name-desc':
+                    return b.name.localeCompare(a.name);
+                case 'variants':
+                    return (b.variant_count || 0) - (a.variant_count || 0);
+                case 'pgs-count':
+                    return Object.keys(b.pgs_metadata || {}).length - Object.keys(a.pgs_metadata || {}).length;
+                case 'category':
+                    const aCat = a.categories?.[0] || 'Other';
+                    const bCat = b.categories?.[0] || 'Other';
+                    return aCat.localeCompare(bCat) || a.name.localeCompare(b.name);
+                default: // 'name'
+                    return a.name.localeCompare(b.name);
+            }
+        });
+        
+        // Update filter stats
+        filterStats.textContent = `Showing ${filteredTraits.length} of ${this.availableTraits.length} traits`;
+        
+        // Render filtered traits
+        this.renderFilteredTraits(filteredTraits, individualId);
+    }
+
+    async renderFilteredTraits(filteredTraits, individualId) {
+        const grid = this.shadowRoot.getElementById('traitsGrid');
+        grid.innerHTML = '';
+        
+        if (filteredTraits.length === 0) {
+            grid.innerHTML = '<div class="loading">No traits match your filters</div>';
+            return;
+        }
+        
+        // Group traits by category for display
+        const categoryGroups = {};
+        filteredTraits.forEach(trait => {
+            trait.categories?.forEach(category => {
+                if (!categoryGroups[category]) {
+                    categoryGroups[category] = [];
+                }
+                if (!categoryGroups[category].find(t => t.id === trait.id)) {
+                    categoryGroups[category].push(trait);
+                }
+            });
+        });
+        
+        // Sort categories (Other Conditions last)
+        const sortedCategories = Object.keys(categoryGroups).sort((a, b) => {
+            if (a === 'Other Conditions') return 1;
+            if (b === 'Other Conditions') return -1;
+            return a.localeCompare(b);
+        });
+        
+        for (const categoryName of sortedCategories) {
+            const traits = categoryGroups[categoryName];
+            
             // Create category header
             const categoryHeader = document.createElement('div');
             categoryHeader.className = 'family-header';
@@ -137,7 +246,7 @@ export class RiskDashboard extends HTMLElement {
             
             for (const trait of traits) {
                 Debug.log(2, 'RiskDashboard', 'Creating card for trait:', trait.name);
-                const cached = await this.processor.getCachedResult(individualId, trait.id);
+                const cached = individualId ? await this.processor.getCachedResult(individualId, trait.id) : null;
                 const card = this.createTraitCard(trait, individualId, cached);
                 categoryGrid.appendChild(card);
             }
@@ -155,10 +264,10 @@ export class RiskDashboard extends HTMLElement {
         card.innerHTML = `
             <div class="trait-header">
                 <h3 class="trait-name">${trait.name}</h3>
-                <span class="trait-category">${trait.category}</span>
+                <span class="trait-category">${trait.categories?.[0] || 'Other'}</span>
             </div>
             <div class="trait-stats">
-                ${trait.pgs_ids?.length || 0} PGS scores | ${trait.variant_count?.toLocaleString() || 'Unknown'} variants
+                ${Object.keys(trait.pgs_metadata || {}).length} PGS scores | ${trait.variant_count?.toLocaleString() || 'Unknown'} variants
             </div>
             ${cached ? this.renderCachedResult(cached, individualId) : this.renderAnalyzeButton(trait.id, individualId)}
         `;
@@ -181,11 +290,15 @@ export class RiskDashboard extends HTMLElement {
                 throw new Error('Processor not available');
             }
             
-            // Get trait families from processor
-            const traitFamilies = this.processor.getTraitFamilies();
+            // Get trait categories from processor
+            const traitCategories = this.processor.getTraitCategories();
             this.availableTraits = this.processor.getAllTraits();
             
             Debug.log(1, 'RiskDashboard', 'Loaded traits from processor:', this.availableTraits.length);
+            
+            // Populate category filter
+            this.populateCategoryFilter();
+            
             useAppStore.getState().setTraitsLoaded(true);
             
             // Show message to add individual or trigger update if individual exists
@@ -477,6 +590,52 @@ export class RiskDashboard extends HTMLElement {
     render() {
         this.shadowRoot.innerHTML = `
             <style>
+                .filter-bar {
+                    background: #f8f9fa;
+                    border: 1px solid #dee2e6;
+                    border-radius: 8px;
+                    padding: 15px;
+                    margin-bottom: 20px;
+                    display: flex;
+                    gap: 15px;
+                    align-items: center;
+                    flex-wrap: wrap;
+                }
+                .filter-group {
+                    display: flex;
+                    align-items: center;
+                    gap: 8px;
+                }
+                .filter-group label {
+                    font-size: 14px;
+                    font-weight: 500;
+                    color: #495057;
+                }
+                .search-input {
+                    padding: 6px 12px;
+                    border: 1px solid #ced4da;
+                    border-radius: 4px;
+                    font-size: 14px;
+                    width: 200px;
+                }
+                .category-select {
+                    padding: 6px 12px;
+                    border: 1px solid #ced4da;
+                    border-radius: 4px;
+                    font-size: 14px;
+                    min-width: 150px;
+                }
+                .sort-select {
+                    padding: 6px 12px;
+                    border: 1px solid #ced4da;
+                    border-radius: 4px;
+                    font-size: 14px;
+                }
+                .filter-stats {
+                    margin-left: auto;
+                    font-size: 12px;
+                    color: #6c757d;
+                }
                 .family-header { margin: 30px 0 15px 0; }
                 .family-header h2 { margin: 0 0 5px 0; color: #333; font-size: 24px; }
                 .family-header p { margin: 0; color: #666; font-size: 14px; }
@@ -562,10 +721,48 @@ export class RiskDashboard extends HTMLElement {
                 .score-distribution h5 { margin: 0 0 10px 0; font-size: 12px; }
                 .score-distribution canvas { max-width: 100%; height: auto; }
             </style>
+            <div class="filter-bar">
+                <div class="filter-group">
+                    <label>Search:</label>
+                    <input type="text" class="search-input" placeholder="Search traits..." id="searchInput">
+                </div>
+                <div class="filter-group">
+                    <label>Category:</label>
+                    <select class="category-select" id="categorySelect">
+                        <option value="">All Categories</option>
+                    </select>
+                </div>
+                <div class="filter-group">
+                    <label>Sort by:</label>
+                    <select class="sort-select" id="sortSelect">
+                        <option value="name">Name (A-Z)</option>
+                        <option value="name-desc">Name (Z-A)</option>
+                        <option value="variants">Variant Count</option>
+                        <option value="pgs-count">PGS Count</option>
+                        <option value="category">Category</option>
+                    </select>
+                </div>
+                <div class="filter-stats" id="filterStats">
+                    Showing 0 traits
+                </div>
+            </div>
             <div id="traitsGrid" class="traits-container">
                 <div class="loading">Loading traits...</div>
             </div>
         `;
+        
+        // Add event listeners for filters
+        this.shadowRoot.getElementById('searchInput').addEventListener('input', (e) => {
+            this.filterTraits();
+        });
+        
+        this.shadowRoot.getElementById('categorySelect').addEventListener('change', (e) => {
+            this.filterTraits();
+        });
+        
+        this.shadowRoot.getElementById('sortSelect').addEventListener('change', (e) => {
+            this.filterTraits();
+        });
     }
 
     async analyzeRisk(traitId, individualId, buttonElement) {
@@ -613,10 +810,10 @@ export class RiskDashboard extends HTMLElement {
             card.innerHTML = `
                 <div class="trait-header">
                     <h3 class="trait-name">${trait.name}</h3>
-                    <span class="trait-category">${trait.category}</span>
+                    <span class="trait-category">${trait.categories?.[0] || 'Other'}</span>
                 </div>
                 <div class="trait-stats">
-                    ${trait.pgs_ids?.length || 0} PGS scores | ${trait.variant_count?.toLocaleString() || 'Unknown'} variants
+                    ${Object.keys(trait.pgs_metadata || {}).length} PGS scores | ${trait.variant_count?.toLocaleString() || 'Unknown'} variants
                 </div>
                 ${this.renderCachedResult(result, individualId)}
             `;
@@ -665,10 +862,10 @@ export class RiskDashboard extends HTMLElement {
                 card.innerHTML = `
                     <div class="trait-header">
                         <h3 class="trait-name">${trait.name}</h3>
-                        <span class="trait-category">${trait.category}</span>
+                        <span class="trait-category">${trait.categories?.[0] || 'Other'}</span>
                     </div>
                     <div class="trait-stats">
-                        ${trait.pgs_ids?.length || 0} PGS scores | ${trait.variant_count?.toLocaleString() || 'Unknown'} variants
+                        ${Object.keys(trait.pgs_metadata || {}).length} PGS scores | ${trait.variant_count?.toLocaleString() || 'Unknown'} variants
                     </div>
                     ${this.renderAnalyzeButton(traitId, individualId)}
                 `;

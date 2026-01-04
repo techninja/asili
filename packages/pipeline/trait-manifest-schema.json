@@ -1,0 +1,123 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Asili Trait Manifest Schema",
+  "type": "object",
+  "required": ["traits", "generated_at"],
+  "properties": {
+    "traits": {
+      "type": "object",
+      "patternProperties": {
+        "^(MONDO:[0-9]{7}|EFO_[0-9]{7})$": {
+          "$ref": "#/definitions/TraitManifestEntry"
+        }
+      },
+      "additionalProperties": false
+    },
+    "generated_at": {
+      "type": "string",
+      "format": "date-time"
+    }
+  },
+  "definitions": {
+    "TraitManifestEntry": {
+      "type": "object",
+      "required": ["name", "categories", "variant_count", "file_path", "pgs_metadata", "last_updated", "actual_variants", "file_size_mb", "last_processed", "expected_variants", "weight", "pgs_ids", "mondo_id"],
+      "properties": {
+        "name": {
+          "type": "string",
+          "minLength": 1
+        },
+        "description": {
+          "type": "string"
+        },
+        "categories": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "uniqueItems": true,
+          "minItems": 1
+        },
+        "variant_count": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "file_path": {
+          "type": "string",
+          "minLength": 1
+        },
+        "pgs_metadata": {
+          "type": "object",
+          "patternProperties": {
+            "^PGS[0-9]{6}$": {
+              "$ref": "#/definitions/PGSMetadata"
+            }
+          },
+          "additionalProperties": false
+        },
+        "source_hashes": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "object"
+          }
+        },
+        "last_updated": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "actual_variants": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "file_size_mb": {
+          "type": "number",
+          "minimum": 0
+        },
+        "last_processed": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "expected_variants": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "weight": {
+          "type": "number",
+          "minimum": 0
+        },
+        "pgs_ids": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "mondo_id": {
+          "type": "string"
+        },
+        "last_validated": {
+          "type": "string",
+          "format": "date-time"
+        }
+      },
+      "additionalProperties": false
+    },
+    "PGSMetadata": {
+      "type": "object",
+      "required": ["name", "trait"],
+      "properties": {
+        "name": {
+          "type": "string",
+          "minLength": 1
+        },
+        "trait": {
+          "type": "string",
+          "minLength": 1
+        },
+        "ancestry": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": false
+    }
+  }
+}

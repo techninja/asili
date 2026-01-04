@@ -16,6 +16,7 @@ async function main() {
     const startTime = Date.now();
     let processedCount = 0;
     let errorCount = 0;
+    const errors = [];
     
     try {
         // Load trait catalog
@@ -26,8 +27,11 @@ async function main() {
         console.log(`📊 Found ${Object.keys(traitConfigs).length} trait configurations`);
         console.log('');
         
-        // Process each trait
-        for (const [traitName, config] of Object.entries(traitConfigs)) {
+        // Process each trait - sort by variant count (largest first) for better memory management
+        const sortedTraits = Object.entries(traitConfigs)
+            .sort(([,a], [,b]) => (b.expected_variants || 0) - (a.expected_variants || 0));
+        
+        for (const [traitName, config] of sortedTraits) {
             const displayName = `${config.name || config.title || traitName} (${config.mondo_id || traitName})`;
             const traitStartTime = Date.now();
             
@@ -50,18 +54,38 @@ async function main() {
             } catch (error) {
                 const traitDuration = Math.round((Date.now() - traitStartTime) / 1000);
                 console.error(`   ❌ Error processing ${displayName}: ${error.message} (${traitDuration}s)`);
+                errors.push({
+                    mondo_id: config.mondo_id || traitName,
+                    title: config.title || config.name || traitName,
+                    error: error.message,
+                    duration: traitDuration
+                });
                 errorCount++;
                 console.log('');
             }
         }
         
         // Summary
-        const duration = Math.round((Date.now() - startTime) / 1000);
+        const totalDuration = Math.round((Date.now() - startTime) / 1000);
+        const minutes = Math.floor(totalDuration / 60);
+        const seconds = totalDuration % 60;
+        const durationStr = minutes > 0 ? `${minutes}m ${seconds}s` : `${seconds}s`;
+        
         console.log('=====================================');
         console.log('🎉 ETL Pipeline Complete!');
         console.log(`📈 Processed: ${processedCount} traits`);
         console.log(`⚠️  Errors: ${errorCount} traits`);
-        console.log(`⏱️  Duration: ${duration}s`);
+        console.log(`⏱️  Total Duration: ${durationStr}`);
+        
+        if (errors.length > 0) {
+            console.log('');
+            console.log('❌ ERROR SUMMARY:');
+            console.log('==================');
+            for (const err of errors) {
+                console.log(`   ${err.mondo_id} (${err.title}): ${err.error} (${err.duration}s)`);
+            }
+        }
+        
         console.log('🚀 Trait packs ready for serving');
         
         if (errorCount > 0) {

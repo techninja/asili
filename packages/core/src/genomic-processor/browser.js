@@ -184,7 +184,7 @@ export class BrowserGenomicProcessor extends GenomicProcessor {
       
       progressCallback?.(`Processing batch ${chunkNum}/${totalChunks}...`, progress);
       const chunkResult = await this.conn.query(`
-        SELECT pgs_id, variant_id, chr_name, chr_position, effect_allele, effect_weight 
+        SELECT pgs_id, variant_id, effect_allele, effect_weight 
         FROM trait_data 
         LIMIT ${CHUNK_SIZE} OFFSET ${offset}
       `);
@@ -202,14 +202,21 @@ export class BrowserGenomicProcessor extends GenomicProcessor {
         }
         pgsBreakdown.get(trait.pgs_id).total++;
         
-        // Fast lookup
+        // Fast lookup - try both rsid and position-based matching
         let genotype = null;
-        if (trait.variant_id && rsidMap.has(trait.variant_id)) {
-          genotype = rsidMap.get(trait.variant_id);
-        } else if (trait.chr_name && trait.chr_position) {
-          const posKey = `${trait.chr_name}:${trait.chr_position}`;
-          if (posMap.has(posKey)) {
-            genotype = posMap.get(posKey);
+        if (trait.variant_id) {
+          // Try direct rsid match first
+          if (rsidMap.has(trait.variant_id)) {
+            genotype = rsidMap.get(trait.variant_id);
+          } else if (trait.variant_id.includes(':')) {
+            // Try position-based match for chr:pos:ref:alt format
+            const parts = trait.variant_id.split(':');
+            if (parts.length >= 2) {
+              const posKey = `${parts[0]}:${parts[1]}`;
+              if (posMap.has(posKey)) {
+                genotype = posMap.get(posKey);
+              }
+            }
           }
         }
         

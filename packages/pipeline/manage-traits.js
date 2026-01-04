@@ -37,6 +37,15 @@ function validateCatalog(catalog) {
                 console.log(chalk.gray(`    Value: ${JSON.stringify(error.data)}`));
             }
         });
+        
+        // Debug: show actual catalog structure
+        console.log(chalk.yellow('\nActual catalog structure:'));
+        console.log(chalk.gray(JSON.stringify(Object.keys(catalog), null, 2)));
+        if (catalog.traits) {
+            console.log(chalk.yellow('Traits keys:'));
+            console.log(chalk.gray(JSON.stringify(Object.keys(catalog.traits), null, 2)));
+        }
+        
         return false;
     }
     
@@ -59,7 +68,7 @@ async function loadCatalog() {
     } catch (error) {
         if (error.code === 'ENOENT') {
             console.log(chalk.yellow('No existing catalog found, creating new one...'));
-            return { trait_families: {} };
+            return { traits: {} };
         }
         throw error;
     }
@@ -74,44 +83,54 @@ async function saveCatalog(catalog) {
     console.log(chalk.green('✓ Catalog saved'));
 }
 
-async function searchPGS(query) {
-    console.log(chalk.blue(`Searching PGS Catalog for: ${query}`));
+async function lookupMondoTrait(mondoId) {
+    try {
+        const traitInfo = await pgsApiClient.getTraitInfo(mondoId);
+        
+        // If this is an EFO trait, try to find the MONDO equivalent
+        let actualMondoId = mondoId;
+        if (mondoId.startsWith('EFO_') && traitInfo.trait_mapped_terms) {
+            const mondoTerm = traitInfo.trait_mapped_terms.find(term => term.startsWith('MONDO:'));
+            if (mondoTerm) {
+                actualMondoId = mondoTerm;
+                console.log(chalk.blue(`  Found MONDO equivalent: ${mondoTerm}`));
+            }
+        }
+        
+        return {
+            mondo_id: actualMondoId,
+            source_id: mondoId, // Keep original for API calls
+            title: traitInfo.label || 'Unknown trait',
+            description: traitInfo.description || '',
+            pgs_count: (traitInfo.associated_pgs_ids?.length || 0) + (traitInfo.child_associated_pgs_ids?.length || 0)
+        };
+    } catch (error) {
+        return null;
+    }
+}
+
+async function searchMondoTraits(query) {
+    console.log(chalk.blue(`Searching MONDO traits for: ${query}`));
     
     try {
         const traitData = await pgsApiClient.searchTraits(query);
         const results = [];
         
-        // Get PGS scores for each trait
-        for (const trait of traitData.results.slice(0, 3)) { // Limit to 3 traits
-            console.log(chalk.gray(`  Found trait: ${trait.label}`));
-            const pgsIds = trait.associated_pgs_ids.concat(trait.child_associated_pgs_ids || []);
-            
-            for (const pgsId of pgsIds.slice(0, 10)) { // Limit to 10 PGS per trait
-                try {
-                    const scoreData = await pgsApiClient.getScore(pgsId);
-                    results.push({
-                        id: scoreData.id,
-                        name: trait.label,
-                        description: trait.description || scoreData.trait_reported || 'No description available',
-                        variant_count: scoreData.variants_number,
-                        samples_ancestry: scoreData.samples_ancestry,
-                        publication: scoreData.publication?.title,
-                        ftp_scoring_file: scoreData.ftp_scoring_file,
-                        trait_efo: trait.efo_id,
-                        trait_ontology: trait.ontology_trait_name,
-                        scoreData: scoreData // Keep full score data for later use
-                    });
-                    console.log(chalk.green(`    ✓ ${pgsId}: ${scoreData.variants_number?.toLocaleString()} variants`));
-                } catch (error) {
-                    console.log(chalk.yellow(`    ⚠ Skipping ${pgsId}: ${error.message}`));
-                }
+        for (const trait of traitData.results.slice(0, 10)) {
+            if (trait.ontology_trait_name && trait.ontology_trait_name.startsWith('MONDO:')) {
+                const pgsCount = (trait.associated_pgs_ids || []).length + (trait.child_associated_pgs_ids || []).length;
+                results.push({
+                    mondo_id: trait.ontology_trait_name,
+                    title: trait.label,
+                    description: trait.description || '',
+                    pgs_count: pgsCount
+                });
             }
         }
         
-        console.log(chalk.blue(`Found ${results.length} total PGS scores`));
         return results;
     } catch (error) {
-        console.log(chalk.red('Error searching PGS Catalog:', error.message));
+        console.log(chalk.red('Error searching MONDO traits:', error.message));
         return [];
     }
 }
@@ -188,8 +207,17 @@ async function refreshTraitData() {
         // Fallback: try trait search if direct search failed
         if (allPgsIds.length === 0) {
             console.log(chalk.yellow(`  No direct results, trying trait search...`));
-            const titleResults = await searchPGS(trait.title);
-            allPgsIds = titleResults.map(r => r.id).filter(id => id && id.match(/^PGS[0-9]{6}$/));
+            const searchResults = await searchMondoTraits(trait.title);
+            if (searchResults.length > 0) {
+                // Try to get PGS IDs from the first matching trait
+                const matchingTrait = searchResults.find(r => r.mondo_id === mondoId) || searchResults[0];
+                try {
+                    const traitInfo = await pgsApiClient.getTraitInfo(matchingTrait.mondo_id);
+                    allPgsIds = traitInfo.associated_pgs_ids || [];
+                } catch (error) {
+                    console.log(chalk.yellow(`  Trait info lookup failed: ${error.message}`));
+                }
+            }
         }
         
         // Compare with existing IDs
@@ -248,83 +276,186 @@ async function addTrait() {
     
     const catalog = await loadCatalog();
     
-    // Get MONDO ID from user
-    const { mondoId } = await prompts({
+    // Single input that handles both numbers and text search
+    const { input } = await prompts({
         type: 'text',
-        name: 'mondoId',
-        message: 'Enter MONDO ID (e.g., MONDO:0005015):',
-        validate: value => {
-            if (!/^MONDO:[0-9]{7}$/.test(value)) {
-                return 'Please enter a valid MONDO ID format (MONDO:0000000)';
-            }
-            if (catalog.traits[value]) {
-                return 'This MONDO ID already exists in the catalog';
-            }
-            return true;
+        name: 'input',
+        message: `Add trait - Enter one of:
+  • MONDO number: 1657, 5105
+  • Full MONDO ID: MONDO:0001657
+  • EFO ID: EFO_0000756
+  • Search term: "diabetes", "cancer"
+Input:`,
+        validate: value => value.trim().length > 0 || 'Input cannot be empty'
+    });
+    
+    if (!input) return;
+    
+    const trimmed = input.trim();
+    let selectedTrait = null;
+    
+    // Try to parse as number first
+    const parsedNumber = parseInt(trimmed);
+    if (!isNaN(parsedNumber) && parsedNumber > 0) {
+        // Handle as MONDO ID number
+        const mondoId = `MONDO:${parsedNumber.toString().padStart(7, '0')}`;
+        
+        if (catalog.traits[mondoId]) {
+            console.log(chalk.yellow(`Trait ${mondoId} already exists in catalog`));
+            return;
         }
-    });
-    
-    if (!mondoId) return;
-    
-    // Get trait title
-    const { title } = await prompts({
-        type: 'text',
-        name: 'title',
-        message: 'Enter trait title:',
-        validate: value => value.length > 0 || 'Title cannot be empty'
-    });
-    
-    if (!title) return;
-    
-    // Search for PGS scores
-    const results = await searchPGS(title);
-    
-    if (results.length === 0) {
-        console.log(chalk.yellow('No PGS scores found. Adding trait with empty PGS list.'));
-        catalog.traits[mondoId] = {
-            title,
-            mondo_id: mondoId,
-            pgs_ids: [],
-            last_updated: new Date().toISOString()
-        };
+        
+        console.log(chalk.blue(`Looking up ${mondoId}...`));
+        const traitInfo = await lookupMondoTrait(mondoId);
+        
+        if (!traitInfo) {
+            console.log(chalk.red(`Could not find trait information for ${mondoId}`));
+            return;
+        }
+        
+        selectedTrait = traitInfo;
+        console.log(chalk.green(`Found: ${traitInfo.title} (${traitInfo.pgs_count} PGS scores)`));
+        
+    } else if (/^MONDO:[0-9]{7}$/.test(trimmed)) {
+        // Handle as full MONDO ID
+        if (catalog.traits[trimmed]) {
+            console.log(chalk.yellow(`Trait ${trimmed} already exists in catalog`));
+            return;
+        }
+        
+        console.log(chalk.blue(`Looking up ${trimmed}...`));
+        const traitInfo = await lookupMondoTrait(trimmed);
+        
+        if (!traitInfo) {
+            console.log(chalk.red(`Could not find trait information for ${trimmed}`));
+            return;
+        }
+        
+        selectedTrait = traitInfo;
+        console.log(chalk.green(`Found: ${traitInfo.title} (${traitInfo.pgs_count} PGS scores)`));
+        
+    } else if (/^EFO_[0-9]{7}$/.test(trimmed)) {
+        // Handle as EFO ID - look up and convert to MONDO
+        console.log(chalk.blue(`Looking up ${trimmed}...`));
+        const traitInfo = await lookupMondoTrait(trimmed);
+        
+        if (!traitInfo) {
+            console.log(chalk.red(`Could not find trait information for ${trimmed}`));
+            return;
+        }
+        
+        if (catalog.traits[traitInfo.mondo_id]) {
+            const existing = catalog.traits[traitInfo.mondo_id];
+            if (existing.pgs_ids.length === 0 || existing.expected_variants === 0) {
+                console.log(chalk.yellow(`Trait ${traitInfo.mondo_id} exists but has incomplete data (${existing.pgs_ids.length} PGS scores, ${existing.expected_variants} variants)`));
+                const { update } = await prompts({
+                    type: 'confirm',
+                    name: 'update',
+                    message: 'Update with complete data?',
+                    initial: true
+                });
+                if (!update) return;
+            } else {
+                console.log(chalk.yellow(`Trait ${traitInfo.mondo_id} already exists with complete data (${existing.pgs_ids.length} PGS scores)`));
+                return;
+            }
+        }
+        
+        // Skip if no valid trait ID found
+        if (!traitInfo.mondo_id.match(/^(MONDO:[0-9]{7}|EFO_[0-9]{7})$/)) {
+            console.log(chalk.red(`No valid MONDO or EFO ID found for ${trimmed}, skipping`));
+            return;
+        }
+        
+        selectedTrait = traitInfo;
+        console.log(chalk.green(`Found: ${traitInfo.title} (${traitInfo.pgs_count} PGS scores)`));
+        
     } else {
-        // Select PGS scores
-        const choices = results.map(result => ({
-            title: `${result.name} (${result.id})`,
-            description: `${result.variant_count?.toLocaleString() || 'Unknown'} variants`,
-            value: result.id
+        // Handle as search term
+        console.log(chalk.blue(`Searching for traits matching: ${trimmed}`));
+        const searchResults = await searchMondoTraits(trimmed);
+        
+        if (searchResults.length === 0) {
+            console.log(chalk.yellow('No MONDO traits found for that search term'));
+            return;
+        }
+        
+        // Filter out existing traits
+        const availableResults = searchResults.filter(trait => !catalog.traits[trait.mondo_id]);
+        
+        if (availableResults.length === 0) {
+            console.log(chalk.yellow('All found traits are already in the catalog'));
+            return;
+        }
+        
+        const choices = availableResults.map(trait => ({
+            title: `${trait.title} (${trait.mondo_id})`,
+            description: `${trait.pgs_count} PGS scores available`,
+            value: trait
         }));
         
-        const { selectAll } = await prompts({
-            type: 'confirm',
-            name: 'selectAll',
-            message: `Select all ${choices.length} PGS scores?`,
-            initial: true
+        const { selected } = await prompts({
+            type: 'select',
+            name: 'selected',
+            message: 'Select a trait to add:',
+            choices
         });
         
-        let selectedPgsIds;
-        if (selectAll) {
-            selectedPgsIds = choices.map(c => c.value);
-        } else {
-            const selection = await prompts({
-                type: 'multiselect',
-                name: 'selectedPgsIds',
-                message: 'Select PGS scores:',
-                choices
-            });
-            selectedPgsIds = selection.selectedPgsIds || [];
-        }
-        
-        catalog.traits[mondoId] = {
-            title,
-            mondo_id: mondoId,
-            pgs_ids: selectedPgsIds,
-            last_updated: new Date().toISOString()
-        };
+        if (!selected) return;
+        selectedTrait = selected;
     }
     
+    // Add the trait
+    console.log(chalk.blue(`Adding ${selectedTrait.title} (${selectedTrait.mondo_id})...`));
+    
+    // Get PGS IDs for this trait
+    let pgsIds = [];
+    try {
+        // Use the source ID (original EFO or MONDO) for fetching PGS scores
+        const sourceId = selectedTrait.source_id || selectedTrait.mondo_id;
+        const traitInfo = await pgsApiClient.getTraitInfo(sourceId);
+        pgsIds = (traitInfo.associated_pgs_ids || []).concat(traitInfo.child_associated_pgs_ids || []);
+        // Remove duplicates
+        pgsIds = [...new Set(pgsIds)];
+        console.log(chalk.green(`Found ${pgsIds.length} PGS scores`));
+    } catch (error) {
+        console.log(chalk.yellow(`Could not fetch PGS scores: ${error.message}`));
+    }
+    
+    // Calculate variant counts
+    let totalVariants = 0;
+    let uniqueVariants = 0;
+    
+    if (pgsIds.length > 0) {
+        console.log(chalk.blue('Calculating variant counts...'));
+        for (const pgsId of pgsIds) {
+            try {
+                const data = await pgsApiClient.getScore(pgsId);
+                if (data.variants_number) {
+                    totalVariants += data.variants_number;
+                    const estimatedUnique = Math.floor(data.variants_number * 0.7);
+                    uniqueVariants += estimatedUnique;
+                }
+                console.log(chalk.green(`  ✓ ${pgsId}: ${data.variants_number?.toLocaleString()} variants`));
+            } catch (error) {
+                console.log(chalk.yellow(`  ⚠ ${pgsId}: ${error.message}`));
+            }
+        }
+        console.log(chalk.blue(`Total variants: ${totalVariants.toLocaleString()} (estimated unique: ${uniqueVariants.toLocaleString()})`));
+    }
+    
+    catalog.traits[selectedTrait.mondo_id] = {
+        title: selectedTrait.title,
+        mondo_id: selectedTrait.mondo_id,
+        pgs_ids: pgsIds,
+        last_updated: new Date().toISOString(),
+        expected_variants: totalVariants,
+        estimated_unique_variants: uniqueVariants
+    };
+    
     await saveCatalog(catalog);
-    console.log(chalk.green(`\n✓ Added trait: ${title} (${mondoId})`));
+    console.log(chalk.green(`\n✓ Added trait: ${selectedTrait.title} (${selectedTrait.mondo_id})`));
+    console.log(chalk.blue(`   ${pgsIds.length} PGS scores, ${totalVariants.toLocaleString()} total variants`));
 }
 
 async function listTraits() {

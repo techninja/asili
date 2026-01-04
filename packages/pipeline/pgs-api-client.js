@@ -1,10 +1,10 @@
 import fs from 'fs/promises';
 import path from 'path';
 import { fileURLToPath } from 'url';
+import crypto from 'crypto';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const CACHE_DIR = path.resolve(__dirname, '../../cache');
-const API_CACHE_DIR = path.join(CACHE_DIR, 'api');
 const PGS_FILES_DIR = path.join(CACHE_DIR, 'pgs_files');
 const RATE_LIMIT = 30; // requests per minute
 const RATE_WINDOW = 60 * 1000; // 1 minute in ms
@@ -15,28 +15,36 @@ class PGSApiClient {
     }
 
     async ensureCacheDir() {
-        await fs.mkdir(API_CACHE_DIR, { recursive: true });
+        await fs.mkdir(CACHE_DIR, { recursive: true });
         await fs.mkdir(PGS_FILES_DIR, { recursive: true });
     }
 
     getCacheFilePath(url) {
-        // Create hash from full URL including query parameters
         const urlObj = new URL(url);
-        const pathWithQuery = urlObj.pathname + urlObj.search;
-        // Replace special characters for filesystem safety
-        const safePath = pathWithQuery.replace(/[^a-zA-Z0-9]/g, '_');
-        return path.join(API_CACHE_DIR, `${safePath}.json`);
+        const domain = urlObj.hostname;
+        const pathParts = urlObj.pathname.split('/').filter(p => p);
+        const endpoint = pathParts.join('_');
+        
+        // Create hash from query parameters for unique filenames
+        const queryHash = urlObj.search ? 
+            crypto.createHash('md5').update(urlObj.search).digest('hex').substring(0, 8) : 
+            'no-params';
+        
+        const cacheDir = path.join(CACHE_DIR, domain, endpoint);
+        const fileName = `${queryHash}.json`;
+        
+        return { dir: cacheDir, file: path.join(cacheDir, fileName) };
     }
 
     async loadFromCache(url) {
-        const filePath = this.getCacheFilePath(url);
+        const { file: filePath } = this.getCacheFilePath(url);
         try {
             const data = await fs.readFile(filePath, 'utf8');
             const cached = JSON.parse(data);
             
-            // Check if cache is less than 1 hour old
+            // Check if cache is less than 30 days old
             const age = Date.now() - cached.timestamp;
-            if (age < 60 * 60 * 1000) {
+            if (age < 30 * 24 * 60 * 60 * 1000) {
                 return cached.data;
             }
         } catch {}
@@ -44,12 +52,13 @@ class PGSApiClient {
     }
 
     async saveToCache(url, data) {
-        const filePath = this.getCacheFilePath(url);
-        await fs.mkdir(path.dirname(filePath), { recursive: true });
+        const { dir: cacheDir, file: filePath } = this.getCacheFilePath(url);
+        await fs.mkdir(cacheDir, { recursive: true });
         
         const cached = {
             data,
-            timestamp: Date.now()
+            timestamp: Date.now(),
+            url
         };
         
         await fs.writeFile(filePath, JSON.stringify(cached, null, 2));
@@ -81,7 +90,6 @@ class PGSApiClient {
         // Check cache first
         const cachedData = await this.loadFromCache(url);
         if (cachedData) {
-            console.log(`CACHED - ${url}`);
             return cachedData;
         }
         
@@ -90,7 +98,6 @@ class PGSApiClient {
         
         for (let attempt = 1; attempt <= retries; attempt++) {
             try {
-                console.log(`REQUEST - ${url}`);
                 const response = await fetch(url, {
                     headers: { 'accept': 'application/json' }
                 });
@@ -101,20 +108,19 @@ class PGSApiClient {
                         responseText = await response.text();
                     } catch {}
                     
-                    console.log(`HTTP ${response.status} ${response.statusText} - ${url}`);
+                    console.log(`❌ HTTP ${response.status} ${response.statusText} - ${url}`);
                     console.log(`Response: ${responseText.substring(0, 500)}`);
                     throw new Error(`HTTP ${response.status}: ${response.statusText}`);
                 }
                 
                 const data = await response.json();
-                console.log(`OK - ${url}`);
                 
                 // Cache the result
                 await this.saveToCache(url, data);
                 return data;
                 
             } catch (error) {
-                console.log(`RETRY ${attempt}/${retries} - ${url}`);
+                console.log(`❌ RETRY ${attempt}/${retries} - ${url}`);
                 console.log(`Error: ${error.message}`);
                 console.log(`Error code: ${error.code || 'none'}`);
                 console.log(`Error cause: ${error.cause || 'none'}`);
@@ -125,7 +131,7 @@ class PGSApiClient {
                                      error.message.includes('ETIMEDOUT');
                 
                 if (attempt === retries) {
-                    console.log(`FINAL FAILURE after ${retries} attempts`);
+                    console.log(`❌ FINAL FAILURE after ${retries} attempts`);
                     throw error;
                 }
                 
@@ -147,9 +153,16 @@ class PGSApiClient {
     }
 
     async getTraitInfo(traitId) {
-        // Convert MONDO:ID format to EFO_ID format for API
-        const apiTraitId = traitId.replace('MONDO:', 'EFO_');
-        const url = `https://www.pgscatalog.org/rest/trait/${apiTraitId}`;
+        // Handle both MONDO and EFO formats
+        let url;
+        if (traitId.startsWith('MONDO:')) {
+            url = `https://www.pgscatalog.org/rest/trait/${traitId}`;
+        } else if (traitId.startsWith('EFO_')) {
+            url = `https://www.pgscatalog.org/rest/trait/${traitId}`;
+        } else {
+            // Try as direct ID
+            url = `https://www.pgscatalog.org/rest/trait/${traitId}`;
+        }
         return this.fetchWithCache(url);
     }
 

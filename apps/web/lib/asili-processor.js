@@ -55,95 +55,48 @@ export class AsiliProcessor {
       const response = await fetch('/data/trait_manifest.json');
       this.traitManifest = await response.json();
       
-      // Convert catalog to flat trait list with manifest data
+      // Convert new manifest structure to flat trait list
       this.availableTraits = [];
       
-      if (!this.traitManifest.trait_families) {
-        throw new Error('Invalid manifest: missing trait_families');
+      if (!this.traitManifest.traits) {
+        throw new Error('Invalid manifest: missing traits');
       }
       
-      // Group traits by disease category using MONDO hierarchy
-      const categoryMap = {
-        'MONDO:0000400': 'Metabolic Disorders', // diabetes mellitus
-        'MONDO:0005147': 'Metabolic Disorders', // Type 1 diabetes
-        'MONDO:0005148': 'Metabolic Disorders', // Type 2 diabetes
-        'MONDO:0001645': 'Cardiovascular Disease', // coronary artery disease
-        'MONDO:0000712': 'Cardiovascular Disease', // stroke
-        'MONDO:0007254': 'Cancer', // breast cancer
-        'MONDO:0008903': 'Cancer'  // prostate cancer
-      };
-      
-      Object.entries(this.traitManifest.trait_families).forEach(([familyKey, family]) => {
-        if (family.subtypes) {
-          Object.entries(family.subtypes).forEach(([subtypeKey, subtype]) => {
-            const traitId = `${familyKey}_${subtypeKey}`;
-            const manifestData = this.traitManifest.traits?.[traitId] || {};
-            const category = categoryMap[subtypeKey] || 'Other Conditions';
-            
-            this.availableTraits.push({
-              id: traitId,
-              name: subtype.name,
-              description: subtype.description,
-              category: category,
-              family: familyKey,
-              familyName: family.name,
-              file_path: manifestData.file_path,
-              pgs_ids: subtype.pgs_ids,
-              pgs_metadata: manifestData.pgs_metadata || {},
-              variant_count: manifestData.variant_count || 0,
-              last_updated: manifestData.last_updated
-            });
-          });
-        }
-        
-        if (family.biomarkers) {
-          Object.entries(family.biomarkers).forEach(([biomarkerKey, biomarker]) => {
-            const traitId = `${familyKey}_${biomarkerKey}`;
-            const manifestData = this.traitManifest.traits?.[traitId] || {};
-            const category = 'Biomarkers';
-            
-            this.availableTraits.push({
-              id: traitId,
-              name: biomarker.name,
-              description: biomarker.description || '',
-              category: category,
-              family: familyKey,
-              familyName: family.name,
-              file_path: manifestData.file_path,
-              pgs_ids: biomarker.pgs_ids,
-              pgs_metadata: manifestData.pgs_metadata || {},
-              variant_count: manifestData.variant_count || 0,
-              last_updated: manifestData.last_updated
-            });
-          });
-        }
+      // Process traits directly from the keyed structure
+      Object.entries(this.traitManifest.traits).forEach(([mondoId, trait]) => {
+        this.availableTraits.push({
+          id: mondoId,
+          name: trait.name,
+          description: trait.description || `Polygenic risk score for ${trait.name}`,
+          categories: trait.categories || ['Other Conditions'],
+          file_path: trait.file_path,
+          pgs_metadata: trait.pgs_metadata || {},
+          variant_count: trait.variant_count || 0,
+          last_updated: trait.last_updated
+        });
       });
       
     } catch (error) {
       Debug.log(1, 'AsiliProcessor', 'Failed to load trait manifest:', error);
-      this.traitManifest = { trait_families: {}, traits: {} };
+      this.traitManifest = { traits: {} };
       this.availableTraits = [];
     }
   }
 
-  // Get available trait families
-  getTraitFamilies() {
-    return this.traitManifest?.trait_families || {};
+  // Get available trait categories
+  getTraitCategories() {
+    const categories = new Set();
+    this.availableTraits.forEach(trait => {
+      trait.categories?.forEach(cat => categories.add(cat));
+    });
+    return Array.from(categories).sort();
   }
 
-  // Get traits for a specific family
-  getTraitsForFamily(familyName) {
-    const family = this.traitManifest?.trait_families?.[familyName];
-    if (!family) return [];
-    
-    return Object.entries(family.subtypes || {}).map(([key, subtype]) => ({
-      id: `${familyName}_${key}`,
-      name: subtype.name,
-      category: familyName,
-      pgsIds: subtype.pgs_ids,
-      description: subtype.description,
-      weight: subtype.weight
-    }));
+  // Get traits for a specific category
+  getTraitsForCategory(categoryName) {
+    return this.availableTraits.filter(trait => 
+      trait.categories?.includes(categoryName)
+    );
   }
 
   // Get all available traits

@@ -1,29 +1,72 @@
-import fs from 'fs/promises';
-import path from 'path';
 import { loadTraitCatalog } from './catalog.js';
+import { loadTraitManifest, saveTraitManifest } from './manifest-interface.js';
+import pgsApiClient from '../pgs-api-client.js';
 
-const OUTPUT_DIR = '/output';
+// Category mapping for better organization
+const CATEGORY_MAPPING = {
+    'Cancer': 'Cancer',
+    'Neurological disorder': 'Neurological Disorders', 
+    'Cardiovascular disease': 'Cardiovascular Disease',
+    'Metabolic disorder': 'Metabolic Disorders',
+    'Immune system disorder': 'Immune System Disorders',
+    'Mental health disorder': 'Mental Health',
+    'Digestive system disorder': 'Digestive System Disorders'
+};
+
+async function getTraitCategories(mondoId) {
+    try {
+        const traitInfo = await pgsApiClient.getTraitInfo(mondoId);
+        if (traitInfo?.trait_categories?.length > 0) {
+            return traitInfo.trait_categories.map(cat => CATEGORY_MAPPING[cat] || cat);
+        }
+    } catch (error) {
+        // Silently fall back to default category
+    }
+    
+    return ['Other Conditions']; // Only use as fallback when no other categories exist
+}
 
 export async function updateOutputManifest(updatedData) {
-    const manifestPath = path.join(OUTPUT_DIR, 'trait_manifest.json');
     const catalog = await loadTraitCatalog();
+    const manifest = await loadTraitManifest();
     
-    let manifest = { 
-        trait_families: {},
-        traits: {},
-        generated_at: new Date().toISOString() 
-    };
-    
-    try {
-        const existing = await fs.readFile(manifestPath, 'utf8');
-        const existingManifest = JSON.parse(existing);
-        manifest.trait_families = existingManifest.trait_families || {};
-        manifest.traits = existingManifest.traits || {};
-    } catch {}
+    // Handle trait-specific updates
+    if (updatedData.trait_update) {
+        for (const [mondoId, traitData] of Object.entries(updatedData.trait_update)) {
+            const traitInfo = catalog.traits[mondoId];
+            if (!traitInfo) continue;
+            
+            if (!manifest.traits[mondoId]) {
+                manifest.traits[mondoId] = {
+                    name: traitInfo.title,
+                    categories: await getTraitCategories(mondoId),
+                    variant_count: 0,
+                    file_path: `${mondoId.replace(':', '_')}_hg38.parquet`,
+                    pgs_metadata: {},
+                    source_hashes: {},
+                    last_updated: new Date().toISOString(),
+                    actual_variants: 0,
+                    file_size_mb: 0,
+                    last_processed: new Date().toISOString(),
+                    expected_variants: 0,
+                    weight: 1.0,
+                    pgs_ids: [],
+                    mondo_id: mondoId,
+                    last_validated: new Date().toISOString()
+                };
+            }
+            
+                manifest.traits[mondoId] = {
+                    ...manifest.traits[mondoId],
+                    ...traitData,
+                    file_path: traitData.file_path || manifest.traits[mondoId]?.file_path || `${mondoId.replace(':', '_')}_hg38.parquet`,
+                    last_validated: manifest.traits[mondoId]?.last_validated || new Date().toISOString()
+                };
+        }
+    }
     
     // Handle metadata-only updates during collection
     if (updatedData.metadata_update) {
-        // Find which trait this metadata belongs to by checking PGS IDs
         const pgsMetadata = updatedData.metadata_update.pgs_metadata;
         const pgsIds = Object.keys(pgsMetadata);
         
@@ -33,77 +76,76 @@ export async function updateOutputManifest(updatedData) {
             const hasMatchingPgs = pgsIds.some(pgsId => traitPgsIds.includes(pgsId));
             
             if (hasMatchingPgs) {
-                const familyName = traitData.title;
-                const traitId = `${familyName}_${mondoId}`;
-                
-                // Create family with subtypes structure for frontend
-                if (!manifest.trait_families[familyName]) {
-                    manifest.trait_families[familyName] = {
-                        name: familyName,
+                if (!manifest.traits[mondoId]) {
+                    manifest.traits[mondoId] = {
+                        name: traitData.title,
+                        categories: await getTraitCategories(mondoId),
+                        variant_count: 0,
+                        file_path: `${mondoId.replace(':', '_')}_hg38.parquet`,
+                        pgs_metadata: {},
+                        source_hashes: {},
+                        last_updated: new Date().toISOString(),
+                        actual_variants: 0,
+                        file_size_mb: 0,
+                        last_processed: new Date().toISOString(),
+                        expected_variants: 0,
+                        weight: 1.0,
+                        pgs_ids: [],
                         mondo_id: mondoId,
-                        subtypes: {
-                            [mondoId]: {
-                                name: traitData.title,
-                                description: `Polygenic risk score for ${traitData.title}`,
-                                pgs_ids: traitData.pgs_ids,
-                                weight: 1.0
-                            }
-                        }
+                        last_validated: new Date().toISOString()
                     };
                 }
                 
-                // Update traits section
-                if (!manifest.traits[traitId]) {
-                    manifest.traits[traitId] = {};
+                // Only update metadata that doesn't already exist
+                const existingMetadata = manifest.traits[mondoId].pgs_metadata || {};
+                const newMetadata = {};
+                for (const [pgsId, metadata] of Object.entries(pgsMetadata)) {
+                    if (!existingMetadata[pgsId]) {
+                        newMetadata[pgsId] = metadata;
+                    }
                 }
                 
-                const existing = manifest.traits[traitId];
-                manifest.traits[traitId] = {
-                    ...existing,
-                    pgs_metadata: { ...existing.pgs_metadata, ...pgsMetadata },
-                    last_updated: new Date().toISOString()
-                };
+                if (Object.keys(newMetadata).length > 0) {
+                    manifest.traits[mondoId] = {
+                        ...manifest.traits[mondoId],
+                        pgs_metadata: { ...existingMetadata, ...newMetadata },
+                        last_updated: new Date().toISOString(),
+                        file_path: manifest.traits[mondoId]?.file_path || `${mondoId.replace(':', '_')}_hg38.parquet`,
+                        last_validated: manifest.traits[mondoId]?.last_validated || new Date().toISOString()
+                    };
+                }
                 break;
             }
         }
-    } else {
-        // Update manifest with generated files and metadata
+    }
+    
+    // Handle full trait processing updates
+    if (!updatedData.metadata_update && !updatedData.trait_update) {
         for (const [mondoId, data] of Object.entries(updatedData)) {
-            // Find trait info from catalog
             const traitInfo = catalog.traits[mondoId];
             if (!traitInfo) continue;
             
-            const familyName = traitInfo.title;
-            const traitId = `${familyName}_${mondoId}`;
-            
-            // Create family with subtypes structure for frontend
-            if (!manifest.trait_families[familyName]) {
-                manifest.trait_families[familyName] = {
-                    name: familyName,
-                    mondo_id: mondoId,
-                    subtypes: {
-                        [mondoId]: {
-                            name: traitInfo.title,
-                            description: `Polygenic risk score for ${traitInfo.title}`,
-                            pgs_ids: traitInfo.pgs_ids,
-                            weight: 1.0
-                        }
-                    }
-                };
-            }
-            
-            // Update traits section
-            manifest.traits[traitId] = {
-                last_updated: data.timestamp,
+            manifest.traits[mondoId] = {
+                name: traitInfo.title,
+                description: `Polygenic risk score for ${traitInfo.title}`,
+                categories: await getTraitCategories(mondoId),
                 variant_count: data.variant_count,
-                file_path: data.fileName,
-                pgs_ids: data.pgsIds,
-                source_hashes: data.source_hashes,
-                pgs_metadata: data.pgs_metadata
+                file_path: data.fileName || `${mondoId.replace(':', '_')}_hg38.parquet`,
+                pgs_metadata: data.pgs_metadata || {},
+                source_hashes: data.source_hashes || {},
+                last_updated: data.timestamp,
+                actual_variants: data.variant_count || 0,
+                file_size_mb: data.file_size_mb || 0,
+                last_processed: data.timestamp,
+                expected_variants: data.expected_variants || data.variant_count || 0,
+                weight: data.weight || 1.0,
+                pgs_ids: data.pgsIds || [],
+                mondo_id: mondoId,
+                last_validated: data.timestamp
             };
         }
     }
     
     manifest.generated_at = new Date().toISOString();
-    await fs.writeFile(manifestPath, JSON.stringify(manifest, null, 2));
+    await saveTraitManifest(manifest);
 }

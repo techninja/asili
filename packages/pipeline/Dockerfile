@@ -1,9 +1,8 @@
 FROM node:22-slim
 
-FROM node:22-slim
-
-# Install DuckDB CLI and golang-migrate for efficient data operations
-RUN apt-get update && apt-get install -y wget unzip \
+# Install DuckDB CLI, Python3, and pandas for efficient data operations
+RUN apt-get update && apt-get install -y wget unzip python3 python3-pip \
+    && pip3 install --break-system-packages pandas pyarrow \
     && ARCH=$(dpkg --print-architecture) \
     && if [ "$ARCH" = "amd64" ]; then DUCKDB_ARCH="linux-amd64"; MIGRATE_ARCH="linux-amd64"; \
        elif [ "$ARCH" = "arm64" ]; then DUCKDB_ARCH="linux-aarch64"; MIGRATE_ARCH="linux-arm64"; \
