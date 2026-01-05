@@ -3,8 +3,8 @@
   "version": "0.5.0",
   "type": "module",
   "scripts": {
-    "dev": "node server.js",
-    "build": "node bundle.mjs && mkdir -p dist && cp *.html components dist/",
+    "dev": "node bundle.mjs && python3 -m http.server 8080 --directory dist",
+    "build": "node bundle.mjs && mkdir -p dist && cp *.html dist/ && cp -r components deps dist/",
     "bundle": "node bundle.mjs",
     "deploy": "aws s3 sync dist/ s3://asili-cdn",
     "test": "node tests/run-tests.js",

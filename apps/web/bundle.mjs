@@ -1,35 +1,39 @@
 import { build } from 'esbuild';
-import { copyFileSync, mkdirSync } from 'fs';
+import { copyFileSync, mkdirSync, readFileSync, writeFileSync } from 'fs';
 
-console.log('🔄 Starting esbuild bundle...');
+console.log('🔄 Building dependencies...');
 
-// Bundle DuckDB with all dependencies
-await build({
-  entryPoints: ['node_modules/@duckdb/duckdb-wasm/dist/duckdb-browser.mjs'],
-  bundle: true,
-  format: 'esm',
-  outfile: 'duckdb-bundle.mjs',
-  external: [],
-  minify: true,
-  sourcemap: false,
-  sourceRoot: undefined
-});
+mkdirSync('deps', { recursive: true });
 
-console.log('📦 Bundle created, copying WASM files...');
+// Bundle individual dependencies
+const deps = [
+  { name: 'zustand', entry: 'node_modules/zustand/esm/index.js', output: 'deps/zustand.js' },
+  { name: 'duckdb', entry: 'node_modules/@duckdb/duckdb-wasm/dist/duckdb-browser.mjs', output: 'deps/duckdb.js' }
+];
 
-// Copy WASM and worker files
-mkdirSync('dist', { recursive: true });
-copyFileSync('node_modules/@duckdb/duckdb-wasm/dist/duckdb-eh.wasm', 'dist/duckdb-eh.wasm');
+for (const dep of deps) {
+  await build({
+    entryPoints: [dep.entry],
+    bundle: true,
+    format: 'esm',
+    outfile: dep.output,
+    external: [],
+    minify: true,
+    sourcemap: false
+  });
+  console.log(`✅ Built ${dep.name}`);
+}
 
-// Copy worker files and strip source map comments
-import { readFileSync, writeFileSync } from 'fs';
+// Copy DuckDB WASM files
+mkdirSync('deps/wasm', { recursive: true });
+copyFileSync('node_modules/@duckdb/duckdb-wasm/dist/duckdb-eh.wasm', 'deps/wasm/duckdb-eh.wasm');
+
 const workerContent = readFileSync('node_modules/@duckdb/duckdb-wasm/dist/duckdb-browser-eh.worker.js', 'utf8')
   .replace(/\/\/# sourceMappingURL=.*$/gm, '');
-writeFileSync('dist/duckdb-browser-eh.worker.js', workerContent);
+writeFileSync('deps/wasm/duckdb-browser-eh.worker.js', workerContent);
 
 const pthreadContent = readFileSync('node_modules/@duckdb/duckdb-wasm/dist/duckdb-browser-coi.pthread.worker.js', 'utf8')
   .replace(/\/\/# sourceMappingURL=.*$/gm, '');
-writeFileSync('dist/duckdb-browser-coi.pthread.worker.js', pthreadContent);
+writeFileSync('deps/wasm/duckdb-browser-coi.pthread.worker.js', pthreadContent);
 
-console.log('✅ Bundle complete: duckdb-bundle.mjs');
-console.log('✅ WASM files copied to dist/');
+console.log('✅ Dependencies built to deps/');

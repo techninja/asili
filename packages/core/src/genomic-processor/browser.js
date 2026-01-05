@@ -6,6 +6,7 @@
 import { GenomicProcessor } from '../interfaces/genomic.js';
 import { PROGRESS_STAGES, PROGRESS_SUBSTAGES } from '../progress/tracker.js';
 import { Debug } from '../utils/debug.js';
+import { StreamingProcessor, PGSAggregator } from './streaming-utils.js';
 
 export class BrowserGenomicProcessor extends GenomicProcessor {
   constructor(config, progressTracker) {
@@ -21,7 +22,7 @@ export class BrowserGenomicProcessor extends GenomicProcessor {
     
     try {
       // Dynamic import for browser environment
-      const duckdb = await import('@duckdb/duckdb-wasm');
+      const duckdb = await import('/deps/duckdb.js');
       
       const JSDELIVR_BUNDLES = duckdb.getJsDelivrBundles();
       const bundle = await duckdb.selectBundle(JSDELIVR_BUNDLES);
@@ -31,6 +32,11 @@ export class BrowserGenomicProcessor extends GenomicProcessor {
       this.db = new duckdb.AsyncDuckDB(logger, worker);
       await this.db.instantiate(bundle.mainModule, bundle.pthreadWorker);
       this.conn = await this.db.connect();
+      
+      // Configure DuckDB for HTTP streaming
+      await this.conn.query('INSTALL httpfs');
+      await this.conn.query('LOAD httpfs');
+      await this.conn.query('SET http_timeout=30000');
       
       this.progress.setProgress(100, 'DuckDB initialized');
     } catch (error) {
@@ -118,187 +124,70 @@ export class BrowserGenomicProcessor extends GenomicProcessor {
     
     await this.initialize();
     
-    progressCallback?.('Loading trait data...', 5);
-    await this.loadParquet(traitUrl, 'trait_data');
+    // Stream process the parquet file instead of loading entirely into memory
+    return await this.streamCalculateRisk(traitUrl, userDNA, progressCallback, pgsMetadata);
+  }
+
+  async streamCalculateRisk(traitUrl, userDNA, progressCallback, pgsMetadata = {}) {
+    progressCallback?.('Initializing streaming...', 5);
     
-    // Get total count for progress
-    progressCallback?.('Counting variants...', 10);
-    const countResult = await this.conn.query('SELECT COUNT(*) as total FROM trait_data');
-    const totalVariants = Number(countResult.toArray()[0].total);
-    
-    Debug.log(1, 'BrowserGenomicProcessor', `Processing ${totalVariants} trait variants in chunks`);
-    
-    // Adaptive chunk size based on dataset size - increased for better throughput
-    let CHUNK_SIZE;
-    if (totalVariants > 5000000) {
-      CHUNK_SIZE = 10000;  // Increased from 2500
-    } else if (totalVariants > 1000000) {
-      CHUNK_SIZE = 20000;  // Increased from 5000
-    } else {
-      CHUNK_SIZE = 50000;  // Increased from 25000
-    }
-    
-    Debug.log(2, 'BrowserGenomicProcessor', `Using chunk size: ${CHUNK_SIZE} for ${totalVariants} variants`);
-    
-    let riskScore = 0;
-    const pgsBreakdown = new Map();
-    const pgsDetails = new Map();
-    const pgsDistributions = new Map(); // Add distribution tracking
-    
-    // Define bins for distribution
-    const createBins = () => [
-      { label: '-1.0 to -0.1', min: -Infinity, max: -0.1, count: 0, sum: 0 },
-      { label: '-0.1 to -0.05', min: -0.1, max: -0.05, count: 0, sum: 0 },
-      { label: '-0.05 to -0.01', min: -0.05, max: -0.01, count: 0, sum: 0 },
-      { label: '-0.01 to -0.001', min: -0.01, max: -0.001, count: 0, sum: 0 },
-      { label: '-0.001 to 0', min: -0.001, max: 0, count: 0, sum: 0 },
-      { label: '0 to 0.001', min: 0, max: 0.001, count: 0, sum: 0 },
-      { label: '0.001 to 0.01', min: 0.001, max: 0.01, count: 0, sum: 0 },
-      { label: '0.01 to 0.05', min: 0.01, max: 0.05, count: 0, sum: 0 },
-      { label: '0.05 to 0.1', min: 0.05, max: 0.1, count: 0, sum: 0 },
-      { label: '0.1 to 1.0+', min: 0.1, max: Infinity, count: 0, sum: 0 }
-    ];
-    
-    // Create lookup maps for fast matching
-    const rsidMap = new Map();
-    const posMap = new Map();
-    
-    userDNA.forEach(snp => {
-      const genotype = snp.allele1 + snp.allele2;
-      if (snp.rsid) rsidMap.set(snp.rsid, genotype);
-      if (snp.chromosome && snp.position) {
-        posMap.set(`${snp.chromosome}:${snp.position}`, genotype);
-      }
+    // Create streaming processor with optimized settings for large datasets
+    const streamProcessor = new StreamingProcessor(this.conn, {
+      chunkSize: 5000, // Smaller chunks for memory efficiency
+      memoryThreshold: 0.75,
+      yieldInterval: 3
     });
     
+    // Create DNA lookup maps
+    const { rsidMap, posMap } = streamProcessor.createDNALookup(userDNA);
     Debug.log(2, 'BrowserGenomicProcessor', `Created lookup maps: ${rsidMap.size} rsids, ${posMap.size} positions`);
     
-    let totalMatches = 0;
-    const totalChunks = Math.ceil(totalVariants/CHUNK_SIZE);
-    const pgsTopVariants = new Map(); // Track top variants per PGS
+    // Initialize aggregator
+    const aggregator = new PGSAggregator();
     
-    // Process in chunks
-    for (let offset = 0; offset < totalVariants; offset += CHUNK_SIZE) {
-      const progress = 20 + (offset / totalVariants * 70);
-      const chunkNum = Math.floor(offset/CHUNK_SIZE) + 1;
-      
-      progressCallback?.(`Processing batch ${chunkNum}/${totalChunks}...`, progress);
-      const chunkResult = await this.conn.query(`
-        SELECT pgs_id, variant_id, effect_allele, effect_weight 
-        FROM trait_data 
-        LIMIT ${CHUNK_SIZE} OFFSET ${offset}
-      `);
-      
-      const chunkData = chunkResult.toArray();
-      let chunkMatches = 0;
-      
-      for (const trait of chunkData) {
-        // Initialize PGS tracking
-        if (!pgsBreakdown.has(trait.pgs_id)) {
-          pgsBreakdown.set(trait.pgs_id, { positive: 0, negative: 0, positiveSum: 0, negativeSum: 0, total: 0 });
-          pgsDetails.set(trait.pgs_id, { topVariants: [], metadata: pgsMetadata[trait.pgs_id] || {} });
-          pgsTopVariants.set(trait.pgs_id, []);
-          pgsDistributions.set(trait.pgs_id, createBins());
-        }
-        pgsBreakdown.get(trait.pgs_id).total++;
+    // Process parquet file in streaming chunks
+    const processedRows = await streamProcessor.processParquetStream(
+      traitUrl,
+      async (chunkData, chunkNum, totalChunks) => {
+        let chunkMatches = 0;
         
-        // Fast lookup - try both rsid and position-based matching
-        let genotype = null;
-        if (trait.variant_id) {
-          // Try direct rsid match first
-          if (rsidMap.has(trait.variant_id)) {
-            genotype = rsidMap.get(trait.variant_id);
-          } else if (trait.variant_id.includes(':')) {
-            // Try position-based match for chr:pos:ref:alt format
-            const parts = trait.variant_id.split(':');
-            if (parts.length >= 2) {
-              const posKey = `${parts[0]}:${parts[1]}`;
-              if (posMap.has(posKey)) {
-                genotype = posMap.get(posKey);
-              }
-            }
+        for (const trait of chunkData) {
+          // Initialize PGS if needed
+          aggregator.initializePGS(trait.pgs_id, pgsMetadata[trait.pgs_id] || {});
+          
+          // Match variant
+          const genotype = streamProcessor.matchVariant(trait.variant_id, rsidMap, posMap);
+          
+          if (genotype && genotype.includes(trait.effect_allele)) {
+            aggregator.addVariant(trait.pgs_id, trait, genotype, trait.effect_weight);
+            chunkMatches++;
           }
         }
         
-        if (genotype && genotype.includes(trait.effect_allele)) {
-          riskScore += trait.effect_weight;
-          chunkMatches++;
-          totalMatches++;
-          
-          const breakdown = pgsBreakdown.get(trait.pgs_id);
-          if (trait.effect_weight > 0) {
-            breakdown.positive++;
-            breakdown.positiveSum += trait.effect_weight;
-          } else {
-            breakdown.negative++;
-            breakdown.negativeSum += trait.effect_weight;
-          }
-          
-          if (pgsMetadata[trait.pgs_id] && !breakdown.metadata) {
-            breakdown.metadata = pgsMetadata[trait.pgs_id];
-          }
-          
-          // Add to distribution bins
-          const bins = pgsDistributions.get(trait.pgs_id);
-          const bin = bins.find(b => trait.effect_weight > b.min && trait.effect_weight <= b.max);
-          if (bin) {
-            bin.count++;
-            bin.sum += trait.effect_weight;
-          }
-          
-          // Track top contributing variants (keep only top 20 per PGS)
-          const topVariants = pgsTopVariants.get(trait.pgs_id);
-          topVariants.push({
-            rsid: trait.variant_id,
-            effect_allele: trait.effect_allele,
-            effect_weight: trait.effect_weight,
-            userGenotype: genotype
-          });
-          
-          // Keep only top 20 by absolute effect weight
-          if (topVariants.length > 20) {
-            topVariants.sort((a, b) => Math.abs(b.effect_weight) - Math.abs(a.effect_weight));
-            topVariants.splice(20);
-          }
+        if (chunkNum % 50 === 0 || chunkNum === totalChunks) {
+          Debug.log(2, 'BrowserGenomicProcessor', 
+            `Stream chunk ${chunkNum}: ${chunkMatches} matches, total: ${aggregator.totalMatches}`);
         }
+      },
+      (message, progress) => {
+        const adjustedProgress = 20 + (progress * 0.7); // Map to 20-90% range
+        progressCallback?.(message, adjustedProgress);
       }
-      
-      if (chunkNum % 25 === 0 || chunkNum === totalChunks) {
-        Debug.log(2, 'BrowserGenomicProcessor', `Chunk ${chunkNum}: ${chunkMatches} matches, running total: ${totalMatches}, score: ${riskScore.toFixed(6)}`);
-      }
-      
-      // Yield control periodically
-      if (chunkNum % 10 === 0) {
-        await new Promise(resolve => setTimeout(resolve, 1));
-      }
-    }
+    );
     
-    progressCallback?.('Finalizing...', 95);
+    progressCallback?.('Finalizing results...', 95);
     
-    // Finalize top variants and distributions for each PGS
-    for (const [pgsId, topVariants] of pgsTopVariants) {
-      topVariants.sort((a, b) => Math.abs(b.effect_weight) - Math.abs(a.effect_weight));
-      const pgsDetail = pgsDetails.get(pgsId);
-      pgsDetail.topVariants = topVariants.slice(0, 20);
-      pgsDetail.distribution = pgsDistributions.get(pgsId);
-    }
-    
-    // Clean up
-    await this.conn.query('DROP TABLE IF EXISTS trait_data');
+    // Finalize and cleanup
+    const results = aggregator.finalize();
+    aggregator.cleanup();
     rsidMap.clear();
     posMap.clear();
-    pgsTopVariants.clear();
-    pgsDistributions.clear();
     
-    const pgsCount = pgsBreakdown.size;
-    Debug.log(1, 'BrowserGenomicProcessor', `Risk calculation complete: score=${riskScore.toFixed(6)}, matches=${totalMatches}, PGS_scores=${pgsCount}`);
+    Debug.log(1, 'BrowserGenomicProcessor', 
+      `Stream processing complete: score=${results.riskScore.toFixed(6)}, matches=${results.totalMatches}, rows=${processedRows}`);
+    
     progressCallback?.('Complete', 100);
-    
-    return { 
-      riskScore, 
-      pgsBreakdown: Object.fromEntries(pgsBreakdown), 
-      pgsDetails: Object.fromEntries(pgsDetails) 
-    };
+    return results;
   }
 
   async loadParquet(url, tableName) {

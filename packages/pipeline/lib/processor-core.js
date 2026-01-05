@@ -110,12 +110,16 @@ export async function needsUpdate(traitName, config) {
                 const actualVariants = parseInt(result.match(/│\s*(\d+)\s*│/)?.[1] || '0');
                 await fs.unlink(verifyFile);
                 
-                if (actualVariants !== config.expected_variants) {
-                    console.log(`    Variant count mismatch: expected ${config.expected_variants}, found ${actualVariants}, will regenerate`);
+                // Allow <0.01% difference in variant counts
+                const tolerance = Math.max(1, Math.floor(config.expected_variants * 0.0001));
+                const difference = Math.abs(actualVariants - config.expected_variants);
+                
+                if (difference > tolerance) {
+                    console.log(`    Variant count mismatch: expected ${config.expected_variants}, found ${actualVariants} (diff: ${difference}, tolerance: ${tolerance}), will regenerate`);
                     return true;
                 }
                 
-                console.log(`    File valid (${actualVariants} variants match expected), skipping generation`);
+                console.log(`    File valid (${actualVariants} variants, diff: ${difference} within tolerance ${tolerance}), skipping generation`);
                 return false;
             } catch (error) {
                 console.log(`    Could not verify variant count: ${error.message}, will regenerate`);

@@ -1,19 +1,18 @@
 services:
-  # 1. The Frontend Application
+  # Build deps in container, mount dev files
   webapp:
-    build: 
+    build:
       context: .
       dockerfile: apps/web/Dockerfile
     volumes:
-      - ./apps/web:/app/apps/web
-      - ./packages:/app/packages
-      - /app/node_modules
+      - ./cdn/nginx.conf:/etc/nginx/conf.d/default.conf
+      - ./apps/web:/usr/share/nginx/html/dev
+      - ./packages:/usr/share/nginx/html/packages
+      - ./data_out:/usr/share/nginx/html/data
     ports:
-      - "4242:8080"
-    depends_on:
-      - cdn
+      - "4242:80"
 
-  # 2. The Data Pipeline (ETL)
+  # The Data Pipeline (ETL)
   pipeline:
     build: 
       context: ./packages/pipeline
@@ -23,12 +22,3 @@ services:
       - /app/node_modules
       - ./data_out:/output
       - ./cache:/cache
-
-  # 3. The Local CDN (Simulating S3)
-  cdn:
-    image: nginx:alpine
-    volumes:
-      - ./cdn/nginx.conf:/etc/nginx/conf.d/default.conf
-      - ./data_out:/usr/share/nginx/html/data
-    ports:
-      - "4343:80"

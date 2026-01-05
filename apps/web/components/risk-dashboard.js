@@ -147,6 +147,11 @@ export class RiskDashboard extends HTMLElement {
     }
 
     filterTraits(individualId = null) {
+        // If no individualId provided, get from store
+        if (!individualId) {
+            const state = useAppStore.getState();
+            individualId = state.selectedIndividual;
+        }
         const grid = this.shadowRoot.getElementById('traitsGrid');
         const searchInput = this.shadowRoot.getElementById('searchInput');
         const categorySelect = this.shadowRoot.getElementById('categorySelect');
@@ -333,7 +338,7 @@ export class RiskDashboard extends HTMLElement {
                 ${cached.matchedVariants} matched of ${cached.totalVariants?.toLocaleString() || 'unknown'} variants<br>
                 Calculated ${new Date(cached.calculatedAt).toLocaleDateString()}
             </div>
-            ${cached.pgsBreakdown ? this.renderPgsBreakdown(cached.pgsBreakdown, individualId) : ''}
+            ${cached.pgsBreakdown ? this.renderPgsBreakdown(cached.pgsBreakdown, individualId, cached.pgsDetails) : ''}
         `;
     }
 
@@ -347,7 +352,7 @@ export class RiskDashboard extends HTMLElement {
         `;
     }
 
-    renderPgsBreakdown(pgsBreakdown, individualId) {
+    renderPgsBreakdown(pgsBreakdown, individualId, pgsDetails = {}) {
         if (!pgsBreakdown || typeof pgsBreakdown !== 'object') return '';
         
         const entries = Object.entries(pgsBreakdown)
@@ -372,10 +377,14 @@ export class RiskDashboard extends HTMLElement {
                         
                         const scoreColor = netScore >= 0 ? '#721c24' : '#155724';
                         
+                        // Get metadata from pgsDetails
+                        const metadata = pgsDetails[pgsId]?.metadata || {};
+                        const pgsName = metadata.name || pgsId;
+                        
                         return `
                             <div class="pgs-item" onclick="this.getRootNode().host.showPGSBreakdown('${pgsId}', '${individualId}', this)" style="cursor: pointer;">
                                 <div class="pgs-header">
-                                    <span class="pgs-name">${data.metadata?.name || pgsId}</span>
+                                    <span class="pgs-name">${pgsName}</span>
                                     <div class="pgs-score" style="color: ${scoreColor}">${formatScore(netScore)}</div>
                                 </div>
                                 <div class="pgs-bar" title="View detailed calculation">
@@ -476,7 +485,7 @@ export class RiskDashboard extends HTMLElement {
                 <div class="calculation-info">
                     <h5>Calculation Summary</h5>
                     <div style="font-size: 12px; line-height: 1.4; color: #555;">
-                        <div>• Matched ${pgsContribution.positive + pgsContribution.negative} of ${pgsContribution.total} variants in this PGS</div>
+                        <div>• Matched ${pgsContribution.positive + pgsContribution.negative} of ${pgsContribution.total} variants in this PGS (${((pgsContribution.positive + pgsContribution.negative) / pgsContribution.total * 100).toFixed(1)}%)</div>
                         <div>• ${pgsContribution.positive} variants increase risk (${pgsContribution.positiveSum >= 0 ? '+' : ''}${pgsContribution.positiveSum.toFixed(4)})</div>
                         <div>• ${pgsContribution.negative} variants decrease risk (${pgsContribution.negativeSum.toFixed(4)})</div>
                         <div style="font-weight: bold; margin-top: 8px;">• Net contribution: ${pgsScore >= 0 ? '+' : ''}${pgsScore.toFixed(4)}</div>
@@ -555,7 +564,7 @@ export class RiskDashboard extends HTMLElement {
         
         if (card && cached) {
             const pgsBreakdown = card.querySelector('.pgs-breakdown');
-            pgsBreakdown.innerHTML = this.renderPgsBreakdown(cached.pgsBreakdown, individualId);
+            pgsBreakdown.innerHTML = this.renderPgsBreakdown(cached.pgsBreakdown, individualId, cached.pgsDetails);
             pgsBreakdown.classList.remove('showing-detail');
         }
         
@@ -662,14 +671,14 @@ export class RiskDashboard extends HTMLElement {
                 .trait-stats { font-size: 12px; color: #666; margin-top: 10px; }
                 .pgs-breakdown { margin-top: 15px; }
                 .breakdown-title { font-size: 12px; font-weight: bold; margin-bottom: 8px; color: #333; }
-                .pgs-list { max-height: 200px; overflow-y: auto; }
+                .pgs-list { max-height: 200px; overflow-y: auto; overflow-x: hidden; padding-right: 8px; }
                 .pgs-item { margin-bottom: 8px; }
                 .pgs-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 2px; }
                 .pgs-bar { width: 100%; height: 16px; border: 1px solid #ddd; border-radius: 3px; overflow: hidden; }
                 .pgs-negative { background: #d4edda; height: 100%; float: left; }
                 .pgs-positive { background: #f8d7da; height: 100%; float: left; }
                 .pgs-score { font-weight: bold; font-size: 11px; }
-                .pgs-name { font-size: 11px; color: #007acc; font-weight: 500; }
+                .pgs-name { font-size: 11px; color: #007acc; font-weight: 500; max-width: 70%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
                 .pgs-item:hover { background: #f8f9fa; }
                 .analyze-btn { position: relative; width: 100%; padding: 10px; background: #007acc; color: white; border: none; border-radius: 4px; cursor: pointer; overflow: hidden; }
                 .analyze-btn:hover { background: #005a99; }

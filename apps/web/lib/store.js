@@ -1,4 +1,4 @@
-import { createStore } from 'zustand';
+import { createStore } from '/deps/zustand.js';
 
 export const useAppStore = createStore((set, get) => ({
   // Core state
