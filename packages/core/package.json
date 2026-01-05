@@ -6,6 +6,7 @@
   "exports": {
     ".": "./src/index.js",
     "./progress": "./src/progress/index.js",
+    "./queue": "./src/queue/index.js",
     "./interfaces": "./src/interfaces/index.js"
   },
   "dependencies": {},

@@ -4,6 +4,9 @@ export * from './interfaces/index.js';
 // Progress tracking
 export * from './progress/index.js';
 
+// Queue management
+export * from './queue/index.js';
+
 // Utilities
 export { Debug } from './utils/debug.js';
 

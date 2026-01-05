@@ -1,5 +1,6 @@
 import { Debug } from '@asili/debug';
 import { useAppStore } from '../lib/store.js';
+import { QueueManager, QUEUE_PRIORITY } from '@asili/core';
 import './pgs-breakdown.js';
 
 // Format PGS scores as standard deviations (not multipliers)
@@ -50,8 +51,10 @@ export class RiskDashboard extends HTMLElement {
         super();
         this.attachShadow({ mode: 'open' });
         this.processor = null;
+        this.queueManager = null;
         this.availableTraits = [];
         this.unsubscribe = null;
+        this.hasAutoQueued = false;
     }
 
     connectedCallback() {
@@ -60,6 +63,12 @@ export class RiskDashboard extends HTMLElement {
         
         // Subscribe to state changes
         this.unsubscribe = useAppStore.subscribe((state) => {
+            // Reset auto-queue flag when individual changes
+            const currentIndividual = state.selectedIndividual;
+            if (this.lastIndividual !== currentIndividual) {
+                this.hasAutoQueued = false;
+                this.lastIndividual = currentIndividual;
+            }
             this.updateTraitCards(state);
         });
     }
@@ -70,6 +79,10 @@ export class RiskDashboard extends HTMLElement {
             const { AsiliProcessor } = await import('../lib/asili-processor.js');
             this.processor = new AsiliProcessor();
             await this.processor.initialize();
+            
+            // Initialize queue manager
+            this.queueManager = new QueueManager(this.processor);
+            
             await this.loadAvailableTraits();
         } catch (error) {
             Debug.error('RiskDashboard', 'Failed to initialize processor:', error);
@@ -101,6 +114,12 @@ export class RiskDashboard extends HTMLElement {
         }
         
         this.filterTraits(state.selectedIndividual);
+        
+        // Auto-queue all uncached traits when individual is ready
+        if (this.queueManager && !this.hasAutoQueued) {
+            this.autoQueueUncachedTraits(state.selectedIndividual);
+            this.hasAutoQueued = true;
+        }
     }
 
     async renderTraitCardsForIndividual(individualId) {
@@ -343,10 +362,56 @@ export class RiskDashboard extends HTMLElement {
     }
 
     renderAnalyzeButton(traitId, individualId) {
+        if (!this.queueManager) {
+            return `
+                <div class="risk-display">
+                    <button class="analyze-btn" onclick="this.getRootNode().host.analyzeRisk('${traitId}', '${individualId}', this)">
+                        <span>Calculate Risk</span>
+                    </button>
+                </div>
+            `;
+        }
+        
+        // Check if item is in queue
+        const queueItem = this.queueManager.getQueue().find(item => 
+            item.traitId === traitId && item.individualId === individualId);
+        
+        if (queueItem) {
+            if (queueItem.status === 'processing') {
+                return `
+                    <div class="risk-display">
+                        <div class="queue-status processing">
+                            <div class="processing-indicator">⚡ Processing...</div>
+                            <div class="progress-bar">
+                                <div class="progress-fill" style="width: ${queueItem.progress}%"></div>
+                            </div>
+                            <div class="progress-text">${Math.round(queueItem.progress)}%</div>
+                        </div>
+                    </div>
+                `;
+            } else if (queueItem.status === 'pending') {
+                const position = this.queueManager.getQueue()
+                    .filter(item => item.status === 'pending')
+                    .findIndex(item => item.id === queueItem.id) + 1;
+                
+                return `
+                    <div class="risk-display">
+                        <div class="queue-status pending">
+                            <div class="queue-position">#${position} in queue</div>
+                            <button class="queue-action-btn" onclick="this.getRootNode().host.moveToNext('${queueItem.id}')" 
+                                    ${position === 1 ? 'disabled' : ''}>
+                                ⬆️ Move to Next
+                            </button>
+                        </div>
+                    </div>
+                `;
+            }
+        }
+        
         return `
             <div class="risk-display">
-                <button class="analyze-btn" onclick="this.getRootNode().host.analyzeRisk('${traitId}', '${individualId}', this)">
-                    <span>Calculate Risk</span>
+                <button class="analyze-btn" onclick="this.getRootNode().host.addToQueue('${traitId}', '${individualId}')">
+                    <span>Add to Queue</span>
                 </button>
             </div>
         `;
@@ -645,6 +710,23 @@ export class RiskDashboard extends HTMLElement {
                     font-size: 12px;
                     color: #6c757d;
                 }
+                .queue-all-btn {
+                    padding: 6px 12px;
+                    background: #28a745;
+                    color: white;
+                    border: none;
+                    border-radius: 4px;
+                    cursor: pointer;
+                    font-size: 12px;
+                    font-weight: bold;
+                }
+                .queue-all-btn:hover {
+                    background: #218838;
+                }
+                .queue-all-btn:disabled {
+                    background: #6c757d;
+                    cursor: not-allowed;
+                }
                 .family-header { margin: 30px 0 15px 0; }
                 .family-header h2 { margin: 0 0 5px 0; color: #333; font-size: 24px; }
                 .family-header p { margin: 0; color: #666; font-size: 14px; }
@@ -690,6 +772,14 @@ export class RiskDashboard extends HTMLElement {
                 .analyze-btn.loading span::after { content: ''; display: inline-block; width: 12px; height: 12px; margin-left: 8px; border: 2px solid rgba(255,255,255,0.3); border-top: 2px solid white; border-radius: 50%; animation: spin 1s linear infinite; }
                 .analyze-btn.progress span::after { content: '⚡'; margin-left: 8px; }
                 @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+                .queue-status { text-align: center; padding: 10px; }
+                .queue-status.processing { background: #e8f5e8; border-radius: 6px; }
+                .queue-status.pending { background: #fff3cd; border-radius: 6px; }
+                .processing-indicator { font-size: 14px; font-weight: bold; color: #155724; margin-bottom: 8px; }
+                .queue-position { font-size: 14px; font-weight: bold; color: #856404; margin-bottom: 8px; }
+                .queue-action-btn { padding: 6px 12px; background: #ffc107; color: #212529; border: none; border-radius: 4px; cursor: pointer; font-size: 12px; }
+                .queue-action-btn:hover:not(:disabled) { background: #e0a800; }
+                .queue-action-btn:disabled { opacity: 0.5; cursor: not-allowed; }
                 .loading { color: #666; font-style: italic; }
                 .error-message { margin-top: 10px; padding: 8px; background: #f8d7da; border: 1px solid #f5c6cb; border-radius: 4px; }
                 .error-text { font-size: 12px; color: #721c24; margin-bottom: 5px; }
@@ -754,6 +844,9 @@ export class RiskDashboard extends HTMLElement {
                 <div class="filter-stats" id="filterStats">
                     Showing 0 traits
                 </div>
+                <button class="queue-all-btn" onclick="this.getRootNode().host.queueAllTraits()" id="queueAllBtn">
+                    🚀 Queue All
+                </button>
             </div>
             <div id="traitsGrid" class="traits-container">
                 <div class="loading">Loading traits...</div>
@@ -860,26 +953,82 @@ export class RiskDashboard extends HTMLElement {
         }
     }
     
-    recalculateRisk(buttonElement) {
-        const card = buttonElement.closest('.trait-card');
-        const traitId = card.dataset.traitId;
-        const individualId = card.dataset.individualId;
+    addToQueue(traitId, individualId) {
+        if (!this.queueManager) {
+            // Fallback to direct calculation
+            return this.analyzeRisk(traitId, individualId, null);
+        }
         
-        if (traitId && individualId) {
+        this.queueManager.add(traitId, individualId, QUEUE_PRIORITY.NORMAL);
+        this.refreshTraitCard(traitId, individualId);
+    }
+    
+    moveToNext(itemId) {
+        this.queueManager?.moveToNext(itemId);
+        // Refresh all cards to update queue positions
+        this.filterTraits();
+    }
+    
+    refreshTraitCard(traitId, individualId) {
+        const card = this.shadowRoot.querySelector(`[data-trait-id="${traitId}"]`);
+        if (card) {
             const trait = this.availableTraits.find(t => t.id === traitId);
             if (trait) {
-                card.innerHTML = `
-                    <div class="trait-header">
-                        <h3 class="trait-name">${trait.name}</h3>
-                        <span class="trait-category">${trait.categories?.[0] || 'Other'}</span>
-                    </div>
-                    <div class="trait-stats">
-                        ${Object.keys(trait.pgs_metadata || {}).length} PGS scores | ${trait.variant_count?.toLocaleString() || 'Unknown'} variants
-                    </div>
-                    ${this.renderAnalyzeButton(traitId, individualId)}
-                `;
+                const cached = null; // Will check for cached results
+                const newCard = this.createTraitCard(trait, individualId, cached);
+                card.replaceWith(newCard);
             }
         }
+    }
+    
+    getQueueManager() {
+        return this.queueManager;
+    }
+    
+    queueAllTraitsForIndividual(individualId) {
+        if (!this.queueManager || !individualId) return;
+        
+        const state = useAppStore.getState();
+        if (!state.selectedIndividual || !state.individualReady) return;
+        
+        // Add all available traits to queue
+        this.availableTraits.forEach(trait => {
+            // Skip if already calculated or in queue
+            const existingItem = this.queueManager.getQueue().find(item => 
+                item.traitId === trait.id && item.individualId === individualId);
+            
+            if (!existingItem) {
+                // Check if already calculated
+                this.processor.getCachedResult(individualId, trait.id).then(cached => {
+                    if (!cached) {
+                        this.queueManager.add(trait.id, individualId, QUEUE_PRIORITY.NORMAL);
+                    }
+                });
+            }
+        });
+        
+        // Refresh the display
+        setTimeout(() => this.filterTraits(), 500);
+    }
+    
+    queueAllTraits() {
+        const state = useAppStore.getState();
+        if (state.selectedIndividual) {
+            this.queueAllTraitsForIndividual(state.selectedIndividual);
+        }
+    }
+    
+    async autoQueueUncachedTraits(individualId) {
+        if (!this.queueManager || !individualId) return;
+        
+        for (const trait of this.availableTraits) {
+            const cached = await this.processor.getCachedResult(individualId, trait.id);
+            if (!cached) {
+                this.queueManager.add(trait.id, individualId, QUEUE_PRIORITY.NORMAL);
+            }
+        }
+        
+        setTimeout(() => this.filterTraits(), 100);
     }
 }
 
