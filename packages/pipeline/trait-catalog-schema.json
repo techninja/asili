@@ -7,7 +7,7 @@
     "traits": {
       "type": "object",
       "patternProperties": {
-        "^(MONDO:[0-9]{7}|EFO_[0-9]{7})$": {
+        "^(MONDO:[0-9]{7}|EFO_[0-9]{7}|HP_[0-9]{7}|OBA_VT[0-9]{7}|OBA_[0-9]{7}|PATO_[0-9]{7})$": {
           "$ref": "#/definitions/Trait"
         }
       },
@@ -25,7 +25,7 @@
         },
         "mondo_id": {
           "type": "string",
-          "pattern": "^(MONDO:[0-9]{7}|EFO_[0-9]{7})$"
+          "pattern": "^(MONDO:[0-9]{7}|EFO_[0-9]{7}|HP_[0-9]{7}|OBA_VT[0-9]{7}|OBA_[0-9]{7}|PATO_[0-9]{7})$"
         },
         "pgs_ids": {
           "type": "array",
