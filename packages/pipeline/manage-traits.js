@@ -83,23 +83,51 @@ async function saveCatalog(catalog) {
     console.log(chalk.green('✓ Catalog saved'));
 }
 
-async function lookupMondoTrait(mondoId) {
+// Trait ID patterns and handlers
+const TRAIT_ID_PATTERNS = {
+    MONDO_NUMBER: { regex: /^[0-9]+$/, format: id => `MONDO:${id.padStart(7, '0')}` },
+    MONDO_FULL: { regex: /^MONDO:[0-9]{7}$/, format: id => id },
+    MONDO_UNDERSCORE: { regex: /^MONDO_[0-9]{7}$/, format: id => id.replace('_', ':') },
+    EFO: { regex: /^EFO_[0-9]{7}$/, format: id => id },
+    HP: { regex: /^HP_[0-9]{7}$/, format: id => id },
+    OBA_VT: { regex: /^OBA_VT[0-9]{7}$/, format: id => id },
+    OBA: { regex: /^OBA_[0-9]{7}$/, format: id => id },
+    PATO: { regex: /^PATO_[0-9]{7}$/, format: id => id }
+};
+
+function parseTraitId(input) {
+    const trimmed = input.trim();
+    
+    for (const [type, pattern] of Object.entries(TRAIT_ID_PATTERNS)) {
+        if (pattern.regex.test(trimmed)) {
+            return {
+                type,
+                id: pattern.format(trimmed),
+                original: trimmed
+            };
+        }
+    }
+    
+    return { type: 'SEARCH', id: trimmed, original: trimmed };
+}
+
+async function lookupTraitById(traitId) {
     try {
-        const traitInfo = await pgsApiClient.getTraitInfo(mondoId);
+        const traitInfo = await pgsApiClient.getTraitInfo(traitId);
         
-        // If this is an EFO trait, try to find the MONDO equivalent
-        let actualMondoId = mondoId;
-        if (mondoId.startsWith('EFO_') && traitInfo.trait_mapped_terms) {
+        // Determine canonical ID (prefer MONDO if available)
+        let canonicalId = traitId;
+        if (traitId.startsWith('EFO_') && traitInfo.trait_mapped_terms) {
             const mondoTerm = traitInfo.trait_mapped_terms.find(term => term.startsWith('MONDO:'));
             if (mondoTerm) {
-                actualMondoId = mondoTerm;
+                canonicalId = mondoTerm;
                 console.log(chalk.blue(`  Found MONDO equivalent: ${mondoTerm}`));
             }
         }
         
         return {
-            mondo_id: actualMondoId,
-            source_id: mondoId, // Keep original for API calls
+            canonical_id: canonicalId,
+            source_id: traitId,
             title: traitInfo.label || 'Unknown trait',
             description: traitInfo.description || '',
             pgs_count: (traitInfo.associated_pgs_ids?.length || 0) + (traitInfo.child_associated_pgs_ids?.length || 0)
@@ -284,6 +312,10 @@ async function addTrait() {
   • MONDO number: 1657, 5105
   • Full MONDO ID: MONDO:0001657
   • EFO ID: EFO_0000756
+  • HP ID: HP_0000964
+  • OBA ID: OBA_VT0001560, OBA_1000968
+  • PATO ID: PATO_0000384
+  • Comma-separated IDs: "1657,HP_0000964,PATO_0000384"
   • Search term: "diabetes", "cancer"
 Input:`,
         validate: value => value.trim().length > 0 || 'Input cannot be empty'
@@ -292,88 +324,33 @@ Input:`,
     if (!input) return;
     
     const trimmed = input.trim();
+    
+    // Check if input contains commas (multiple IDs)
+    if (trimmed.includes(',')) {
+        const ids = trimmed.split(',').map(id => id.trim()).filter(id => id.length > 0);
+        console.log(chalk.blue(`Processing ${ids.length} trait IDs...`));
+        
+        for (const id of ids) {
+            console.log(chalk.cyan(`\n--- Processing: ${id} ---`));
+            await processSingleTrait(id, catalog);
+        }
+        return;
+    }
+    
+    // Single trait processing
+    await processSingleTrait(trimmed, catalog);
+}
+
+async function processSingleTrait(input, catalog) {
     let selectedTrait = null;
     
-    // Try to parse as number first
-    const parsedNumber = parseInt(trimmed);
-    if (!isNaN(parsedNumber) && parsedNumber > 0) {
-        // Handle as MONDO ID number
-        const mondoId = `MONDO:${parsedNumber.toString().padStart(7, '0')}`;
-        
-        if (catalog.traits[mondoId]) {
-            console.log(chalk.yellow(`Trait ${mondoId} already exists in catalog`));
-            return;
-        }
-        
-        console.log(chalk.blue(`Looking up ${mondoId}...`));
-        const traitInfo = await lookupMondoTrait(mondoId);
-        
-        if (!traitInfo) {
-            console.log(chalk.red(`Could not find trait information for ${mondoId}`));
-            return;
-        }
-        
-        selectedTrait = traitInfo;
-        console.log(chalk.green(`Found: ${traitInfo.title} (${traitInfo.pgs_count} PGS scores)`));
-        
-    } else if (/^MONDO:[0-9]{7}$/.test(trimmed)) {
-        // Handle as full MONDO ID
-        if (catalog.traits[trimmed]) {
-            console.log(chalk.yellow(`Trait ${trimmed} already exists in catalog`));
-            return;
-        }
-        
-        console.log(chalk.blue(`Looking up ${trimmed}...`));
-        const traitInfo = await lookupMondoTrait(trimmed);
-        
-        if (!traitInfo) {
-            console.log(chalk.red(`Could not find trait information for ${trimmed}`));
-            return;
-        }
-        
-        selectedTrait = traitInfo;
-        console.log(chalk.green(`Found: ${traitInfo.title} (${traitInfo.pgs_count} PGS scores)`));
-        
-    } else if (/^EFO_[0-9]{7}$/.test(trimmed)) {
-        // Handle as EFO ID - look up and convert to MONDO
-        console.log(chalk.blue(`Looking up ${trimmed}...`));
-        const traitInfo = await lookupMondoTrait(trimmed);
-        
-        if (!traitInfo) {
-            console.log(chalk.red(`Could not find trait information for ${trimmed}`));
-            return;
-        }
-        
-        if (catalog.traits[traitInfo.mondo_id]) {
-            const existing = catalog.traits[traitInfo.mondo_id];
-            if (existing.pgs_ids.length === 0 || existing.expected_variants === 0) {
-                console.log(chalk.yellow(`Trait ${traitInfo.mondo_id} exists but has incomplete data (${existing.pgs_ids.length} PGS scores, ${existing.expected_variants} variants)`));
-                const { update } = await prompts({
-                    type: 'confirm',
-                    name: 'update',
-                    message: 'Update with complete data?',
-                    initial: true
-                });
-                if (!update) return;
-            } else {
-                console.log(chalk.yellow(`Trait ${traitInfo.mondo_id} already exists with complete data (${existing.pgs_ids.length} PGS scores)`));
-                return;
-            }
-        }
-        
-        // Skip if no valid trait ID found
-        if (!traitInfo.mondo_id.match(/^(MONDO:[0-9]{7}|EFO_[0-9]{7})$/)) {
-            console.log(chalk.red(`No valid MONDO or EFO ID found for ${trimmed}, skipping`));
-            return;
-        }
-        
-        selectedTrait = traitInfo;
-        console.log(chalk.green(`Found: ${traitInfo.title} (${traitInfo.pgs_count} PGS scores)`));
-        
-    } else {
+    const parsed = parseTraitId(input);
+    console.log(chalk.gray(`Parsed as ${parsed.type}: ${parsed.id}`));
+    
+    if (parsed.type === 'SEARCH') {
         // Handle as search term
-        console.log(chalk.blue(`Searching for traits matching: ${trimmed}`));
-        const searchResults = await searchMondoTraits(trimmed);
+        console.log(chalk.blue(`Searching for traits matching: ${input}`));
+        const searchResults = await searchMondoTraits(input);
         
         if (searchResults.length === 0) {
             console.log(chalk.yellow('No MONDO traits found for that search term'));
@@ -402,17 +379,55 @@ Input:`,
         });
         
         if (!selected) return;
-        selectedTrait = selected;
+        selectedTrait = { ...selected, canonical_id: selected.mondo_id, source_id: selected.mondo_id };
+    } else {
+        // Handle as ID lookup
+        const canonicalId = parsed.id;
+        
+        if (catalog.traits[canonicalId]) {
+            console.log(chalk.yellow(`Trait ${canonicalId} already exists in catalog`));
+            return;
+        }
+        
+        console.log(chalk.blue(`Looking up ${parsed.id}...`));
+        const traitInfo = await lookupTraitById(parsed.id);
+        
+        if (!traitInfo) {
+            console.log(chalk.red(`Could not find trait information for ${parsed.id}`));
+            return;
+        }
+        
+        // Check if canonical ID already exists
+        if (traitInfo.canonical_id !== parsed.id && catalog.traits[traitInfo.canonical_id]) {
+            const existing = catalog.traits[traitInfo.canonical_id];
+            if (existing.pgs_ids.length === 0 || existing.expected_variants === 0) {
+                console.log(chalk.yellow(`Trait ${traitInfo.canonical_id} exists but has incomplete data`));
+                const { update } = await prompts({
+                    type: 'confirm',
+                    name: 'update',
+                    message: 'Update with complete data?',
+                    initial: true
+                });
+                if (!update) return;
+            } else {
+                console.log(chalk.yellow(`Trait ${traitInfo.canonical_id} already exists with complete data`));
+                return;
+            }
+        }
+        
+        selectedTrait = traitInfo;
+        console.log(chalk.green(`Found: ${traitInfo.title} (${traitInfo.pgs_count} PGS scores)`));
     }
     
     // Add the trait
-    console.log(chalk.blue(`Adding ${selectedTrait.title} (${selectedTrait.mondo_id})...`));
+    const canonicalId = selectedTrait.canonical_id;
+    console.log(chalk.blue(`Adding ${selectedTrait.title} (${canonicalId})...`));
     
     // Get PGS IDs for this trait
     let pgsIds = [];
     try {
-        // Use the source ID (original EFO or MONDO) for fetching PGS scores
-        const sourceId = selectedTrait.source_id || selectedTrait.mondo_id;
+        // Use the source ID (original) for fetching PGS scores
+        const sourceId = selectedTrait.source_id || canonicalId;
         const traitInfo = await pgsApiClient.getTraitInfo(sourceId);
         pgsIds = (traitInfo.associated_pgs_ids || []).concat(traitInfo.child_associated_pgs_ids || []);
         // Remove duplicates
@@ -444,9 +459,9 @@ Input:`,
         console.log(chalk.blue(`Total variants: ${totalVariants.toLocaleString()} (estimated unique: ${uniqueVariants.toLocaleString()})`));
     }
     
-    catalog.traits[selectedTrait.mondo_id] = {
+    catalog.traits[canonicalId] = {
         title: selectedTrait.title,
-        mondo_id: selectedTrait.mondo_id,
+        mondo_id: canonicalId,
         pgs_ids: pgsIds,
         last_updated: new Date().toISOString(),
         expected_variants: totalVariants,
@@ -454,7 +469,7 @@ Input:`,
     };
     
     await saveCatalog(catalog);
-    console.log(chalk.green(`\n✓ Added trait: ${selectedTrait.title} (${selectedTrait.mondo_id})`));
+    console.log(chalk.green(`\n✓ Added trait: ${selectedTrait.title} (${canonicalId})`));
     console.log(chalk.blue(`   ${pgsIds.length} PGS scores, ${totalVariants.toLocaleString()} total variants`));
 }
 
@@ -485,6 +500,78 @@ async function freshStart() {
     console.log(chalk.green('✓ Catalog reset to empty state'));
 }
 
+async function importFromFile() {
+    console.log(chalk.cyan('\n=== Import Traits from File ===\n'));
+    
+    const catalog = await loadCatalog();
+    
+    const { filePath } = await prompts({
+        type: 'text',
+        name: 'filePath',
+        message: 'Enter file path (relative to pipeline directory):',
+        initial: 'import_ids.csv',
+        validate: value => value.trim().length > 0 || 'File path cannot be empty'
+    });
+    
+    if (!filePath) return;
+    
+    try {
+        const fullPath = path.resolve(__dirname, filePath.trim());
+        const fileContent = await fs.readFile(fullPath, 'utf8');
+        
+        // Parse CSV - handle both comma-separated single line and multi-line
+        const ids = fileContent
+            .split(/[,\n\r]+/)
+            .map(id => id.trim())
+            .filter(id => id.length > 0);
+        
+        console.log(chalk.blue(`Found ${ids.length} trait IDs in file`));
+        
+        const { confirm } = await prompts({
+            type: 'confirm',
+            name: 'confirm',
+            message: `Process ${ids.length} trait IDs?`,
+            initial: true
+        });
+        
+        if (!confirm) return;
+        
+        let processed = 0;
+        let added = 0;
+        let skipped = 0;
+        let errors = 0;
+        
+        for (const id of ids) {
+            processed++;
+            console.log(chalk.cyan(`\n[${processed}/${ids.length}] Processing: ${id}`));
+            
+            try {
+                const beforeCount = Object.keys(catalog.traits).length;
+                await processSingleTrait(id, catalog);
+                const afterCount = Object.keys(catalog.traits).length;
+                
+                if (afterCount > beforeCount) {
+                    added++;
+                } else {
+                    skipped++;
+                }
+            } catch (error) {
+                console.log(chalk.red(`  Error processing ${id}: ${error.message}`));
+                errors++;
+            }
+        }
+        
+        console.log(chalk.green(`\n✓ Import complete:`));
+        console.log(chalk.blue(`  Processed: ${processed}`));
+        console.log(chalk.green(`  Added: ${added}`));
+        console.log(chalk.yellow(`  Skipped: ${skipped}`));
+        console.log(chalk.red(`  Errors: ${errors}`));
+        
+    } catch (error) {
+        console.log(chalk.red(`Error reading file: ${error.message}`));
+    }
+}
+
 async function main() {
     console.log(chalk.bold.blue('\n🧬 Asili Trait Manager\n'));
 
@@ -495,6 +582,7 @@ async function main() {
         choices: [
             { title: '📋 List current traits', value: 'list' },
             { title: '➕ Add trait to family', value: 'add' },
+            { title: '📁 Import traits from file', value: 'import' },
             { title: '🔄 Refresh trait data', value: 'refresh' },
             { title: '🆕 Fresh start', value: 'fresh' },
             { title: '🚪 Exit', value: 'exit' }
@@ -507,6 +595,9 @@ async function main() {
             break;
         case 'add':
             await addTrait();
+            break;
+        case 'import':
+            await importFromFile();
             break;
         case 'refresh':
             await refreshTraitData();
