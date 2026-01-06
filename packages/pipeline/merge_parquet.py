@@ -2,10 +2,13 @@
 import pandas as pd
 import sys
 import os
+import gc
 from pathlib import Path
+import pyarrow.parquet as pq
+import pyarrow as pa
 
-def merge_one_at_a_time(input_files, output_file):
-    """Merge files one at a time into output file to minimize memory usage"""
+def merge_chunked(input_files, output_file, chunk_size=50000):
+    """Merge files using chunked processing to minimize memory usage"""
     
     valid_files = []
     for file_path in input_files:
@@ -18,27 +21,42 @@ def merge_one_at_a_time(input_files, output_file):
         print("Error: No valid files to merge")
         sys.exit(1)
     
-    print(f"Merging {len(valid_files)} files one at a time...")
+    print(f"Chunked merge of {len(valid_files)} files (chunk size: {chunk_size:,})...")
     
-    # Start with first file
-    print(f"  Starting with: {Path(valid_files[0]).name}")
-    result_df = pd.read_parquet(valid_files[0])
+    # Create parquet writer
+    writer = None
+    schema = None
     
-    # Merge each subsequent file one at a time
-    for i, file_path in enumerate(valid_files[1:], 2):
-        print(f"  Merging file {i}/{len(valid_files)}: {Path(file_path).name}")
+    try:
+        for i, file_path in enumerate(valid_files, 1):
+            print(f"  Processing file {i}/{len(valid_files)}: {Path(file_path).name}")
+            
+            # Read file in chunks
+            parquet_file = pq.ParquetFile(file_path)
+            
+            for batch_idx, batch in enumerate(parquet_file.iter_batches(batch_size=chunk_size)):
+                table = pa.Table.from_batches([batch])
+                
+                if writer is None:
+                    schema = table.schema
+                    writer = pq.ParquetWriter(output_file, schema, compression='snappy')
+                
+                writer.write_table(table)
+                
+                # Force garbage collection
+                del table, batch
+                gc.collect()
         
-        df = pd.read_parquet(file_path)
-        result_df = pd.concat([result_df, df], ignore_index=True)
+        if writer:
+            writer.close()
         
-        # Clean up memory
-        del df
-    
-    print(f"Writing final file: {output_file}")
-    result_df.to_parquet(output_file, compression='snappy', index=False)
-    
-    size_mb = os.path.getsize(output_file) / (1024 * 1024)
-    print(f"✓ Merged {len(valid_files)} files into {output_file} ({size_mb:.1f}MB)")
+        size_mb = os.path.getsize(output_file) / (1024 * 1024)
+        print(f"✓ Merged {len(valid_files)} files into {output_file} ({size_mb:.1f}MB)")
+        
+    except Exception as e:
+        if writer:
+            writer.close()
+        raise e
 
 if __name__ == "__main__":
     if len(sys.argv) < 3:
@@ -48,4 +66,4 @@ if __name__ == "__main__":
     input_files = sys.argv[1:-1]
     output_file = sys.argv[-1]
     
-    merge_one_at_a_time(input_files, output_file)
+    merge_chunked(input_files, output_file)
