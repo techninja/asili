@@ -3,21 +3,21 @@
  */
 
 export const STANDARD_SCHEMA = {
-    variant_id: 'VARCHAR',
-    chr_name: 'VARCHAR', 
-    chr_position: 'BIGINT',
-    effect_allele: 'VARCHAR',
-    other_allele: 'VARCHAR',
-    effect_weight: 'DOUBLE',
-    pgs_id: 'VARCHAR'
+  variant_id: 'VARCHAR',
+  chr_name: 'VARCHAR',
+  chr_position: 'BIGINT',
+  effect_allele: 'VARCHAR',
+  other_allele: 'VARCHAR',
+  effect_weight: 'DOUBLE',
+  pgs_id: 'VARCHAR'
 };
 
 export function enforceStandardSchema(db, tableName) {
-    const columns = Object.entries(STANDARD_SCHEMA)
-        .map(([col, type]) => `${col} ${type}`)
-        .join(', ');
-    
-    return db.exec(`
+  const columns = Object.entries(STANDARD_SCHEMA)
+    .map(([col, type]) => `${col} ${type}`)
+    .join(', ');
+
+  return db.exec(`
         CREATE OR REPLACE TABLE ${tableName}_standardized AS
         SELECT 
             COALESCE(variant_id, '') as variant_id,

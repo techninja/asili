@@ -29,9 +29,10 @@ export class QueueManager {
   }
 
   add(traitId, individualId, priority = QUEUE_PRIORITY.NORMAL) {
-    const existing = this.queue.find(item => 
-      item.traitId === traitId && item.individualId === individualId);
-    
+    const existing = this.queue.find(
+      item => item.traitId === traitId && item.individualId === individualId
+    );
+
     if (existing) {
       existing.priority = Math.max(existing.priority, priority);
       this.sortQueue();
@@ -126,7 +127,9 @@ export class QueueManager {
   async processNext() {
     if (!this.isProcessing || this.isPaused) return;
 
-    const nextItem = this.queue.find(item => item.status === QUEUE_STATUS.PENDING);
+    const nextItem = this.queue.find(
+      item => item.status === QUEUE_STATUS.PENDING
+    );
     if (!nextItem) {
       this.isProcessing = false;
       this.emit('completed', null);
@@ -140,7 +143,7 @@ export class QueueManager {
 
     try {
       const startTime = Date.now();
-      
+
       const result = await this.processor.calculateTraitRisk(
         nextItem.traitId,
         nextItem.individualId,
@@ -151,7 +154,11 @@ export class QueueManager {
       );
 
       const duration = Date.now() - startTime;
-      this.timeEstimator.recordCompletion(nextItem.traitId, duration, result.matchedVariants);
+      this.timeEstimator.recordCompletion(
+        nextItem.traitId,
+        duration,
+        result.matchedVariants
+      );
 
       nextItem.status = QUEUE_STATUS.COMPLETED;
       nextItem.completedAt = Date.now();
@@ -160,7 +167,6 @@ export class QueueManager {
       this.stats.totalTime += duration;
 
       this.emit('itemCompleted', { item: nextItem, result });
-
     } catch (error) {
       nextItem.status = QUEUE_STATUS.FAILED;
       nextItem.error = error.message;
@@ -174,10 +180,18 @@ export class QueueManager {
   }
 
   getQueueState() {
-    const pending = this.queue.filter(item => item.status === QUEUE_STATUS.PENDING);
-    const processing = this.queue.find(item => item.status === QUEUE_STATUS.PROCESSING);
-    const completed = this.queue.filter(item => item.status === QUEUE_STATUS.COMPLETED);
-    const failed = this.queue.filter(item => item.status === QUEUE_STATUS.FAILED);
+    const pending = this.queue.filter(
+      item => item.status === QUEUE_STATUS.PENDING
+    );
+    const processing = this.queue.find(
+      item => item.status === QUEUE_STATUS.PROCESSING
+    );
+    const completed = this.queue.filter(
+      item => item.status === QUEUE_STATUS.COMPLETED
+    );
+    const failed = this.queue.filter(
+      item => item.status === QUEUE_STATUS.FAILED
+    );
 
     return {
       total: this.queue.length,
@@ -198,8 +212,12 @@ export class QueueManager {
   }
 
   clear() {
-    const pendingItems = this.queue.filter(item => item.status === QUEUE_STATUS.PENDING);
-    this.queue = this.queue.filter(item => item.status !== QUEUE_STATUS.PENDING);
+    const pendingItems = this.queue.filter(
+      item => item.status === QUEUE_STATUS.PENDING
+    );
+    this.queue = this.queue.filter(
+      item => item.status !== QUEUE_STATUS.PENDING
+    );
     this.emit('cleared', pendingItems);
   }
 }

@@ -1,11 +1,13 @@
 # Asili: The local DNA Research Tool
 
 ## Infrastructure Setup
+
 This setup orchestrates a Client-Side Data Lakehouse architecture. It is designed to query massive genomic datasets (via Parquet) entirely within the user's browser using DuckDB WASM. This ensures zero-knowledge privacy for user DNA data while minimizing server bandwidth via HTTP Range Requests.
 
 ## Application Directory Structure
 
 Files should be organized as follows:
+
 ```
 /asili
   ├── docker-compose.yml
@@ -22,8 +24,8 @@ Files should be organized as follows:
       └── (Web Components)
 ```
 
-
 ## Setup Instructions
+
 `docker compose up`
 
 Pipeline: The pipeline container will start, generate mock Parquet files ("Trait Packs") in data_out/, and then exit.
@@ -41,9 +43,11 @@ import * as duckdb from '@duckdb/duckdb-wasm';
 
 // Initialize DuckDB with local bundles
 const bundle = {
-    mainModule: '/node_modules/@duckdb/duckdb-wasm/dist/duckdb-eh.wasm',
-    mainWorker: '/node_modules/@duckdb/duckdb-wasm/dist/duckdb-browser-eh.worker.js',
-    pthreadWorker: '/node_modules/@duckdb/duckdb-wasm/dist/duckdb-browser-coi.pthread.worker.js'
+  mainModule: '/node_modules/@duckdb/duckdb-wasm/dist/duckdb-eh.wasm',
+  mainWorker:
+    '/node_modules/@duckdb/duckdb-wasm/dist/duckdb-browser-eh.worker.js',
+  pthreadWorker:
+    '/node_modules/@duckdb/duckdb-wasm/dist/duckdb-browser-coi.pthread.worker.js'
 };
 
 const worker = new Worker(bundle.mainWorker);

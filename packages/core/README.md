@@ -26,7 +26,7 @@ import { createBrowserProcessor, PROGRESS_STAGES } from '@asili/core';
 const { processor, progressTracker } = await createBrowserProcessor();
 
 // Subscribe to progress updates
-progressTracker.subscribe((status) => {
+progressTracker.subscribe(status => {
   console.log(`${status.stage}: ${status.message} (${status.progress}%)`);
 });
 
@@ -37,7 +37,9 @@ const dataset = await processor.loadDataset({
 });
 
 // Calculate risk scores
-const dnaData = { /* parsed DNA data */ };
+const dnaData = {
+  /* parsed DNA data */
+};
 const traits = [{ id: 'trait1', name: 'Trait 1', pgsIds: ['PGS000001'] }];
 const scores = await processor.calculatePGS(dnaData, traits);
 ```
@@ -101,7 +103,7 @@ import { ProgressTracker, PROGRESS_STAGES } from '@asili/core';
 const tracker = new ProgressTracker();
 
 // Subscribe to updates
-const unsubscribe = tracker.subscribe((status) => {
+const unsubscribe = tracker.subscribe(status => {
   updateUI(status);
 });
 
@@ -122,9 +124,15 @@ Base interface for genomic data processing:
 
 ```javascript
 class GenomicProcessor {
-  async loadDataset(source) { /* Load genomic dataset */ }
-  async calculatePGS(dna, traits) { /* Calculate risk scores */ }
-  async cacheResults(results) { /* Cache processing results */ }
+  async loadDataset(source) {
+    /* Load genomic dataset */
+  }
+  async calculatePGS(dna, traits) {
+    /* Calculate risk scores */
+  }
+  async cacheResults(results) {
+    /* Cache processing results */
+  }
 }
 ```
 
@@ -134,10 +142,18 @@ Base interface for data storage:
 
 ```javascript
 class StorageManager {
-  async store(key, data) { /* Store data */ }
-  async retrieve(key) { /* Retrieve data */ }
-  async clear() { /* Clear all data */ }
-  async list() { /* List stored keys */ }
+  async store(key, data) {
+    /* Store data */
+  }
+  async retrieve(key) {
+    /* Retrieve data */
+  }
+  async clear() {
+    /* Clear all data */
+  }
+  async list() {
+    /* List stored keys */
+  }
 }
 ```
 
@@ -147,14 +163,19 @@ Base interface for risk score calculation:
 
 ```javascript
 class RiskCalculator {
-  async calculateRisk(dna, trait, pgsData) { /* Calculate single trait risk */ }
-  async batchCalculate(dna, traits, datasets) { /* Calculate multiple traits */ }
+  async calculateRisk(dna, trait, pgsData) {
+    /* Calculate single trait risk */
+  }
+  async batchCalculate(dna, traits, datasets) {
+    /* Calculate multiple traits */
+  }
 }
 ```
 
 ## Data Types
 
 ### DNAData
+
 ```javascript
 {
   format: 'string',      // DNA file format
@@ -171,6 +192,7 @@ class RiskCalculator {
 ```
 
 ### TraitConfig
+
 ```javascript
 {
   id: 'string',          // Trait identifier
@@ -181,6 +203,7 @@ class RiskCalculator {
 ```
 
 ### RiskScore
+
 ```javascript
 {
   traitId: 'string',     // Trait identifier
@@ -194,11 +217,13 @@ class RiskCalculator {
 ## Platform Implementations
 
 ### Browser (Current)
+
 - **Processor**: `BrowserGenomicProcessor` - Uses DuckDB WASM for SQL processing
 - **Storage**: `BrowserStorageManager` - Uses IndexedDB for persistent storage
 - **Calculator**: `BasicRiskCalculator` - Standard PGS calculation algorithms
 
 ### Future Platforms
+
 - **Server**: Node.js implementation with native DuckDB
 - **Mobile**: React Native with native modules for performance
 - **Desktop**: Electron wrapper for desktop applications

@@ -3,11 +3,11 @@
  * This demonstrates the unified progress tracking and genomic processing
  */
 
-import { 
-  createBrowserProcessor, 
-  createBrowserStorage, 
+import {
+  createBrowserProcessor,
+  createBrowserStorage,
   createRiskCalculator,
-  PROGRESS_STAGES 
+  PROGRESS_STAGES
 } from '@asili/core';
 import { Debug } from '@asili/debug';
 
@@ -29,13 +29,13 @@ export class AsiliProcessor {
 
     this.processor = processor;
     this.progressTracker = progressTracker;
-    
+
     // Create storage and calculator
     this.storage = await createBrowserStorage({
       dbName: 'asili-genomic-data',
       version: 1
     });
-    
+
     this.calculator = await createRiskCalculator({
       populationMean: 0,
       populationStd: 1
@@ -45,7 +45,7 @@ export class AsiliProcessor {
     await this.loadTraitManifest();
 
     // Subscribe to progress updates
-    this.progressTracker.subscribe((status) => {
+    this.progressTracker.subscribe(status => {
       this.progressListeners.forEach(listener => listener(status));
     });
   }
@@ -54,20 +54,21 @@ export class AsiliProcessor {
     try {
       const response = await fetch('/data/trait_manifest.json');
       this.traitManifest = await response.json();
-      
+
       // Convert new manifest structure to flat trait list
       this.availableTraits = [];
-      
+
       if (!this.traitManifest.traits) {
         throw new Error('Invalid manifest: missing traits');
       }
-      
+
       // Process traits directly from the keyed structure
       Object.entries(this.traitManifest.traits).forEach(([mondoId, trait]) => {
         this.availableTraits.push({
           id: mondoId,
           name: trait.name,
-          description: trait.description || `Polygenic risk score for ${trait.name}`,
+          description:
+            trait.description || `Polygenic risk score for ${trait.name}`,
           categories: trait.categories || ['Other Conditions'],
           file_path: trait.file_path,
           pgs_metadata: trait.pgs_metadata || {},
@@ -75,7 +76,6 @@ export class AsiliProcessor {
           last_updated: trait.last_updated
         });
       });
-      
     } catch (error) {
       Debug.log(1, 'AsiliProcessor', 'Failed to load trait manifest:', error);
       this.traitManifest = { traits: {} };
@@ -94,7 +94,7 @@ export class AsiliProcessor {
 
   // Get traits for a specific category
   getTraitsForCategory(categoryName) {
-    return this.availableTraits.filter(trait => 
+    return this.availableTraits.filter(trait =>
       trait.categories?.includes(categoryName)
     );
   }
@@ -111,7 +111,13 @@ export class AsiliProcessor {
   }
 
   // Import DNA file and store variants
-  async importDNA(dnaFile, individualId, individualName, emoji = '👤', progressCallback) {
+  async importDNA(
+    dnaFile,
+    individualId,
+    individualName,
+    emoji = '👤',
+    progressCallback
+  ) {
     if (!this.storage) {
       throw new Error('Storage not initialized');
     }
@@ -119,18 +125,26 @@ export class AsiliProcessor {
     try {
       // Add individual if not exists
       if (individualId && individualName) {
-        await this.storage.addIndividual(individualId, individualName, 'self', emoji);
+        await this.storage.addIndividual(
+          individualId,
+          individualName,
+          'self',
+          emoji
+        );
       }
-      
+
       // Parse and store DNA file
-      const dnaData = await this.parseDNAFile(dnaFile, individualId, progressCallback);
-      
+      const dnaData = await this.parseDNAFile(
+        dnaFile,
+        individualId,
+        progressCallback
+      );
+
       return {
         individualId,
         variantCount: dnaData.variants.length,
         metadata: dnaData.metadata
       };
-      
     } catch (error) {
       this.progressTracker.setError(error);
       throw error;
@@ -139,8 +153,12 @@ export class AsiliProcessor {
 
   // Calculate risk for a single trait using real DNA processing
   async calculateTraitRisk(traitId, individualId, progressCallback) {
-    Debug.log(1, 'AsiliProcessor', `Starting risk calculation for trait: ${traitId}, individual: ${individualId}`);
-    
+    Debug.log(
+      1,
+      'AsiliProcessor',
+      `Starting risk calculation for trait: ${traitId}, individual: ${individualId}`
+    );
+
     if (!this.storage || !this.processor) {
       throw new Error('Processor not initialized');
     }
@@ -149,46 +167,75 @@ export class AsiliProcessor {
       // Get trait information
       const trait = this.availableTraits.find(t => t.id === traitId);
       if (!trait) {
-        Debug.error('AsiliProcessor', `Trait ${traitId} not found in available traits`);
+        Debug.error(
+          'AsiliProcessor',
+          `Trait ${traitId} not found in available traits`
+        );
         throw new Error(`Trait ${traitId} not found`);
       }
 
-      Debug.log(2, 'AsiliProcessor', `Found trait: ${trait.name} with ${trait.variant_count} variants`);
+      Debug.log(
+        2,
+        'AsiliProcessor',
+        `Found trait: ${trait.name} with ${trait.variant_count} variants`
+      );
 
       if (!trait.file_path) {
-        Debug.error('AsiliProcessor', `No data file available for trait ${trait.name}`);
+        Debug.error(
+          'AsiliProcessor',
+          `No data file available for trait ${trait.name}`
+        );
         throw new Error(`No data file available for trait ${trait.name}`);
       }
 
       // Get user DNA data
       progressCallback?.('Loading user DNA...', 0);
-      Debug.log(2, 'AsiliProcessor', `Loading DNA variants for individual: ${individualId}`);
+      Debug.log(
+        2,
+        'AsiliProcessor',
+        `Loading DNA variants for individual: ${individualId}`
+      );
       const userDNA = await this.storage.getVariants(individualId);
       if (!userDNA || userDNA.length === 0) {
-        Debug.error('AsiliProcessor', `No DNA data found for individual: ${individualId}`);
+        Debug.error(
+          'AsiliProcessor',
+          `No DNA data found for individual: ${individualId}`
+        );
         throw new Error('No DNA data found for individual');
       }
 
-      Debug.log(2, 'AsiliProcessor', `Loaded ${userDNA.length} DNA variants for processing`);
+      Debug.log(
+        2,
+        'AsiliProcessor',
+        `Loaded ${userDNA.length} DNA variants for processing`
+      );
 
       // Build trait URL
       progressCallback?.('Loading trait data...', 5);
       const traitUrl = `/data/${trait.file_path}`;
       Debug.log(2, 'AsiliProcessor', `Using trait data URL: ${traitUrl}`);
-      
+
       // Use the real DuckDB processor for calculation
       const result = await this.processor.calculateRisk(
-        traitUrl, 
-        userDNA, 
+        traitUrl,
+        userDNA,
         (message, percent) => {
-          Debug.log(3, 'AsiliProcessor', `Risk calculation progress: ${message} (${percent}%)`);
+          Debug.log(
+            3,
+            'AsiliProcessor',
+            `Risk calculation progress: ${message} (${percent}%)`
+          );
           progressCallback?.(message, percent);
-        }, 
+        },
         trait.pgs_metadata
       );
-      
-      Debug.log(1, 'AsiliProcessor', `Risk calculation complete. Score: ${result.riskScore}, PGS breakdown: ${Object.keys(result.pgsBreakdown || {}).length} scores`);
-      
+
+      Debug.log(
+        1,
+        'AsiliProcessor',
+        `Risk calculation complete. Score: ${result.riskScore}, PGS breakdown: ${Object.keys(result.pgsBreakdown || {}).length} scores`
+      );
+
       // Format result with additional metadata (include compact pgsDetails with top variants)
       const riskData = {
         riskScore: result.riskScore,
@@ -199,38 +246,56 @@ export class AsiliProcessor {
         traitLastUpdated: trait.last_updated,
         calculatedAt: new Date().toISOString()
       };
-      
+
       // Cache the result with compact pgsDetails
-      Debug.log(2, 'AsiliProcessor', `Caching risk result for ${traitId} with ${Object.keys(result.pgsDetails || {}).length} PGS summaries`);
+      Debug.log(
+        2,
+        'AsiliProcessor',
+        `Caching risk result for ${traitId} with ${Object.keys(result.pgsDetails || {}).length} PGS summaries`
+      );
       await this.storage.storeRiskScore(individualId, traitId, riskData);
-      
+
       return riskData;
-      
     } catch (error) {
-      Debug.error('AsiliProcessor', `Risk calculation failed for ${traitId}:`, error.message);
+      Debug.error(
+        'AsiliProcessor',
+        `Risk calculation failed for ${traitId}:`,
+        error.message
+      );
       this.progressTracker?.setError(error);
       throw error;
     }
   }
 
   async parseDNAFile(file, individualId, progressCallback) {
-    Debug.log(1, 'AsiliProcessor', `Starting DNA file parsing: ${file.name} (${file.size} bytes)`);
-    this.progressTracker.setStage(PROGRESS_STAGES.PROCESSING_DNA, 'Parsing DNA file...');
-    
+    Debug.log(
+      1,
+      'AsiliProcessor',
+      `Starting DNA file parsing: ${file.name} (${file.size} bytes)`
+    );
+    this.progressTracker.setStage(
+      PROGRESS_STAGES.PROCESSING_DNA,
+      'Parsing DNA file...'
+    );
+
     const text = await file.text();
     const lines = text.split('\n');
-    const dataLines = lines.filter(line => 
-      line.trim() && !line.startsWith('#') && !line.startsWith('rsid')
+    const dataLines = lines.filter(
+      line => line.trim() && !line.startsWith('#') && !line.startsWith('rsid')
     );
-    
-    Debug.log(2, 'AsiliProcessor', `Found ${dataLines.length} data lines from ${lines.length} total lines`);
-    
+
+    Debug.log(
+      2,
+      'AsiliProcessor',
+      `Found ${dataLines.length} data lines from ${lines.length} total lines`
+    );
+
     const variants = [];
-    
+
     for (let i = 0; i < dataLines.length; i++) {
       const line = dataLines[i].trim();
       if (!line) continue;
-      
+
       const columns = line.split('\t');
       if (columns.length >= 4) {
         const position = parseInt(columns[2], 10);
@@ -247,7 +312,7 @@ export class AsiliProcessor {
           }
         }
       }
-      
+
       // Update progress periodically
       if (i % 10000 === 0) {
         const progress = Math.round((i / dataLines.length) * 100);
@@ -256,23 +321,39 @@ export class AsiliProcessor {
         progressCallback?.(message, progress);
       }
     }
-    
-    Debug.log(1, 'AsiliProcessor', `Parsed ${variants.length} valid variants from DNA file`);
-    
+
+    Debug.log(
+      1,
+      'AsiliProcessor',
+      `Parsed ${variants.length} valid variants from DNA file`
+    );
+
     // Store variants in database
     if (individualId) {
-      Debug.log(2, 'AsiliProcessor', `Storing variants for individual: ${individualId}`);
-      await this.storage.storeVariants(individualId, variants, (current, total) => {
-        const progress = Math.round((current / total) * 100);
-        const message = `Stored ${current}/${total} variants`;
-        this.progressTracker.setProgress(progress, message);
-        progressCallback?.(message, progress);
-      });
+      Debug.log(
+        2,
+        'AsiliProcessor',
+        `Storing variants for individual: ${individualId}`
+      );
+      await this.storage.storeVariants(
+        individualId,
+        variants,
+        (current, total) => {
+          const progress = Math.round((current / total) * 100);
+          const message = `Stored ${current}/${total} variants`;
+          this.progressTracker.setProgress(progress, message);
+          progressCallback?.(message, progress);
+        }
+      );
     }
-    
+
     this.progressTracker.complete(`Imported ${variants.length} variants`);
-    Debug.log(1, 'AsiliProcessor', `DNA file processing complete: ${variants.length} variants stored`);
-    
+    Debug.log(
+      1,
+      'AsiliProcessor',
+      `DNA file processing complete: ${variants.length} variants stored`
+    );
+
     return {
       format: 'generic',
       variants,
@@ -285,22 +366,24 @@ export class AsiliProcessor {
     };
   }
 
-
-
   // Get cached results
   async getCachedResults(individualId) {
     const keys = await this.storage.list();
-    const resultKeys = keys.filter(key => key.startsWith(`risk_`) && key.endsWith(`_${individualId}`));
-    
+    const resultKeys = keys.filter(
+      key => key.startsWith('risk_') && key.endsWith(`_${individualId}`)
+    );
+
     const results = [];
     for (const key of resultKeys) {
       const data = await this.storage.retrieve(key);
       if (data) {
-        const traitId = key.replace(`risk_`, '').replace(`_${individualId}`, '');
+        const traitId = key
+          .replace('risk_', '')
+          .replace(`_${individualId}`, '');
         results.push({ traitId, ...data });
       }
     }
-    
+
     return results;
   }
 
@@ -312,8 +395,10 @@ export class AsiliProcessor {
   // Clear cached results for individual
   async clearCachedResults(individualId) {
     const keys = await this.storage.list();
-    const resultKeys = keys.filter(key => key.startsWith(`risk_`) && key.endsWith(`_${individualId}`));
-    
+    const resultKeys = keys.filter(
+      key => key.startsWith('risk_') && key.endsWith(`_${individualId}`)
+    );
+
     for (const key of resultKeys) {
       await this.storage.delete(key);
     }

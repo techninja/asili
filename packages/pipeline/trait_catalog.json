@@ -683,10 +683,7 @@
     "MONDO:0005258": {
       "title": "autism spectrum disorder",
       "mondo_id": "MONDO:0005258",
-      "pgs_ids": [
-        "PGS000327",
-        "PGS002790"
-      ],
+      "pgs_ids": ["PGS000327", "PGS002790"],
       "last_updated": "2026-01-03T19:06:18.005Z",
       "expected_variants": 951800,
       "estimated_unique_variants": 666259
@@ -768,12 +765,7 @@
     "MONDO:0005266": {
       "title": "diabetic retinopathy",
       "mondo_id": "MONDO:0005266",
-      "pgs_ids": [
-        "PGS000819",
-        "PGS000862",
-        "PGS001819",
-        "PGS002027"
-      ],
+      "pgs_ids": ["PGS000819", "PGS000862", "PGS001819", "PGS002027"],
       "last_updated": "2026-01-03T19:09:02.876Z",
       "expected_variants": 3927222,
       "estimated_unique_variants": 2749054
@@ -907,12 +899,7 @@
     "EFO_0007585": {
       "title": "Cannabis use",
       "mondo_id": "EFO_0007585",
-      "pgs_ids": [
-        "PGS001391",
-        "PGS001910",
-        "PGS002125",
-        "PGS003504"
-      ],
+      "pgs_ids": ["PGS001391", "PGS001910", "PGS002125", "PGS003504"],
       "last_updated": "2026-01-03T19:22:10.117Z",
       "expected_variants": 1806503,
       "estimated_unique_variants": 1264550
@@ -989,10 +976,7 @@
     "MONDO:0011786": {
       "title": "allergic rhinitis",
       "mondo_id": "MONDO:0011786",
-      "pgs_ids": [
-        "PGS001109",
-        "PGS001259"
-      ],
+      "pgs_ids": ["PGS001109", "PGS001259"],
       "last_updated": "2026-01-03T19:25:08.917Z",
       "expected_variants": 2259,
       "estimated_unique_variants": 1581
@@ -1077,9 +1061,7 @@
     "MONDO:0005326": {
       "title": "sunburn",
       "mondo_id": "MONDO:0005326",
-      "pgs_ids": [
-        "PGS001257"
-      ],
+      "pgs_ids": ["PGS001257"],
       "last_updated": "2026-01-03T19:27:55.075Z",
       "expected_variants": 519,
       "estimated_unique_variants": 363
@@ -1102,11 +1084,7 @@
     "MONDO:0004985": {
       "title": "bipolar disorder",
       "mondo_id": "MONDO:0004985",
-      "pgs_ids": [
-        "PGS002786",
-        "PGS002787",
-        "PGS002788"
-      ],
+      "pgs_ids": ["PGS002786", "PGS002787", "PGS002788"],
       "last_updated": "2026-01-03T19:28:57.844Z",
       "expected_variants": 2821799,
       "estimated_unique_variants": 1975258
@@ -1152,9 +1130,7 @@
     "MONDO:0005451": {
       "title": "eating disorder",
       "mondo_id": "MONDO:0005451",
-      "pgs_ids": [
-        "PGS002098"
-      ],
+      "pgs_ids": ["PGS002098"],
       "last_updated": "2026-01-03T19:30:23.042Z",
       "expected_variants": 764146,
       "estimated_unique_variants": 534902
@@ -1162,10 +1138,7 @@
     "MONDO:0007743": {
       "title": "attention deficit hyperactivity disorder",
       "mondo_id": "MONDO:0007743",
-      "pgs_ids": [
-        "PGS002746",
-        "PGS003753"
-      ],
+      "pgs_ids": ["PGS002746", "PGS003753"],
       "last_updated": "2026-01-03T19:30:55.826Z",
       "expected_variants": 549104,
       "estimated_unique_variants": 384372
@@ -1173,10 +1146,7 @@
     "MONDO:0007079": {
       "title": "alcohol dependence",
       "mondo_id": "MONDO:0007079",
-      "pgs_ids": [
-        "PGS002738",
-        "PGS002739"
-      ],
+      "pgs_ids": ["PGS002738", "PGS002739"],
       "last_updated": "2026-01-03T19:31:15.472Z",
       "expected_variants": 326858,
       "estimated_unique_variants": 228800
@@ -1184,10 +1154,7 @@
     "MONDO:0002326": {
       "title": "alcohol-induced mental disorder",
       "mondo_id": "MONDO:0002326",
-      "pgs_ids": [
-        "PGS004449",
-        "PGS004519"
-      ],
+      "pgs_ids": ["PGS004449", "PGS004519"],
       "last_updated": "2026-01-03T19:31:35.132Z",
       "expected_variants": 2119878,
       "estimated_unique_variants": 1483914
@@ -1195,9 +1162,7 @@
     "EFO_0001063": {
       "title": "deafness",
       "mondo_id": "EFO_0001063",
-      "pgs_ids": [
-        "PGS001252"
-      ],
+      "pgs_ids": ["PGS001252"],
       "last_updated": "2026-01-03T19:32:14.661Z",
       "expected_variants": 3731,
       "estimated_unique_variants": 2611
@@ -1205,10 +1170,7 @@
     "MONDO:0008575": {
       "title": "nicotine dependence",
       "mondo_id": "MONDO:0008575",
-      "pgs_ids": [
-        "PGS001830",
-        "PGS002037"
-      ],
+      "pgs_ids": ["PGS001830", "PGS002037"],
       "last_updated": "2026-01-03T19:32:52.647Z",
       "expected_variants": 861529,
       "estimated_unique_variants": 603069
@@ -4682,12 +4644,7 @@
     "MONDO:0005045": {
       "title": "hypertrophic cardiomyopathy",
       "mondo_id": "MONDO:0005045",
-      "pgs_ids": [
-        "PGS000739",
-        "PGS000778",
-        "PGS004910",
-        "PGS004911"
-      ],
+      "pgs_ids": ["PGS000739", "PGS000778", "PGS004910", "PGS004911"],
       "last_updated": "2026-01-05T02:01:46.143Z",
       "expected_variants": 748351,
       "estimated_unique_variants": 523843
@@ -4695,12 +4652,7 @@
     "MONDO:0005515": {
       "title": "oral cavity cancer",
       "mondo_id": "MONDO:0005515",
-      "pgs_ids": [
-        "PGS000081",
-        "PGS000357",
-        "PGS000358",
-        "PGS000792"
-      ],
+      "pgs_ids": ["PGS000081", "PGS000357", "PGS000358", "PGS000792"],
       "last_updated": "2026-01-05T02:01:46.672Z",
       "expected_variants": 1119311,
       "estimated_unique_variants": 783515
@@ -4708,12 +4660,7 @@
     "MONDO:0013209": {
       "title": "non-alcoholic fatty liver disease",
       "mondo_id": "MONDO:0013209",
-      "pgs_ids": [
-        "PGS000655",
-        "PGS000872",
-        "PGS002282",
-        "PGS002283"
-      ],
+      "pgs_ids": ["PGS000655", "PGS000872", "PGS002282", "PGS002283"],
       "last_updated": "2026-01-05T02:02:35.095Z",
       "expected_variants": 98,
       "estimated_unique_variants": 67
@@ -4743,12 +4690,7 @@
     "EFO_0004615": {
       "title": "apolipoprotein B measurement",
       "mondo_id": "EFO_0004615",
-      "pgs_ids": [
-        "PGS000672",
-        "PGS001889",
-        "PGS002102",
-        "PGS003492"
-      ],
+      "pgs_ids": ["PGS000672", "PGS001889", "PGS002102", "PGS003492"],
       "last_updated": "2026-01-05T02:02:40.828Z",
       "expected_variants": 1330840,
       "estimated_unique_variants": 931587
@@ -4756,12 +4698,7 @@
     "MONDO:0007186": {
       "title": "gastroesophageal reflux disease",
       "mondo_id": "MONDO:0007186",
-      "pgs_ids": [
-        "PGS001851",
-        "PGS002063",
-        "PGS004468",
-        "PGS004538"
-      ],
+      "pgs_ids": ["PGS001851", "PGS002063", "PGS004468", "PGS004538"],
       "last_updated": "2026-01-05T02:02:42.670Z",
       "expected_variants": 2970146,
       "estimated_unique_variants": 2079101
@@ -4769,12 +4706,7 @@
     "MONDO:0010138": {
       "title": "Thyrotoxicosis",
       "mondo_id": "MONDO:0010138",
-      "pgs_ids": [
-        "PGS001042",
-        "PGS001043",
-        "PGS001815",
-        "PGS002023"
-      ],
+      "pgs_ids": ["PGS001042", "PGS001043", "PGS001815", "PGS002023"],
       "last_updated": "2026-01-05T02:02:42.971Z",
       "expected_variants": 279960,
       "estimated_unique_variants": 195971
@@ -4782,12 +4714,7 @@
     "MONDO:0018906": {
       "title": "follicular lymphoma",
       "mondo_id": "MONDO:0018906",
-      "pgs_ids": [
-        "PGS000643",
-        "PGS000644",
-        "PGS002304",
-        "PGS003455"
-      ],
+      "pgs_ids": ["PGS000643", "PGS000644", "PGS002304", "PGS003455"],
       "last_updated": "2026-01-05T02:02:43.385Z",
       "expected_variants": 3257972,
       "estimated_unique_variants": 2280579
@@ -4795,12 +4722,7 @@
     "MONDO:0005310": {
       "title": "atrial flutter",
       "mondo_id": "MONDO:0005310",
-      "pgs_ids": [
-        "PGS001263",
-        "PGS001339",
-        "PGS001841",
-        "PGS002050"
-      ],
+      "pgs_ids": ["PGS001263", "PGS001339", "PGS001841", "PGS002050"],
       "last_updated": "2026-01-05T02:02:43.697Z",
       "expected_variants": 563117,
       "estimated_unique_variants": 394180
@@ -5128,12 +5050,7 @@
     "MONDO:0011849": {
       "title": "psoriatic arthritis",
       "mondo_id": "MONDO:0011849",
-      "pgs_ids": [
-        "PGS000198",
-        "PGS000342",
-        "PGS000343",
-        "PGS001287"
-      ],
+      "pgs_ids": ["PGS000198", "PGS000342", "PGS000343", "PGS001287"],
       "last_updated": "2026-01-05T02:03:36.429Z",
       "expected_variants": 83,
       "estimated_unique_variants": 56
@@ -5141,12 +5058,7 @@
     "MONDO:0001134": {
       "title": "essential hypertension",
       "mondo_id": "MONDO:0001134",
-      "pgs_ids": [
-        "PGS000957",
-        "PGS000958",
-        "PGS004456",
-        "PGS004526"
-      ],
+      "pgs_ids": ["PGS000957", "PGS000958", "PGS004456", "PGS004526"],
       "last_updated": "2026-01-05T02:03:36.731Z",
       "expected_variants": 2140554,
       "estimated_unique_variants": 1498387
@@ -5154,12 +5066,7 @@
     "MONDO:0005494": {
       "title": "triple-negative breast cancer",
       "mondo_id": "MONDO:0005494",
-      "pgs_ids": [
-        "PGS000216",
-        "PGS004890",
-        "PGS004891",
-        "PGS004892"
-      ],
+      "pgs_ids": ["PGS000216", "PGS004890", "PGS004891", "PGS004892"],
       "last_updated": "2026-01-05T02:03:37.043Z",
       "expected_variants": 421,
       "estimated_unique_variants": 292
@@ -5167,11 +5074,7 @@
     "MONDO:0005061": {
       "title": "lung adenocarcinoma",
       "mondo_id": "MONDO:0005061",
-      "pgs_ids": [
-        "PGS000070",
-        "PGS003393",
-        "PGS005169"
-      ],
+      "pgs_ids": ["PGS000070", "PGS003393", "PGS005169"],
       "last_updated": "2026-01-05T02:03:37.532Z",
       "expected_variants": 118,
       "estimated_unique_variants": 81
@@ -5179,11 +5082,7 @@
     "MONDO:0005011": {
       "title": "Crohn's disease",
       "mondo_id": "MONDO:0005011",
-      "pgs_ids": [
-        "PGS001330",
-        "PGS001331",
-        "PGS004254"
-      ],
+      "pgs_ids": ["PGS001330", "PGS001331", "PGS004254"],
       "last_updated": "2026-01-05T02:03:37.866Z",
       "expected_variants": 745159,
       "estimated_unique_variants": 521610
@@ -5191,11 +5090,7 @@
     "MONDO:0005086": {
       "title": "renal cell carcinoma",
       "mondo_id": "MONDO:0005086",
-      "pgs_ids": [
-        "PGS000076",
-        "PGS000787",
-        "PGS004245"
-      ],
+      "pgs_ids": ["PGS000076", "PGS000787", "PGS004245"],
       "last_updated": "2026-01-05T02:03:38.173Z",
       "expected_variants": 50,
       "estimated_unique_variants": 34
@@ -5203,11 +5098,7 @@
     "MONDO:0008661": {
       "title": "Vitiligo",
       "mondo_id": "MONDO:0008661",
-      "pgs_ids": [
-        "PGS000738",
-        "PGS000760",
-        "PGS001536"
-      ],
+      "pgs_ids": ["PGS000738", "PGS000760", "PGS001536"],
       "last_updated": "2026-01-05T02:03:38.476Z",
       "expected_variants": 167,
       "estimated_unique_variants": 115
@@ -5237,11 +5128,7 @@
     "MONDO:0024431": {
       "title": "bilirubin metabolism disease",
       "mondo_id": "MONDO:0024431",
-      "pgs_ids": [
-        "PGS000924",
-        "PGS001824",
-        "PGS002032"
-      ],
+      "pgs_ids": ["PGS000924", "PGS001824", "PGS002032"],
       "last_updated": "2026-01-05T02:03:45.138Z",
       "expected_variants": 19795,
       "estimated_unique_variants": 13855
@@ -5369,11 +5256,7 @@
     "MONDO:0002352": {
       "title": "Malignant Laryngeal Neoplasm",
       "mondo_id": "MONDO:0002352",
-      "pgs_ids": [
-        "PGS000360",
-        "PGS000361",
-        "PGS000362"
-      ],
+      "pgs_ids": ["PGS000360", "PGS000361", "PGS000362"],
       "last_updated": "2026-01-05T02:03:46.053Z",
       "expected_variants": 113866,
       "estimated_unique_variants": 79706
@@ -5381,11 +5264,7 @@
     "MONDO:0004641": {
       "title": "skin carcinoma in situ",
       "mondo_id": "MONDO:0004641",
-      "pgs_ids": [
-        "PGS000469",
-        "PGS000470",
-        "PGS000471"
-      ],
+      "pgs_ids": ["PGS000469", "PGS000470", "PGS000471"],
       "last_updated": "2026-01-05T02:03:46.363Z",
       "expected_variants": 1119250,
       "estimated_unique_variants": 783473
@@ -5408,11 +5287,7 @@
     "MONDO:0006644": {
       "title": "alcoholic liver cirrhosis",
       "mondo_id": "MONDO:0006644",
-      "pgs_ids": [
-        "PGS000704",
-        "PGS001777",
-        "PGS004913"
-      ],
+      "pgs_ids": ["PGS000704", "PGS001777", "PGS004913"],
       "last_updated": "2026-01-05T02:03:47.078Z",
       "expected_variants": 183294,
       "estimated_unique_variants": 128305
@@ -5420,11 +5295,7 @@
     "MONDO:0005081": {
       "title": "preeclampsia",
       "mondo_id": "MONDO:0005081",
-      "pgs_ids": [
-        "PGS003586",
-        "PGS003587",
-        "PGS004593"
-      ],
+      "pgs_ids": ["PGS003586", "PGS003587", "PGS004593"],
       "last_updated": "2026-01-05T02:03:47.383Z",
       "expected_variants": 3277008,
       "estimated_unique_variants": 2293905
@@ -5575,11 +5446,7 @@
     "MONDO:0004625": {
       "title": "Phlebitis",
       "mondo_id": "MONDO:0004625",
-      "pgs_ids": [
-        "PGS000961",
-        "PGS001844",
-        "PGS002056"
-      ],
+      "pgs_ids": ["PGS000961", "PGS001844", "PGS002056"],
       "last_updated": "2026-01-05T02:04:38.997Z",
       "expected_variants": 116253,
       "estimated_unique_variants": 81376
@@ -5587,12 +5454,7 @@
     "MONDO:0021042": {
       "title": "glioma",
       "mondo_id": "MONDO:0021042",
-      "pgs_ids": [
-        "PGS000155",
-        "PGS000781",
-        "PGS002302",
-        "PGS003384"
-      ],
+      "pgs_ids": ["PGS000155", "PGS000781", "PGS002302", "PGS003384"],
       "last_updated": "2026-01-05T02:04:42.574Z",
       "expected_variants": 962,
       "estimated_unique_variants": 672
@@ -5600,11 +5462,7 @@
     "MONDO:0005649": {
       "title": "appendicitis",
       "mondo_id": "MONDO:0005649",
-      "pgs_ids": [
-        "PGS001369",
-        "PGS001785",
-        "PGS004876"
-      ],
+      "pgs_ids": ["PGS001369", "PGS001785", "PGS004876"],
       "last_updated": "2026-01-05T02:04:42.889Z",
       "expected_variants": 1513173,
       "estimated_unique_variants": 1059219
@@ -5612,10 +5470,7 @@
     "MONDO:0007886": {
       "title": "uterine fibroid",
       "mondo_id": "MONDO:0007886",
-      "pgs_ids": [
-        "PGS001032",
-        "PGS002263"
-      ],
+      "pgs_ids": ["PGS001032", "PGS002263"],
       "last_updated": "2026-01-05T02:04:43.914Z",
       "expected_variants": 4618,
       "estimated_unique_variants": 3231
@@ -5623,10 +5478,7 @@
     "MONDO:0021398": {
       "title": "polyp of rectum",
       "mondo_id": "MONDO:0021398",
-      "pgs_ids": [
-        "PGS001859",
-        "PGS002070"
-      ],
+      "pgs_ids": ["PGS001859", "PGS002070"],
       "last_updated": "2026-01-05T02:04:44.318Z",
       "expected_variants": 584922,
       "estimated_unique_variants": 409445
@@ -5634,10 +5486,7 @@
     "MONDO:0000831": {
       "title": "thrombotic disease",
       "mondo_id": "MONDO:0000831",
-      "pgs_ids": [
-        "PGS000930",
-        "PGS000931"
-      ],
+      "pgs_ids": ["PGS000930", "PGS000931"],
       "last_updated": "2026-01-05T02:04:44.625Z",
       "expected_variants": 652,
       "estimated_unique_variants": 455
@@ -5645,10 +5494,7 @@
     "MONDO:0005517": {
       "title": "pharynx cancer",
       "mondo_id": "MONDO:0005517",
-      "pgs_ids": [
-        "PGS000081",
-        "PGS000792"
-      ],
+      "pgs_ids": ["PGS000081", "PGS000792"],
       "last_updated": "2026-01-05T02:04:45.557Z",
       "expected_variants": 28,
       "estimated_unique_variants": 18
@@ -5656,10 +5502,7 @@
     "MONDO:0010108": {
       "title": "Testicular Germ Cell Tumor",
       "mondo_id": "MONDO:0010108",
-      "pgs_ids": [
-        "PGS000086",
-        "PGS000796"
-      ],
+      "pgs_ids": ["PGS000086", "PGS000796"],
       "last_updated": "2026-01-05T02:04:46.170Z",
       "expected_variants": 104,
       "estimated_unique_variants": 72
@@ -5667,12 +5510,7 @@
     "MONDO:0005294": {
       "title": "peripheral vascular disease",
       "mondo_id": "MONDO:0005294",
-      "pgs_ids": [
-        "PGS001843",
-        "PGS002055",
-        "PGS005158",
-        "PGS005217"
-      ],
+      "pgs_ids": ["PGS001843", "PGS002055", "PGS005158", "PGS005217"],
       "last_updated": "2026-01-05T02:04:46.585Z",
       "expected_variants": 1896067,
       "estimated_unique_variants": 1327245
@@ -5784,10 +5622,7 @@
     "MONDO:0005386": {
       "title": "peripheral arterial disease",
       "mondo_id": "MONDO:0005386",
-      "pgs_ids": [
-        "PGS005158",
-        "PGS005217"
-      ],
+      "pgs_ids": ["PGS005158", "PGS005217"],
       "last_updated": "2026-01-05T02:04:47.288Z",
       "expected_variants": 1296311,
       "estimated_unique_variants": 907417
@@ -6082,10 +5917,7 @@
     "HP_0001279": {
       "title": "Syncope",
       "mondo_id": "HP_0001279",
-      "pgs_ids": [
-        "PGS004498",
-        "PGS004568"
-      ],
+      "pgs_ids": ["PGS004498", "PGS004568"],
       "last_updated": "2026-01-05T02:04:49.943Z",
       "expected_variants": 2119878,
       "estimated_unique_variants": 1483914
@@ -6112,10 +5944,7 @@
     "MONDO:0002423": {
       "title": "rectosigmoid junction neoplasm",
       "mondo_id": "MONDO:0002423",
-      "pgs_ids": [
-        "PGS000383",
-        "PGS000384"
-      ],
+      "pgs_ids": ["PGS000383", "PGS000384"],
       "last_updated": "2026-01-05T02:05:36.602Z",
       "expected_variants": 2182817,
       "estimated_unique_variants": 1527971
@@ -6123,10 +5952,7 @@
     "MONDO:0006519": {
       "title": "rectum cancer",
       "mondo_id": "MONDO:0006519",
-      "pgs_ids": [
-        "PGS000383",
-        "PGS000384"
-      ],
+      "pgs_ids": ["PGS000383", "PGS000384"],
       "last_updated": "2026-01-05T02:05:36.957Z",
       "expected_variants": 2182817,
       "estimated_unique_variants": 1527971
@@ -6134,10 +5960,7 @@
     "EFO_1001516": {
       "title": "ovarian serous carcinoma",
       "mondo_id": "EFO_1001516",
-      "pgs_ids": [
-        "PGS000069",
-        "PGS003385"
-      ],
+      "pgs_ids": ["PGS000069", "PGS003385"],
       "last_updated": "2026-01-05T02:05:37.262Z",
       "expected_variants": 144825,
       "estimated_unique_variants": 101377
@@ -6145,12 +5968,7 @@
     "MONDO:0000632": {
       "title": "uterine benign neoplasm",
       "mondo_id": "MONDO:0000632",
-      "pgs_ids": [
-        "PGS001813",
-        "PGS002021",
-        "PGS001032",
-        "PGS002263"
-      ],
+      "pgs_ids": ["PGS001813", "PGS002021", "PGS001032", "PGS002263"],
       "last_updated": "2026-01-05T02:05:38.273Z",
       "expected_variants": 553543,
       "estimated_unique_variants": 387477
@@ -6177,10 +5995,7 @@
     "EFO_1000243": {
       "title": "Epidermal Inclusion Cyst",
       "mondo_id": "EFO_1000243",
-      "pgs_ids": [
-        "PGS001874",
-        "PGS002087"
-      ],
+      "pgs_ids": ["PGS001874", "PGS002087"],
       "last_updated": "2026-01-05T02:05:39.500Z",
       "expected_variants": 207232,
       "estimated_unique_variants": 145062
@@ -6188,10 +6003,7 @@
     "MONDO:0021661": {
       "title": "coronary atherosclerosis",
       "mondo_id": "MONDO:0021661",
-      "pgs_ids": [
-        "PGS001839",
-        "PGS002048"
-      ],
+      "pgs_ids": ["PGS001839", "PGS002048"],
       "last_updated": "2026-01-05T02:05:40.125Z",
       "expected_variants": 787549,
       "estimated_unique_variants": 551283
@@ -6199,10 +6011,7 @@
     "MONDO:0004966": {
       "title": "gastritis",
       "mondo_id": "MONDO:0004966",
-      "pgs_ids": [
-        "PGS004470",
-        "PGS004540"
-      ],
+      "pgs_ids": ["PGS004470", "PGS004540"],
       "last_updated": "2026-01-05T02:05:42.998Z",
       "expected_variants": 2119878,
       "estimated_unique_variants": 1483914
@@ -6210,10 +6019,7 @@
     "MONDO:0018905": {
       "title": "diffuse large B-cell lymphoma",
       "mondo_id": "MONDO:0018905",
-      "pgs_ids": [
-        "PGS002303",
-        "PGS003454"
-      ],
+      "pgs_ids": ["PGS002303", "PGS003454"],
       "last_updated": "2026-01-05T02:05:43.293Z",
       "expected_variants": 14,
       "estimated_unique_variants": 9
@@ -6221,10 +6027,7 @@
     "MONDO:0001056": {
       "title": "gastric cancer",
       "mondo_id": "MONDO:0001056",
-      "pgs_ids": [
-        "PGS002299",
-        "PGS005161"
-      ],
+      "pgs_ids": ["PGS002299", "PGS005161"],
       "last_updated": "2026-01-05T02:05:43.580Z",
       "expected_variants": 15,
       "estimated_unique_variants": 10
@@ -6481,10 +6284,7 @@
     "MONDO:0015263": {
       "title": "Brugada syndrome",
       "mondo_id": "MONDO:0015263",
-      "pgs_ids": [
-        "PGS000737",
-        "PGS001779"
-      ],
+      "pgs_ids": ["PGS000737", "PGS001779"],
       "last_updated": "2026-01-05T02:05:45.177Z",
       "expected_variants": 24,
       "estimated_unique_variants": 16
@@ -6529,12 +6329,7 @@
     "MONDO:0000385": {
       "title": "benign digestive system neoplasm",
       "mondo_id": "MONDO:0000385",
-      "pgs_ids": [
-        "PGS001812",
-        "PGS002020",
-        "PGS001811",
-        "PGS002019"
-      ],
+      "pgs_ids": ["PGS001812", "PGS002020", "PGS001811", "PGS002019"],
       "last_updated": "2026-01-05T02:05:50.194Z",
       "expected_variants": 1174410,
       "estimated_unique_variants": 822085
@@ -6542,10 +6337,7 @@
     "EFO_0000768": {
       "title": "idiopathic pulmonary fibrosis",
       "mondo_id": "EFO_0000768",
-      "pgs_ids": [
-        "PGS001791",
-        "PGS004695"
-      ],
+      "pgs_ids": ["PGS001791", "PGS004695"],
       "last_updated": "2026-01-05T02:06:37.140Z",
       "expected_variants": 910462,
       "estimated_unique_variants": 637323
@@ -6553,10 +6345,7 @@
     "MONDO:0002278": {
       "title": "benign colon neoplasm",
       "mondo_id": "MONDO:0002278",
-      "pgs_ids": [
-        "PGS001811",
-        "PGS002019"
-      ],
+      "pgs_ids": ["PGS001811", "PGS002019"],
       "last_updated": "2026-01-05T02:06:37.472Z",
       "expected_variants": 669777,
       "estimated_unique_variants": 468843
@@ -6564,10 +6353,7 @@
     "MONDO:0013792": {
       "title": "intracerebral hemorrhage",
       "mondo_id": "MONDO:0013792",
-      "pgs_ids": [
-        "PGS003457",
-        "PGS004943"
-      ],
+      "pgs_ids": ["PGS003457", "PGS004943"],
       "last_updated": "2026-01-05T02:06:37.780Z",
       "expected_variants": 2807521,
       "estimated_unique_variants": 1965263
@@ -6575,10 +6361,7 @@
     "MONDO:0002279": {
       "title": "iron metabolism disease",
       "mondo_id": "MONDO:0002279",
-      "pgs_ids": [
-        "PGS001823",
-        "PGS002031"
-      ],
+      "pgs_ids": ["PGS001823", "PGS002031"],
       "last_updated": "2026-01-05T02:06:38.059Z",
       "expected_variants": 7367,
       "estimated_unique_variants": 5156
@@ -6586,10 +6369,7 @@
     "MONDO:0005346": {
       "title": "gallstones",
       "mondo_id": "MONDO:0005346",
-      "pgs_ids": [
-        "PGS000705",
-        "PGS001256"
-      ],
+      "pgs_ids": ["PGS000705", "PGS001256"],
       "last_updated": "2026-01-05T02:06:38.392Z",
       "expected_variants": 184334,
       "estimated_unique_variants": 129033
@@ -6650,10 +6430,7 @@
     "MONDO:0001409": {
       "title": "esophagitis",
       "mondo_id": "MONDO:0001409",
-      "pgs_ids": [
-        "PGS001851",
-        "PGS002063"
-      ],
+      "pgs_ids": ["PGS001851", "PGS002063"],
       "last_updated": "2026-01-05T02:06:39.316Z",
       "expected_variants": 850268,
       "estimated_unique_variants": 595187
@@ -6684,12 +6461,7 @@
     "MONDO:0019086": {
       "title": "esophageal carcinoma",
       "mondo_id": "MONDO:0019086",
-      "pgs_ids": [
-        "PGS002298",
-        "PGS005160",
-        "PGS003387",
-        "PGS003388"
-      ],
+      "pgs_ids": ["PGS002298", "PGS005160", "PGS003387", "PGS003388"],
       "last_updated": "2026-01-05T02:06:40.807Z",
       "expected_variants": 958748,
       "estimated_unique_variants": 671122
@@ -7141,10 +6913,7 @@
     "MONDO:0060766": {
       "title": "anal polyp",
       "mondo_id": "MONDO:0060766",
-      "pgs_ids": [
-        "PGS001859",
-        "PGS002070"
-      ],
+      "pgs_ids": ["PGS001859", "PGS002070"],
       "last_updated": "2026-01-05T02:06:46.215Z",
       "expected_variants": 584922,
       "estimated_unique_variants": 409445
@@ -7166,10 +6935,7 @@
     "MONDO:0005028": {
       "title": "esophageal adenocarcinoma",
       "mondo_id": "MONDO:0005028",
-      "pgs_ids": [
-        "PGS003387",
-        "PGS003388"
-      ],
+      "pgs_ids": ["PGS003387", "PGS003388"],
       "last_updated": "2026-01-05T02:06:46.884Z",
       "expected_variants": 958723,
       "estimated_unique_variants": 671106
@@ -7177,10 +6943,7 @@
     "MONDO:0004781": {
       "title": "acute myocardial infarction",
       "mondo_id": "MONDO:0004781",
-      "pgs_ids": [
-        "PGS004458",
-        "PGS004528"
-      ],
+      "pgs_ids": ["PGS004458", "PGS004528"],
       "last_updated": "2026-01-05T02:06:47.194Z",
       "expected_variants": 2119878,
       "estimated_unique_variants": 1483914
@@ -7210,10 +6973,7 @@
     "MONDO:0000775": {
       "title": "drug allergy",
       "mondo_id": "MONDO:0000775",
-      "pgs_ids": [
-        "PGS001885",
-        "PGS002097"
-      ],
+      "pgs_ids": ["PGS001885", "PGS002097"],
       "last_updated": "2026-01-05T02:06:48.868Z",
       "expected_variants": 742999,
       "estimated_unique_variants": 520098
@@ -7221,10 +6981,7 @@
     "MONDO:0004596": {
       "title": "cor pulmonale",
       "mondo_id": "MONDO:0004596",
-      "pgs_ids": [
-        "PGS001840",
-        "PGS002049"
-      ],
+      "pgs_ids": ["PGS001840", "PGS002049"],
       "last_updated": "2026-01-05T02:06:49.243Z",
       "expected_variants": 222701,
       "estimated_unique_variants": 155889
@@ -7232,9 +6989,7 @@
     "MONDO:0005097": {
       "title": "squamous cell lung carcinoma",
       "mondo_id": "MONDO:0005097",
-      "pgs_ids": [
-        "PGS003392"
-      ],
+      "pgs_ids": ["PGS003392"],
       "last_updated": "2026-01-05T02:06:49.966Z",
       "expected_variants": 90,
       "estimated_unique_variants": 62
@@ -7242,9 +6997,7 @@
     "MONDO:0005100": {
       "title": "systemic scleroderma",
       "mondo_id": "MONDO:0005100",
-      "pgs_ids": [
-        "PGS000341"
-      ],
+      "pgs_ids": ["PGS000341"],
       "last_updated": "2026-01-05T02:06:50.572Z",
       "expected_variants": 33,
       "estimated_unique_variants": 23
@@ -7252,12 +7005,7 @@
     "MONDO:0004235": {
       "title": "diverticulitis",
       "mondo_id": "MONDO:0004235",
-      "pgs_ids": [
-        "PGS000996",
-        "PGS001369",
-        "PGS001785",
-        "PGS004876"
-      ],
+      "pgs_ids": ["PGS000996", "PGS001369", "PGS001785", "PGS004876"],
       "last_updated": "2026-01-05T02:06:50.883Z",
       "expected_variants": 1513541,
       "estimated_unique_variants": 1059476
@@ -7265,9 +7013,7 @@
     "EFO_0010820": {
       "title": "spontaneous coronary artery dissection",
       "mondo_id": "EFO_0010820",
-      "pgs_ids": [
-        "PGS004899"
-      ],
+      "pgs_ids": ["PGS004899"],
       "last_updated": "2026-01-05T02:06:51.157Z",
       "expected_variants": 7,
       "estimated_unique_variants": 4
@@ -7316,9 +7062,7 @@
     "EFO_0004723": {
       "title": "coronary artery calcification",
       "mondo_id": "EFO_0004723",
-      "pgs_ids": [
-        "PGS005096"
-      ],
+      "pgs_ids": ["PGS005096"],
       "last_updated": "2026-01-05T02:07:38.899Z",
       "expected_variants": 11,
       "estimated_unique_variants": 7
@@ -7326,9 +7070,7 @@
     "MONDO:0006003": {
       "title": "uterine corpus cancer",
       "mondo_id": "MONDO:0006003",
-      "pgs_ids": [
-        "PGS003740"
-      ],
+      "pgs_ids": ["PGS003740"],
       "last_updated": "2026-01-05T02:07:39.403Z",
       "expected_variants": 16,
       "estimated_unique_variants": 11
@@ -7336,9 +7078,7 @@
     "EFO_0009460": {
       "title": "ACPA-negative rheumatoid arthritis",
       "mondo_id": "EFO_0009460",
-      "pgs_ids": [
-        "PGS000195"
-      ],
+      "pgs_ids": ["PGS000195"],
       "last_updated": "2026-01-05T02:07:39.703Z",
       "expected_variants": 96,
       "estimated_unique_variants": 67
@@ -7346,9 +7086,7 @@
     "EFO_0009459": {
       "title": "ACPA-positive rheumatoid arthritis",
       "mondo_id": "EFO_0009459",
-      "pgs_ids": [
-        "PGS000194"
-      ],
+      "pgs_ids": ["PGS000194"],
       "last_updated": "2026-01-05T02:07:40.172Z",
       "expected_variants": 114,
       "estimated_unique_variants": 79
@@ -7356,9 +7094,7 @@
     "MONDO:0020696": {
       "title": "vitamin B12 deficiency",
       "mondo_id": "MONDO:0020696",
-      "pgs_ids": [
-        "PGS001305"
-      ],
+      "pgs_ids": ["PGS001305"],
       "last_updated": "2026-01-05T02:07:40.460Z",
       "expected_variants": 121,
       "estimated_unique_variants": 84
@@ -7384,9 +7120,7 @@
     "MONDO:0006004": {
       "title": "vasomotor rhinitis",
       "mondo_id": "MONDO:0006004",
-      "pgs_ids": [
-        "PGS001109"
-      ],
+      "pgs_ids": ["PGS001109"],
       "last_updated": "2026-01-05T02:07:41.236Z",
       "expected_variants": 1910,
       "estimated_unique_variants": 1337
@@ -7394,9 +7128,7 @@
     "MONDO:0004648": {
       "title": "vascular dementia",
       "mondo_id": "MONDO:0004648",
-      "pgs_ids": [
-        "PGS001179"
-      ],
+      "pgs_ids": ["PGS001179"],
       "last_updated": "2026-01-05T02:07:44.522Z",
       "expected_variants": 7,
       "estimated_unique_variants": 4
@@ -7427,9 +7159,7 @@
     "MONDO:0001209": {
       "title": "common wart",
       "mondo_id": "MONDO:0001209",
-      "pgs_ids": [
-        "PGS001011"
-      ],
+      "pgs_ids": ["PGS001011"],
       "last_updated": "2026-01-05T02:07:45.566Z",
       "expected_variants": 5,
       "estimated_unique_variants": 3
@@ -7437,9 +7167,7 @@
     "MONDO:0003803": {
       "title": "aortic valve disease",
       "mondo_id": "MONDO:0003803",
-      "pgs_ids": [
-        "PGS001025"
-      ],
+      "pgs_ids": ["PGS001025"],
       "last_updated": "2026-01-05T02:07:45.857Z",
       "expected_variants": 36,
       "estimated_unique_variants": 25
@@ -7447,9 +7175,7 @@
     "EFO_0007848": {
       "title": "apolipoprotein A-IV measurement",
       "mondo_id": "EFO_0007848",
-      "pgs_ids": [
-        "PGS003491"
-      ],
+      "pgs_ids": ["PGS003491"],
       "last_updated": "2026-01-05T02:07:46.622Z",
       "expected_variants": 979739,
       "estimated_unique_variants": 685817
@@ -7457,9 +7183,7 @@
     "MONDO:0013662": {
       "title": "Barrett's esophagus",
       "mondo_id": "MONDO:0013662",
-      "pgs_ids": [
-        "PGS003387"
-      ],
+      "pgs_ids": ["PGS003387"],
       "last_updated": "2026-01-05T02:07:46.911Z",
       "expected_variants": 601980,
       "estimated_unique_variants": 421386
@@ -7496,9 +7220,7 @@
     "MONDO:0004627": {
       "title": "duodenitis",
       "mondo_id": "MONDO:0004627",
-      "pgs_ids": [
-        "PGS001852"
-      ],
+      "pgs_ids": ["PGS001852"],
       "last_updated": "2026-01-05T02:07:47.616Z",
       "expected_variants": 191,
       "estimated_unique_variants": 133
@@ -7506,9 +7228,7 @@
     "MONDO:0021240": {
       "title": "tongue neoplasm",
       "mondo_id": "MONDO:0021240",
-      "pgs_ids": [
-        "PGS000359"
-      ],
+      "pgs_ids": ["PGS000359"],
       "last_updated": "2026-01-05T02:07:48.127Z",
       "expected_variants": 931954,
       "estimated_unique_variants": 652367
@@ -7565,9 +7285,7 @@
     "MONDO:0005412": {
       "title": "duodenal ulcer",
       "mondo_id": "MONDO:0005412",
-      "pgs_ids": [
-        "PGS001390"
-      ],
+      "pgs_ids": ["PGS001390"],
       "last_updated": "2026-01-05T02:07:48.890Z",
       "expected_variants": 220,
       "estimated_unique_variants": 154
@@ -7575,9 +7293,7 @@
     "EFO_0000195": {
       "title": "metabolic syndrome",
       "mondo_id": "EFO_0000195",
-      "pgs_ids": [
-        "PGS004928"
-      ],
+      "pgs_ids": ["PGS004928"],
       "last_updated": "2026-01-05T02:07:49.251Z",
       "expected_variants": 916017,
       "estimated_unique_variants": 641211
@@ -7585,9 +7301,7 @@
     "MONDO:0010030": {
       "title": "Sjogren syndrome",
       "mondo_id": "MONDO:0010030",
-      "pgs_ids": [
-        "PGS001308"
-      ],
+      "pgs_ids": ["PGS001308"],
       "last_updated": "2026-01-05T02:07:49.545Z",
       "expected_variants": 7,
       "estimated_unique_variants": 4
@@ -7595,9 +7309,7 @@
     "MONDO:0006244": {
       "title": "HER2 Positive Breast Carcinoma",
       "mondo_id": "MONDO:0006244",
-      "pgs_ids": [
-        "PGS000215"
-      ],
+      "pgs_ids": ["PGS000215"],
       "last_updated": "2026-01-05T02:07:50.383Z",
       "expected_variants": 330,
       "estimated_unique_variants": 230
@@ -7605,9 +7317,7 @@
     "EFO_1001958": {
       "title": "high grade ovarian serous adenocarcinoma",
       "mondo_id": "EFO_1001958",
-      "pgs_ids": [
-        "PGS000352"
-      ],
+      "pgs_ids": ["PGS000352"],
       "last_updated": "2026-01-05T02:07:50.677Z",
       "expected_variants": 22,
       "estimated_unique_variants": 15
@@ -7615,9 +7325,7 @@
     "HP_0032263": {
       "title": "Increased blood pressure",
       "mondo_id": "HP_0032263",
-      "pgs_ids": [
-        "PGS000935"
-      ],
+      "pgs_ids": ["PGS000935"],
       "last_updated": "2026-01-05T02:07:51.263Z",
       "expected_variants": 370,
       "estimated_unique_variants": 259
@@ -7625,9 +7333,7 @@
     "MONDO:0019433": {
       "title": "oligoarticular juvenile idiopathic arthritis",
       "mondo_id": "MONDO:0019433",
-      "pgs_ids": [
-        "PGS000325"
-      ],
+      "pgs_ids": ["PGS000325"],
       "last_updated": "2026-01-05T02:07:51.612Z",
       "expected_variants": 21,
       "estimated_unique_variants": 14
@@ -7635,9 +7341,7 @@
     "MONDO:0002236": {
       "title": "ocular cancer",
       "mondo_id": "MONDO:0002236",
-      "pgs_ids": [
-        "PGS000617"
-      ],
+      "pgs_ids": ["PGS000617"],
       "last_updated": "2026-01-05T02:08:38.205Z",
       "expected_variants": 834009,
       "estimated_unique_variants": 583806
@@ -7645,9 +7349,7 @@
     "MONDO:0003718": {
       "title": "occlusion precerebral artery",
       "mondo_id": "MONDO:0003718",
-      "pgs_ids": [
-        "PGS002052"
-      ],
+      "pgs_ids": ["PGS002052"],
       "last_updated": "2026-01-05T02:08:38.577Z",
       "expected_variants": 490459,
       "estimated_unique_variants": 343321
@@ -7655,12 +7357,7 @@
     "MONDO:0011429": {
       "title": "juvenile idiopathic arthritis",
       "mondo_id": "MONDO:0011429",
-      "pgs_ids": [
-        "PGS000114",
-        "PGS000324",
-        "PGS000325",
-        "PGS000326"
-      ],
+      "pgs_ids": ["PGS000114", "PGS000324", "PGS000325", "PGS000326"],
       "last_updated": "2026-01-05T02:08:39.023Z",
       "expected_variants": 197,
       "estimated_unique_variants": 136
@@ -7668,9 +7365,7 @@
     "EFO_0008586": {
       "title": "Non-ST Elevation Myocardial Infarction",
       "mondo_id": "EFO_0008586",
-      "pgs_ids": [
-        "PGS001048"
-      ],
+      "pgs_ids": ["PGS001048"],
       "last_updated": "2026-01-05T02:08:39.319Z",
       "expected_variants": 687,
       "estimated_unique_variants": 480
@@ -7739,9 +7434,7 @@
     "HP_0003115": {
       "title": "Abnormal EKG",
       "mondo_id": "HP_0003115",
-      "pgs_ids": [
-        "PGS000914"
-      ],
+      "pgs_ids": ["PGS000914"],
       "last_updated": "2026-01-05T02:08:40.676Z",
       "expected_variants": 6,
       "estimated_unique_variants": 4
@@ -7749,9 +7442,7 @@
     "MONDO:0005072": {
       "title": "neuroblastoma",
       "mondo_id": "MONDO:0005072",
-      "pgs_ids": [
-        "PGS002261"
-      ],
+      "pgs_ids": ["PGS002261"],
       "last_updated": "2026-01-05T02:08:41.479Z",
       "expected_variants": 22,
       "estimated_unique_variants": 15
@@ -7759,9 +7450,7 @@
     "MONDO:0005375": {
       "title": "nasopharyngeal neoplasm",
       "mondo_id": "MONDO:0005375",
-      "pgs_ids": [
-        "PGS002291"
-      ],
+      "pgs_ids": ["PGS002291"],
       "last_updated": "2026-01-05T02:08:44.931Z",
       "expected_variants": 12,
       "estimated_unique_variants": 8
@@ -7769,9 +7458,7 @@
     "MONDO:0024644": {
       "title": "Myocardial Ischemia",
       "mondo_id": "MONDO:0024644",
-      "pgs_ids": [
-        "PGS000962"
-      ],
+      "pgs_ids": ["PGS000962"],
       "last_updated": "2026-01-05T02:08:45.268Z",
       "expected_variants": 2168,
       "estimated_unique_variants": 1517
@@ -7779,9 +7466,7 @@
     "MONDO:0021116": {
       "title": "luminal A breast carcinoma",
       "mondo_id": "MONDO:0021116",
-      "pgs_ids": [
-        "PGS000212"
-      ],
+      "pgs_ids": ["PGS000212"],
       "last_updated": "2026-01-05T02:08:45.586Z",
       "expected_variants": 330,
       "estimated_unique_variants": 230
@@ -7789,9 +7474,7 @@
     "MONDO:0021115": {
       "title": "luminal B breast carcinoma",
       "mondo_id": "MONDO:0021115",
-      "pgs_ids": [
-        "PGS000214"
-      ],
+      "pgs_ids": ["PGS000214"],
       "last_updated": "2026-01-05T02:08:45.883Z",
       "expected_variants": 330,
       "estimated_unique_variants": 230
@@ -7799,9 +7482,7 @@
     "HP_0001634": {
       "title": "Mitral valve prolapse",
       "mondo_id": "HP_0001634",
-      "pgs_ids": [
-        "PGS002271"
-      ],
+      "pgs_ids": ["PGS002271"],
       "last_updated": "2026-01-05T02:08:46.181Z",
       "expected_variants": 1097364,
       "estimated_unique_variants": 768154
@@ -7809,11 +7490,7 @@
     "MONDO:0000226": {
       "title": "mineral metabolism disease",
       "mondo_id": "MONDO:0000226",
-      "pgs_ids": [
-        "PGS001023",
-        "PGS001823",
-        "PGS002031"
-      ],
+      "pgs_ids": ["PGS001023", "PGS001823", "PGS002031"],
       "last_updated": "2026-01-05T02:08:46.788Z",
       "expected_variants": 7369,
       "estimated_unique_variants": 5157
@@ -8077,9 +7754,7 @@
     "MONDO:0005184": {
       "title": "pancreatic ductal adenocarcinoma",
       "mondo_id": "MONDO:0005184",
-      "pgs_ids": [
-        "PGS002264"
-      ],
+      "pgs_ids": ["PGS002264"],
       "last_updated": "2026-01-05T02:08:47.769Z",
       "expected_variants": 49,
       "estimated_unique_variants": 34
@@ -8087,9 +7762,7 @@
     "MONDO:0005324": {
       "title": "seasonal allergic rhinitis",
       "mondo_id": "MONDO:0005324",
-      "pgs_ids": [
-        "PGS001259"
-      ],
+      "pgs_ids": ["PGS001259"],
       "last_updated": "2026-01-05T02:08:48.139Z",
       "expected_variants": 349,
       "estimated_unique_variants": 244
@@ -8184,9 +7857,7 @@
     "MONDO:0019437": {
       "title": "enthesitis-related juvenile idiopathic arthritis",
       "mondo_id": "MONDO:0019437",
-      "pgs_ids": [
-        "PGS000324"
-      ],
+      "pgs_ids": ["PGS000324"],
       "last_updated": "2026-01-05T02:08:49.766Z",
       "expected_variants": 138,
       "estimated_unique_variants": 96
@@ -8194,9 +7865,7 @@
     "MONDO:0017604": {
       "title": "marginal zone B-cell lymphoma",
       "mondo_id": "MONDO:0017604",
-      "pgs_ids": [
-        "PGS003451"
-      ],
+      "pgs_ids": ["PGS003451"],
       "last_updated": "2026-01-05T02:08:50.048Z",
       "expected_variants": 2,
       "estimated_unique_variants": 1
@@ -8204,9 +7873,7 @@
     "MONDO:0017376": {
       "title": "reactive arthritis",
       "mondo_id": "MONDO:0017376",
-      "pgs_ids": [
-        "PGS001110"
-      ],
+      "pgs_ids": ["PGS001110"],
       "last_updated": "2026-01-05T02:08:50.338Z",
       "expected_variants": 6,
       "estimated_unique_variants": 4
@@ -8214,11 +7881,7 @@
     "MONDO:0002771": {
       "title": "pulmonary fibrosis",
       "mondo_id": "MONDO:0002771",
-      "pgs_ids": [
-        "PGS001030",
-        "PGS001791",
-        "PGS004695"
-      ],
+      "pgs_ids": ["PGS001030", "PGS001791", "PGS004695"],
       "last_updated": "2026-01-05T02:08:51.310Z",
       "expected_variants": 910513,
       "estimated_unique_variants": 637358
@@ -8300,9 +7963,7 @@
     "MONDO:0005082": {
       "title": "prostate adenocarcinoma",
       "mondo_id": "MONDO:0005082",
-      "pgs_ids": [
-        "PGS003383"
-      ],
+      "pgs_ids": ["PGS003383"],
       "last_updated": "2026-01-05T02:08:52.741Z",
       "expected_variants": 168700,
       "estimated_unique_variants": 118089
@@ -8310,9 +7971,7 @@
     "MONDO:0037821": {
       "title": "porphyrin metabolism disease",
       "mondo_id": "MONDO:0037821",
-      "pgs_ids": [
-        "PGS000924"
-      ],
+      "pgs_ids": ["PGS000924"],
       "last_updated": "2026-01-05T02:09:38.729Z",
       "expected_variants": 5,
       "estimated_unique_variants": 3
@@ -8320,9 +7979,7 @@
     "MONDO:0005406": {
       "title": "gestational diabetes",
       "mondo_id": "MONDO:0005406",
-      "pgs_ids": [
-        "PGS002256"
-      ],
+      "pgs_ids": ["PGS002256"],
       "last_updated": "2026-01-05T02:09:39.060Z",
       "expected_variants": 4,
       "estimated_unique_variants": 2
@@ -8330,9 +7987,7 @@
     "MONDO:0021400": {
       "title": "polyp of colon",
       "mondo_id": "MONDO:0021400",
-      "pgs_ids": [
-        "PGS005151"
-      ],
+      "pgs_ids": ["PGS005151"],
       "last_updated": "2026-01-05T02:09:39.438Z",
       "expected_variants": 496139,
       "estimated_unique_variants": 347297
@@ -8340,9 +7995,7 @@
     "MONDO:0009891": {
       "title": "polycythemia vera",
       "mondo_id": "MONDO:0009891",
-      "pgs_ids": [
-        "PGS001810"
-      ],
+      "pgs_ids": ["PGS001810"],
       "last_updated": "2026-01-05T02:09:39.847Z",
       "expected_variants": 67,
       "estimated_unique_variants": 46
@@ -8350,9 +8003,7 @@
     "MONDO:0019432": {
       "title": "polyarticular juvenile idiopathic arthritis, rheumatoid factor negative",
       "mondo_id": "MONDO:0019432",
-      "pgs_ids": [
-        "PGS000326"
-      ],
+      "pgs_ids": ["PGS000326"],
       "last_updated": "2026-01-05T02:09:40.160Z",
       "expected_variants": 12,
       "estimated_unique_variants": 8
@@ -8360,9 +8011,7 @@
     "MONDO:0018177": {
       "title": "glioblastoma",
       "mondo_id": "MONDO:0018177",
-      "pgs_ids": [
-        "PGS003384"
-      ],
+      "pgs_ids": ["PGS003384"],
       "last_updated": "2026-01-05T02:09:40.460Z",
       "expected_variants": 910,
       "estimated_unique_variants": 637
@@ -8370,9 +8019,7 @@
     "MONDO:0010150": {
       "title": "head and neck squamous cell carcinoma",
       "mondo_id": "MONDO:0010150",
-      "pgs_ids": [
-        "PGS003390"
-      ],
+      "pgs_ids": ["PGS003390"],
       "last_updated": "2026-01-05T02:09:40.767Z",
       "expected_variants": 931477,
       "estimated_unique_variants": 652033
@@ -8394,9 +8041,7 @@
     "MONDO:0100280": {
       "title": "Waldenstrom macroglobulinemia",
       "mondo_id": "MONDO:0100280",
-      "pgs_ids": [
-        "PGS003452"
-      ],
+      "pgs_ids": ["PGS003452"],
       "last_updated": "2026-01-05T02:09:41.486Z",
       "expected_variants": 2,
       "estimated_unique_variants": 1

@@ -22,11 +22,11 @@ export class QueueControl extends HTMLElement {
   setQueueManager(queueManager) {
     this.unsubscribe?.();
     this.queueManager = queueManager;
-    
+
     if (queueManager) {
-      this.unsubscribe = queueManager.subscribe((event) => {
+      this.unsubscribe = queueManager.subscribe(event => {
         this.updateDisplay(event);
-        
+
         // Notify risk dashboard to refresh cards when queue items complete
         if (event.event === 'itemCompleted' || event.event === 'itemFailed') {
           this.notifyRiskDashboard();
@@ -35,7 +35,7 @@ export class QueueControl extends HTMLElement {
       this.updateDisplay({ queue: queueManager.getQueueState() });
     }
   }
-  
+
   notifyRiskDashboard() {
     // Find risk dashboard and trigger refresh
     const riskDashboard = document.querySelector('risk-dashboard');
@@ -49,14 +49,15 @@ export class QueueControl extends HTMLElement {
     const widget = this.shadowRoot.querySelector('.queue-widget');
     const summary = this.shadowRoot.querySelector('.queue-summary');
     const details = this.shadowRoot.querySelector('.queue-details');
-    
+
     if (!widget || !summary) return;
 
     // Update summary
-    const timeDisplay = state.isProcessing && state.estimatedTimeRemaining > 0 
-      ? this.formatTime(state.estimatedTimeRemaining) 
-      : '--';
-      
+    const timeDisplay =
+      state.isProcessing && state.estimatedTimeRemaining > 0
+        ? this.formatTime(state.estimatedTimeRemaining)
+        : '--';
+
     summary.innerHTML = `
       <div class="queue-status ${state.isProcessing ? 'active' : 'idle'}">
         ${state.isProcessing ? (state.isPaused ? '⏸️' : '⚡') : '▶️'}
@@ -77,7 +78,7 @@ export class QueueControl extends HTMLElement {
         cpu: Math.random() * 30 + 40, // Mock CPU usage
         memory: Math.random() * 20 + 60 // Mock memory usage
       });
-      
+
       if (this.chartData.length > this.maxDataPoints) {
         this.chartData.shift();
       }
@@ -110,7 +111,9 @@ export class QueueControl extends HTMLElement {
         <button class="control-btn clear" onclick="this.getRootNode().host.clearQueue()">🗑️ Clear</button>
       </div>
       
-      ${currentItem ? `
+      ${
+        currentItem
+          ? `
         <div class="current-item">
           <div class="item-header">Currently Processing:</div>
           <div class="item-name">${this.getTraitName(currentItem.traitId)}</div>
@@ -119,11 +122,16 @@ export class QueueControl extends HTMLElement {
           </div>
           <div class="progress-text">${Math.round(currentItem.progress)}%</div>
         </div>
-      ` : ''}
+      `
+          : ''
+      }
       
       <div class="queue-list">
         <div class="list-header">Queue (${pendingItems.length} items):</div>
-        ${pendingItems.slice(0, 5).map((item, index) => `
+        ${pendingItems
+          .slice(0, 5)
+          .map(
+            (item, index) => `
           <div class="queue-item">
             <div class="item-info">
               <span class="item-position">#${index + 1}</span>
@@ -134,7 +142,9 @@ export class QueueControl extends HTMLElement {
                       ${index === 0 ? 'disabled' : ''}>⬆️</button>
             </div>
           </div>
-        `).join('')}
+        `
+          )
+          .join('')}
         ${pendingItems.length > 5 ? `<div class="more-items">...and ${pendingItems.length - 5} more</div>` : ''}
       </div>
       
@@ -161,16 +171,16 @@ export class QueueControl extends HTMLElement {
 
   updateChart() {
     if (!this.isExpanded || this.chartData.length < 2) return;
-    
+
     const canvas = this.shadowRoot.getElementById('statsChart');
     if (!canvas) return;
-    
+
     const ctx = canvas.getContext('2d');
     const width = canvas.width;
     const height = canvas.height;
-    
+
     ctx.clearRect(0, 0, width, height);
-    
+
     // Draw CPU line (red)
     ctx.strokeStyle = '#ff4444';
     ctx.lineWidth = 1;
@@ -182,7 +192,7 @@ export class QueueControl extends HTMLElement {
       else ctx.lineTo(x, y);
     });
     ctx.stroke();
-    
+
     // Draw Memory line (blue)
     ctx.strokeStyle = '#4444ff';
     ctx.beginPath();
@@ -205,7 +215,7 @@ export class QueueControl extends HTMLElement {
     const seconds = Math.floor(ms / 1000);
     const minutes = Math.floor(seconds / 60);
     const hours = Math.floor(minutes / 60);
-    
+
     if (hours > 0) return `${hours}h ${minutes % 60}m`;
     if (minutes > 0) return `${minutes}m ${seconds % 60}s`;
     return `${seconds}s`;
@@ -215,7 +225,7 @@ export class QueueControl extends HTMLElement {
     this.isExpanded = !this.isExpanded;
     const widget = this.shadowRoot.querySelector('.queue-widget');
     widget.classList.toggle('expanded', this.isExpanded);
-    
+
     if (this.isExpanded && this.queueManager) {
       this.updateDetails(this.queueManager.getQueueState());
     }
@@ -223,7 +233,7 @@ export class QueueControl extends HTMLElement {
 
   toggleQueue() {
     if (!this.queueManager) return;
-    
+
     const state = this.queueManager.getQueueState();
     if (state.isProcessing) {
       if (state.isPaused) {

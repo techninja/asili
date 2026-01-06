@@ -8,9 +8,9 @@ Because the user's DNA never leaves their browser, we cannot perform lookups on 
 
 A **Trait Pack** is a single, self-contained file representing the genetic risk factors for a specific condition (e.g., _Type 1 Diabetes_, _Coronary Artery Disease_, _Height_).
 
-* **Format:** Apache Parquet with unified schema
-* **Compression:** ZSTD (Level 3)
-* **Access Pattern:** HTTP Range Requests (via DuckDB WASM)
+- **Format:** Apache Parquet with unified schema
+- **Compression:** ZSTD (Level 3)
+- **Access Pattern:** HTTP Range Requests (via DuckDB WASM)
 
 This allows the browser to download _only the headers_ of a 100MB file to see if it's relevant, or query specific ranges without downloading the whole dataset.
 
@@ -18,12 +18,12 @@ This allows the browser to download _only the headers_ of a 100MB file to see if
 
 Our primary source of truth is the **PGS Catalog** (Polygenic Score Catalog), an open database of polygenic risk scores.
 
-* **Source URL:** [https://www.pgscatalog.org/](https://www.pgscatalog.org/)
-* **Data Type:** Scoring Files (`.txt.gz`) - multiple formats supported
-* **Caching:** Downloaded files cached locally to avoid re-downloads
-* **Update Frequency:**
-  * **Ad-hoc:** When adding new specific traits requested by users
-  * **Quarterly:** To update existing scores with better-researched versions
+- **Source URL:** [https://www.pgscatalog.org/](https://www.pgscatalog.org/)
+- **Data Type:** Scoring Files (`.txt.gz`) - multiple formats supported
+- **Caching:** Downloaded files cached locally to avoid re-downloads
+- **Update Frequency:**
+  - **Ad-hoc:** When adding new specific traits requested by users
+  - **Quarterly:** To update existing scores with better-researched versions
 
 ### Data Architecture
 
@@ -40,22 +40,23 @@ The `etl_job.js` script performs format detection, harmonization, and unificatio
 PGS files come in multiple formats. We detect and harmonize them into a unified schema:
 
 **Supported Formats:**
+
 - **Standard SNP:** chr_name + chr_position based
-- **HLA Allele:** rsID + is_haplotype based  
+- **HLA Allele:** rsID + is_haplotype based
 - **rsID Only:** rsID without positions
 - **rsID + Chr:** rsID + chr_name without positions
 
 **Unified Schema:**
-| Column          | Type    | Description                                    |
+| Column | Type | Description |
 |-----------------|---------|------------------------------------------------|
-| `variant_id`    | String  | Unified identifier (position-based or rsID)   |
-| `chr_name`      | String  | Chromosome (1-22, X, Y, MT) - optional        |
-| `chr_position`  | Integer | Base pair position (HG38 build) - optional    |
-| `effect_allele` | String  | The mutation that causes the effect           |
-| `other_allele`  | String  | Reference allele - optional                   |
-| `effect_weight` | Float   | Effect weight (Log Odds Ratio or Beta)        |
-| `pgs_id`        | String  | Source PGS score identifier                   |
-| `format_type`   | String  | Original format type for debugging            |
+| `variant_id` | String | Unified identifier (position-based or rsID) |
+| `chr_name` | String | Chromosome (1-22, X, Y, MT) - optional |
+| `chr_position` | Integer | Base pair position (HG38 build) - optional |
+| `effect_allele` | String | The mutation that causes the effect |
+| `other_allele` | String | Reference allele - optional |
+| `effect_weight` | Float | Effect weight (Log Odds Ratio or Beta) |
+| `pgs_id` | String | Source PGS score identifier |
+| `format_type` | String | Original format type for debugging |
 
 ### Step B: Coordinate System
 
@@ -66,9 +67,10 @@ PGS files come in multiple formats. We detect and harmonize them into a unified 
 ### Step C: Optimization
 
 DuckDB performs efficient joins when data is properly structured:
-* **Multiple matching strategies:** Position-based and rsID-based matching
-* **Chunked processing:** 50K variants per chunk to manage memory
-* **Minimum thresholds:** 100+ variants required for valid files
+
+- **Multiple matching strategies:** Position-based and rsID-based matching
+- **Chunked processing:** 50K variants per chunk to manage memory
+- **Minimum thresholds:** 100+ variants required for valid files
 
 ## 4. Output & Deployment
 
@@ -87,6 +89,7 @@ docker-compose up --build pipeline
 ```
 
 The container will:
+
 1. Load trait catalog definitions
 2. Check for existing files and validate against PGS API
 3. Download and cache PGS files as needed

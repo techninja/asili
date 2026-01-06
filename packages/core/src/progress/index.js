@@ -1,1 +1,5 @@
-export { ProgressTracker, PROGRESS_STAGES, PROGRESS_SUBSTAGES } from './tracker.js';
+export {
+  ProgressTracker,
+  PROGRESS_STAGES,
+  PROGRESS_SUBSTAGES
+} from './tracker.js';

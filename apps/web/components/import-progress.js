@@ -2,51 +2,51 @@ import { Debug } from '@asili/debug';
 import { useAppStore } from '../lib/store.js';
 
 export class ImportProgress extends HTMLElement {
-    constructor() {
-        super();
-        this.attachShadow({ mode: 'open' });
+  constructor() {
+    super();
+    this.attachShadow({ mode: 'open' });
+  }
+
+  connectedCallback() {
+    this.render();
+    // Setup listeners after render
+    setTimeout(() => this.setupEventListeners(), 0);
+  }
+
+  setupEventListeners() {
+    const cancelBtn = this.shadowRoot.getElementById('cancelBtn');
+    if (cancelBtn && !cancelBtn.hasAttribute('data-listener')) {
+      cancelBtn.setAttribute('data-listener', 'true');
+      cancelBtn.onclick = () => {
+        Debug.log('ImportProgress', 'Cancel button clicked');
+        useAppStore.getState().setCancelImport();
+      };
+    }
+  }
+
+  setProgress(percent, message) {
+    const progressFill = this.shadowRoot.querySelector('.progress-fill');
+    const progressPercent = this.shadowRoot.querySelector('.progress-percent');
+    const statusText = this.shadowRoot.querySelector('.status-text');
+
+    if (progressFill) {
+      progressFill.style.strokeDasharray = `${(314 * percent) / 100} 314`;
+    }
+    if (progressPercent) {
+      progressPercent.textContent = `${percent}%`;
+    }
+    if (statusText) {
+      // Remove percentage from message
+      const cleanMessage = message.replace(/\s*\(\d+%\)/, '');
+      statusText.textContent = cleanMessage;
     }
 
-    connectedCallback() {
-        this.render();
-        // Setup listeners after render
-        setTimeout(() => this.setupEventListeners(), 0);
-    }
+    // Ensure cancel button has listener
+    this.setupEventListeners();
+  }
 
-    setupEventListeners() {
-        const cancelBtn = this.shadowRoot.getElementById('cancelBtn');
-        if (cancelBtn && !cancelBtn.hasAttribute('data-listener')) {
-            cancelBtn.setAttribute('data-listener', 'true');
-            cancelBtn.onclick = () => {
-                Debug.log('ImportProgress', 'Cancel button clicked');
-                useAppStore.getState().setCancelImport();
-            };
-        }
-    }
-
-    setProgress(percent, message) {
-        const progressFill = this.shadowRoot.querySelector('.progress-fill');
-        const progressPercent = this.shadowRoot.querySelector('.progress-percent');
-        const statusText = this.shadowRoot.querySelector('.status-text');
-        
-        if (progressFill) {
-            progressFill.style.strokeDasharray = `${314 * percent / 100} 314`;
-        }
-        if (progressPercent) {
-            progressPercent.textContent = `${percent}%`;
-        }
-        if (statusText) {
-            // Remove percentage from message
-            const cleanMessage = message.replace(/\s*\(\d+%\)/, '');
-            statusText.textContent = cleanMessage;
-        }
-        
-        // Ensure cancel button has listener
-        this.setupEventListeners();
-    }
-
-    render() {
-        this.shadowRoot.innerHTML = `
+  render() {
+    this.shadowRoot.innerHTML = `
             <style>
                 :host {
                     display: block;
@@ -189,7 +189,7 @@ export class ImportProgress extends HTMLElement {
                 </div>
             </div>
         `;
-    }
+  }
 }
 
 customElements.define('import-progress', ImportProgress);

@@ -1,39 +1,39 @@
 import { PROGRESS_STAGES } from '../../packages/core/src/index.js';
 
 export class ProgressBar extends HTMLElement {
-    constructor() {
-        super();
-        this.attachShadow({ mode: 'open' });
-        this.status = null;
+  constructor() {
+    super();
+    this.attachShadow({ mode: 'open' });
+    this.status = null;
+  }
+
+  static get observedAttributes() {
+    return ['status'];
+  }
+
+  attributeChangedCallback(name, oldValue, newValue) {
+    if (name === 'status' && newValue) {
+      this.status = JSON.parse(newValue);
+      this.render();
+    }
+  }
+
+  setStatus(status) {
+    this.status = status;
+    this.render();
+  }
+
+  render() {
+    if (!this.status) {
+      this.shadowRoot.innerHTML = '';
+      return;
     }
 
-    static get observedAttributes() {
-        return ['status'];
-    }
+    const { stage, substage, progress, message } = this.status;
+    const isError = stage === PROGRESS_STAGES.ERROR;
+    const isComplete = stage === PROGRESS_STAGES.COMPLETE;
 
-    attributeChangedCallback(name, oldValue, newValue) {
-        if (name === 'status' && newValue) {
-            this.status = JSON.parse(newValue);
-            this.render();
-        }
-    }
-
-    setStatus(status) {
-        this.status = status;
-        this.render();
-    }
-
-    render() {
-        if (!this.status) {
-            this.shadowRoot.innerHTML = '';
-            return;
-        }
-
-        const { stage, substage, progress, message } = this.status;
-        const isError = stage === PROGRESS_STAGES.ERROR;
-        const isComplete = stage === PROGRESS_STAGES.COMPLETE;
-        
-        this.shadowRoot.innerHTML = `
+    this.shadowRoot.innerHTML = `
             <style>
                 :host {
                     display: block;
@@ -106,25 +106,25 @@ export class ProgressBar extends HTMLElement {
                 <div class="progress-details">${message}</div>
             </div>
         `;
-    }
+  }
 
-    formatStage(stage) {
-        const stageNames = {
-            [PROGRESS_STAGES.IDLE]: 'Idle',
-            [PROGRESS_STAGES.INITIALIZING]: 'Initializing',
-            [PROGRESS_STAGES.LOADING_DATA]: 'Loading Data',
-            [PROGRESS_STAGES.PROCESSING_DNA]: 'Processing DNA',
-            [PROGRESS_STAGES.CALCULATING_PGS]: 'Calculating Risk Scores',
-            [PROGRESS_STAGES.FINALIZING]: 'Finalizing',
-            [PROGRESS_STAGES.COMPLETE]: 'Complete',
-            [PROGRESS_STAGES.ERROR]: 'Error'
-        };
-        return stageNames[stage] || stage;
-    }
+  formatStage(stage) {
+    const stageNames = {
+      [PROGRESS_STAGES.IDLE]: 'Idle',
+      [PROGRESS_STAGES.INITIALIZING]: 'Initializing',
+      [PROGRESS_STAGES.LOADING_DATA]: 'Loading Data',
+      [PROGRESS_STAGES.PROCESSING_DNA]: 'Processing DNA',
+      [PROGRESS_STAGES.CALCULATING_PGS]: 'Calculating Risk Scores',
+      [PROGRESS_STAGES.FINALIZING]: 'Finalizing',
+      [PROGRESS_STAGES.COMPLETE]: 'Complete',
+      [PROGRESS_STAGES.ERROR]: 'Error'
+    };
+    return stageNames[stage] || stage;
+  }
 
-    formatSubstage(substage) {
-        return substage.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
-    }
+  formatSubstage(substage) {
+    return substage.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
+  }
 }
 
 customElements.define('progress-bar', ProgressBar);

@@ -15,17 +15,20 @@ Place your DNA file in `test-data/AncestryDNA.txt` (already copied from root).
 ## Running Tests
 
 ### Full Test Suite
+
 ```bash
 npm test
 ```
 
 Tests:
+
 - DNA file loading and parsing
 - Local storage persistence
 - Type 2 diabetes risk calculation
 - Cross-session data retention
 
 ### Clear Storage
+
 ```bash
 npm run test:clear
 ```
@@ -35,7 +38,7 @@ Clears all browser storage for fresh testing.
 ## Test Features
 
 - **Headless Chrome**: Real browser environment
-- **Local Storage**: Persistent data across sessions  
+- **Local Storage**: Persistent data across sessions
 - **DNA Processing**: Validates variant parsing and storage
 - **Risk Calculation**: Tests polygenic score computation
 - **Error Handling**: Comprehensive error reporting
@@ -43,11 +46,13 @@ Clears all browser storage for fresh testing.
 ## Development
 
 Start the webapp first:
+
 ```bash
 npm run dev
 ```
 
 Then run tests in another terminal:
+
 ```bash
 npm test
 ```

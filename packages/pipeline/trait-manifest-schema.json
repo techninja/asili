@@ -7,7 +7,7 @@
     "traits": {
       "type": "object",
       "patternProperties": {
-        "^(MONDO:[0-9]{7}|EFO_[0-9]{7})$": {
+        "^(MONDO:[0-9]{7}|EFO_[0-9]{7}|HP_[0-9]{7}|OBA_[0-9]{7})$": {
           "$ref": "#/definitions/TraitManifestEntry"
         }
       },
@@ -21,7 +21,21 @@
   "definitions": {
     "TraitManifestEntry": {
       "type": "object",
-      "required": ["name", "categories", "variant_count", "file_path", "pgs_metadata", "last_updated", "actual_variants", "file_size_mb", "last_processed", "expected_variants", "weight", "pgs_ids", "mondo_id"],
+      "required": [
+        "name",
+        "categories",
+        "variant_count",
+        "file_path",
+        "pgs_metadata",
+        "last_updated",
+        "actual_variants",
+        "file_size_mb",
+        "last_processed",
+        "expected_variants",
+        "weight",
+        "pgs_ids",
+        "mondo_id"
+      ],
       "properties": {
         "name": {
           "type": "string",
@@ -95,6 +109,10 @@
           "type": "string"
         },
         "last_validated": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "metadata_collected": {
           "type": "string",
           "format": "date-time"
         }

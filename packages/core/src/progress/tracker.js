@@ -19,12 +19,12 @@ export const PROGRESS_SUBSTAGES = {
   FETCHING_TRAITS: 'fetching_traits',
   LOADING_PGS_FILES: 'loading_pgs_files',
   PREPARING_DATABASE: 'preparing_database',
-  
+
   // Processing DNA substages
   PARSING_DNA_FILE: 'parsing_dna_file',
   VALIDATING_FORMAT: 'validating_format',
   NORMALIZING_DATA: 'normalizing_data',
-  
+
   // Calculating PGS substages
   MATCHING_VARIANTS: 'matching_variants',
   COMPUTING_SCORES: 'computing_scores',
@@ -55,7 +55,7 @@ export class ProgressTracker {
       ...updates,
       timestamp: Date.now()
     };
-    
+
     this.listeners.forEach(callback => {
       try {
         callback(this.currentStatus);
@@ -70,9 +70,9 @@ export class ProgressTracker {
   }
 
   setSubstage(substage, message = '', progress = null) {
-    this.update({ 
-      substage, 
-      message, 
+    this.update({
+      substage,
+      message,
       ...(progress !== null && { progress })
     });
   }

@@ -7,8 +7,16 @@ mkdirSync('deps', { recursive: true });
 
 // Bundle individual dependencies
 const deps = [
-  { name: 'zustand', entry: 'node_modules/zustand/esm/index.js', output: 'deps/zustand.js' },
-  { name: 'duckdb', entry: 'node_modules/@duckdb/duckdb-wasm/dist/duckdb-browser.mjs', output: 'deps/duckdb.js' }
+  {
+    name: 'zustand',
+    entry: 'node_modules/zustand/esm/index.js',
+    output: 'deps/zustand.js'
+  },
+  {
+    name: 'duckdb',
+    entry: 'node_modules/@duckdb/duckdb-wasm/dist/duckdb-browser.mjs',
+    output: 'deps/duckdb.js'
+  }
 ];
 
 for (const dep of deps) {
@@ -26,14 +34,21 @@ for (const dep of deps) {
 
 // Copy DuckDB WASM files
 mkdirSync('deps/wasm', { recursive: true });
-copyFileSync('node_modules/@duckdb/duckdb-wasm/dist/duckdb-eh.wasm', 'deps/wasm/duckdb-eh.wasm');
+copyFileSync(
+  'node_modules/@duckdb/duckdb-wasm/dist/duckdb-eh.wasm',
+  'deps/wasm/duckdb-eh.wasm'
+);
 
-const workerContent = readFileSync('node_modules/@duckdb/duckdb-wasm/dist/duckdb-browser-eh.worker.js', 'utf8')
-  .replace(/\/\/# sourceMappingURL=.*$/gm, '');
+const workerContent = readFileSync(
+  'node_modules/@duckdb/duckdb-wasm/dist/duckdb-browser-eh.worker.js',
+  'utf8'
+).replace(/\/\/# sourceMappingURL=.*$/gm, '');
 writeFileSync('deps/wasm/duckdb-browser-eh.worker.js', workerContent);
 
-const pthreadContent = readFileSync('node_modules/@duckdb/duckdb-wasm/dist/duckdb-browser-coi.pthread.worker.js', 'utf8')
-  .replace(/\/\/# sourceMappingURL=.*$/gm, '');
+const pthreadContent = readFileSync(
+  'node_modules/@duckdb/duckdb-wasm/dist/duckdb-browser-coi.pthread.worker.js',
+  'utf8'
+).replace(/\/\/# sourceMappingURL=.*$/gm, '');
 writeFileSync('deps/wasm/duckdb-browser-coi.pthread.worker.js', pthreadContent);
 
 console.log('✅ Dependencies built to deps/');

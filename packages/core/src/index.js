@@ -18,17 +18,19 @@ export { BasicRiskCalculator } from './risk-calculator/basic.js';
 // Factory function for browser environment
 export async function createBrowserProcessor(config = {}) {
   const { ProgressTracker } = await import('./progress/index.js');
-  const { BrowserGenomicProcessor } = await import('./genomic-processor/browser.js');
-  
+  const { BrowserGenomicProcessor } =
+    await import('./genomic-processor/browser.js');
+
   const progressTracker = new ProgressTracker();
   const processor = new BrowserGenomicProcessor(config, progressTracker);
-  
+
   return { processor, progressTracker };
 }
 
 // Factory function for storage manager
 export async function createBrowserStorage(config = {}) {
-  const { BrowserStorageManager } = await import('./storage-manager/browser.js');
+  const { BrowserStorageManager } =
+    await import('./storage-manager/browser.js');
   return new BrowserStorageManager(config);
 }
 
@@ -44,7 +46,9 @@ function isBrowser() {
 }
 
 function isNode() {
-  return typeof process !== 'undefined' && process.versions && process.versions.node;
+  return (
+    typeof process !== 'undefined' && process.versions && process.versions.node
+  );
 }
 
 // Auto-detecting factory functions

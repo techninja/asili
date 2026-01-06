@@ -5,12 +5,14 @@ The queue system manages sequential execution of genomic risk calculations to pr
 ## Core Components
 
 ### QueueManager (`@asili/core/queue`)
+
 - Manages sequential processing of trait calculations
 - Provides priority-based ordering
 - Tracks progress and estimates completion times
 - Emits events for UI updates
 
 ### TimeEstimator
+
 - Records historical processing times
 - Provides estimates based on trait complexity and variant count
 - Adapts estimates based on actual performance
@@ -18,12 +20,14 @@ The queue system manages sequential execution of genomic risk calculations to pr
 ### Frontend Components
 
 #### QueueControl (`queue-control.js`)
+
 - Floating widget showing queue status
 - Start/pause/stop controls
 - Real-time progress and CPU/memory charts
 - Queue management interface
 
 #### Updated RiskDashboard
+
 - Shows queue position instead of direct calculate buttons
 - "Queue All" button to add all traits for an individual
 - Integration with queue status display
@@ -43,7 +47,7 @@ queueManager.add('MONDO_0005147', 'individual_123', QUEUE_PRIORITY.HIGH);
 queueManager.start();
 
 // Subscribe to events
-queueManager.subscribe((event) => {
+queueManager.subscribe(event => {
   console.log('Queue event:', event.event, event.data);
 });
 ```

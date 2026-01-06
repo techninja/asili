@@ -17,39 +17,46 @@ export class StreamingProcessor {
    * Process parquet file in streaming chunks with memory monitoring
    */
   async processParquetStream(parquetUrl, processor, progressCallback) {
-    const absoluteUrl = parquetUrl.startsWith('/') ? `${window.location.origin}${parquetUrl}` : parquetUrl;
-    
+    const absoluteUrl = parquetUrl.startsWith('/')
+      ? `${window.location.origin}${parquetUrl}`
+      : parquetUrl;
+
     // Get total count efficiently with force download
-    const countResult = await this.conn.query(`SELECT COUNT(*) as total FROM '${absoluteUrl}'`);
+    const countResult = await this.conn.query(
+      `SELECT COUNT(*) as total FROM '${absoluteUrl}'`
+    );
     const totalRows = Number(countResult.toArray()[0].total);
-    
+
     const totalChunks = Math.ceil(totalRows / this.config.chunkSize);
     let processedRows = 0;
-    
+
     for (let offset = 0; offset < totalRows; offset += this.config.chunkSize) {
       const chunkNum = Math.floor(offset / this.config.chunkSize) + 1;
       const progress = (offset / totalRows) * 100;
-      
-      progressCallback?.(`Processing chunk ${chunkNum}/${totalChunks}`, progress);
-      
+
+      progressCallback?.(
+        `Processing chunk ${chunkNum}/${totalChunks}`,
+        progress
+      );
+
       // Stream query directly from parquet without creating tables
       const chunkResult = await this.conn.query(`
         SELECT * FROM '${absoluteUrl}' 
         LIMIT ${this.config.chunkSize} OFFSET ${offset}
       `);
-      
+
       const chunkData = chunkResult.toArray();
       await processor(chunkData, chunkNum, totalChunks);
-      
+
       processedRows += chunkData.length;
-      
+
       // Memory management and yielding
       if (chunkNum % this.config.yieldInterval === 0) {
         await this.yieldControl();
         await this.checkMemoryPressure();
       }
     }
-    
+
     return processedRows;
   }
 
@@ -60,15 +67,17 @@ export class StreamingProcessor {
     if ('memory' in performance) {
       const memInfo = performance.memory;
       const usageRatio = memInfo.usedJSHeapSize / memInfo.jsHeapSizeLimit;
-      
+
       if (usageRatio > this.config.memoryThreshold) {
-        console.warn(`High memory usage detected: ${(usageRatio * 100).toFixed(1)}%`);
-        
+        console.warn(
+          `High memory usage detected: ${(usageRatio * 100).toFixed(1)}%`
+        );
+
         // Force garbage collection if available
         if (window.gc) {
           window.gc();
         }
-        
+
         // Additional cleanup delay
         await new Promise(resolve => setTimeout(resolve, 10));
       }
@@ -88,19 +97,19 @@ export class StreamingProcessor {
   createDNALookup(userDNA) {
     const rsidMap = new Map();
     const posMap = new Map();
-    
+
     for (const snp of userDNA) {
       const genotype = snp.allele1 + snp.allele2;
-      
+
       if (snp.rsid) {
         rsidMap.set(snp.rsid, genotype);
       }
-      
+
       if (snp.chromosome && snp.position) {
         posMap.set(`${snp.chromosome}:${snp.position}`, genotype);
       }
     }
-    
+
     return { rsidMap, posMap };
   }
 
@@ -112,7 +121,7 @@ export class StreamingProcessor {
     if (rsidMap.has(variantId)) {
       return rsidMap.get(variantId);
     }
-    
+
     // Position-based match for chr:pos:ref:alt format
     if (variantId.includes(':')) {
       const parts = variantId.split(':');
@@ -123,7 +132,7 @@ export class StreamingProcessor {
         }
       }
     }
-    
+
     return null;
   }
 
@@ -132,7 +141,7 @@ export class StreamingProcessor {
    */
   maintainTopN(array, item, n, compareFn) {
     array.push(item);
-    
+
     if (array.length > n) {
       array.sort(compareFn);
       array.splice(n);
@@ -161,12 +170,12 @@ export class PGSAggregator {
         negativeSum: 0,
         total: 0
       });
-      
+
       this.pgsDetails.set(pgsId, {
         topVariants: [],
         metadata
       });
-      
+
       this.pgsTopVariants.set(pgsId, []);
     }
   }
@@ -174,7 +183,7 @@ export class PGSAggregator {
   addVariant(pgsId, variant, genotype, effectWeight) {
     const breakdown = this.pgsBreakdown.get(pgsId);
     breakdown.total++;
-    
+
     if (effectWeight > 0) {
       breakdown.positive++;
       breakdown.positiveSum += effectWeight;
@@ -182,10 +191,10 @@ export class PGSAggregator {
       breakdown.negative++;
       breakdown.negativeSum += effectWeight;
     }
-    
+
     this.totalScore += effectWeight;
     this.totalMatches++;
-    
+
     // Track top variants
     const topVariants = this.pgsTopVariants.get(pgsId);
     const variantData = {
@@ -194,15 +203,22 @@ export class PGSAggregator {
       effect_weight: effectWeight,
       userGenotype: genotype
     };
-    
+
     if (topVariants.length < 20) {
       topVariants.push(variantData);
     } else {
       // Replace lowest impact variant if this one is higher
-      const minIndex = topVariants.reduce((minIdx, curr, idx, arr) => 
-        Math.abs(curr.effect_weight) < Math.abs(arr[minIdx].effect_weight) ? idx : minIdx, 0);
-      
-      if (Math.abs(effectWeight) > Math.abs(topVariants[minIndex].effect_weight)) {
+      const minIndex = topVariants.reduce(
+        (minIdx, curr, idx, arr) =>
+          Math.abs(curr.effect_weight) < Math.abs(arr[minIdx].effect_weight)
+            ? idx
+            : minIdx,
+        0
+      );
+
+      if (
+        Math.abs(effectWeight) > Math.abs(topVariants[minIndex].effect_weight)
+      ) {
         topVariants[minIndex] = variantData;
       }
     }
@@ -211,10 +227,12 @@ export class PGSAggregator {
   finalize() {
     // Sort top variants for each PGS
     for (const [pgsId, topVariants] of this.pgsTopVariants) {
-      topVariants.sort((a, b) => Math.abs(b.effect_weight) - Math.abs(a.effect_weight));
+      topVariants.sort(
+        (a, b) => Math.abs(b.effect_weight) - Math.abs(a.effect_weight)
+      );
       this.pgsDetails.get(pgsId).topVariants = topVariants;
     }
-    
+
     return {
       riskScore: this.totalScore,
       totalMatches: this.totalMatches,

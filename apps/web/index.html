@@ -1,40 +1,42 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Asili - Personal Genomic Risk Assistant</title>
-    <script>window.DEBUG_LEVEL = 2;</script>
-    
+    <script>
+      window.DEBUG_LEVEL = 2;
+    </script>
+
     <!-- Preload critical WASM -->
-    <link rel="preload" href="/dist/duckdb-eh.wasm" as="fetch" crossorigin>
-    
+    <link rel="preload" href="/dist/duckdb-eh.wasm" as="fetch" crossorigin />
+
     <!-- Load Chart.js async -->
     <script>
-        window.loadChartJS = () => {
-            if (window.Chart) return Promise.resolve();
-            return new Promise(resolve => {
-                const s = document.createElement('script');
-                s.src = 'https://cdn.jsdelivr.net/npm/chart.js';
-                s.onload = resolve;
-                document.head.appendChild(s);
-            });
-        };
+      window.loadChartJS = () => {
+        if (window.Chart) return Promise.resolve();
+        return new Promise(resolve => {
+          const s = document.createElement('script');
+          s.src = 'https://cdn.jsdelivr.net/npm/chart.js';
+          s.onload = resolve;
+          document.head.appendChild(s);
+        });
+      };
     </script>
-    
+
     <script type="importmap">
-    {
+      {
         "imports": {
-            "@duckdb/duckdb-wasm": "./duckdb-bundle.mjs",
-            "zustand": "/node_modules/zustand/esm/vanilla.mjs",
-            "@asili/core": "/packages/core/src/index.js",
-            "@asili/debug": "/packages/core/src/utils/debug.js"
+          "@duckdb/duckdb-wasm": "./duckdb-bundle.mjs",
+          "zustand": "/node_modules/zustand/esm/vanilla.mjs",
+          "@asili/core": "/packages/core/src/index.js",
+          "@asili/debug": "/packages/core/src/utils/debug.js"
         }
-    }
+      }
     </script>
-</head>
-<body>
+  </head>
+  <body>
     <asili-app></asili-app>
     <script type="module" src="./components/asili-app.js"></script>
-</body>
+  </body>
 </html>

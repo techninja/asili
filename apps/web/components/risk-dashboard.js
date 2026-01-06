@@ -5,287 +5,307 @@ import './pgs-breakdown.js';
 
 // Format PGS scores as standard deviations (not multipliers)
 function formatScore(score) {
-    const abs = Math.abs(score);
-    const sign = score >= 0 ? '+' : '';
-    
-    if (abs >= 10) {
-        return `${sign}${score.toFixed(1)}σ`;
-    } else {
-        return `${sign}${score.toFixed(2)}σ`;
-    }
+  const abs = Math.abs(score);
+  const sign = score >= 0 ? '+' : '';
+
+  if (abs >= 10) {
+    return `${sign}${score.toFixed(1)}σ`;
+  } else {
+    return `${sign}${score.toFixed(2)}σ`;
+  }
 }
 
 // Convert standard deviation to percentile for user-friendly display
 function scoreToPercentile(score) {
-    // Using cumulative normal distribution approximation
-    const z = Math.abs(score);
-    let percentile;
-    
-    if (z < 1) {
-        percentile = 50 + (z * 34.13);
-    } else if (z < 2) {
-        percentile = 84.13 + ((z - 1) * 13.59);
-    } else if (z < 3) {
-        percentile = 97.72 + ((z - 2) * 2.14);
-    } else {
-        percentile = 99.87;
-    }
-    
-    if (score < 0) {
-        percentile = 100 - percentile;
-    }
-    
-    return Math.round(Math.max(1, Math.min(99, percentile)));
+  // Using cumulative normal distribution approximation
+  const z = Math.abs(score);
+  let percentile;
+
+  if (z < 1) {
+    percentile = 50 + z * 34.13;
+  } else if (z < 2) {
+    percentile = 84.13 + (z - 1) * 13.59;
+  } else if (z < 3) {
+    percentile = 97.72 + (z - 2) * 2.14;
+  } else {
+    percentile = 99.87;
+  }
+
+  if (score < 0) {
+    percentile = 100 - percentile;
+  }
+
+  return Math.round(Math.max(1, Math.min(99, percentile)));
 }
 
 // Format percentile with correct ordinal suffix
 function formatPercentile(percentile) {
-    const suffix = percentile % 10 === 1 && percentile !== 11 ? 'st' :
-                  percentile % 10 === 2 && percentile !== 12 ? 'nd' :
-                  percentile % 10 === 3 && percentile !== 13 ? 'rd' : 'th';
-    return `${percentile}${suffix} percentile`;
+  const suffix =
+    percentile % 10 === 1 && percentile !== 11
+      ? 'st'
+      : percentile % 10 === 2 && percentile !== 12
+        ? 'nd'
+        : percentile % 10 === 3 && percentile !== 13
+          ? 'rd'
+          : 'th';
+  return `${percentile}${suffix} percentile`;
 }
 
 export class RiskDashboard extends HTMLElement {
-    constructor() {
-        super();
-        this.attachShadow({ mode: 'open' });
-        this.processor = null;
-        this.queueManager = null;
-        this.availableTraits = [];
-        this.unsubscribe = null;
+  constructor() {
+    super();
+    this.attachShadow({ mode: 'open' });
+    this.processor = null;
+    this.queueManager = null;
+    this.availableTraits = [];
+    this.unsubscribe = null;
+    this.hasAutoQueued = false;
+  }
+
+  connectedCallback() {
+    this.render();
+    this.initializeProcessor();
+
+    // Subscribe to state changes
+    this.unsubscribe = useAppStore.subscribe(state => {
+      // Reset auto-queue flag when individual changes
+      const currentIndividual = state.selectedIndividual;
+      if (this.lastIndividual !== currentIndividual) {
         this.hasAutoQueued = false;
+        this.lastIndividual = currentIndividual;
+      }
+      this.updateTraitCards(state);
+    });
+  }
+
+  async initializeProcessor() {
+    try {
+      // Create our own processor instance
+      const { AsiliProcessor } = await import('../lib/asili-processor.js');
+      this.processor = new AsiliProcessor();
+      await this.processor.initialize();
+
+      // Initialize queue manager
+      this.queueManager = new QueueManager(this.processor);
+
+      await this.loadAvailableTraits();
+    } catch (error) {
+      Debug.error('RiskDashboard', 'Failed to initialize processor:', error);
+    }
+  }
+
+  disconnectedCallback() {
+    this.unsubscribe?.();
+  }
+
+  updateTraitCards(state) {
+    const grid = this.shadowRoot.getElementById('traitsGrid');
+    if (!grid || this.availableTraits.length === 0) return;
+
+    if (!state.selectedIndividual || !state.individualReady) {
+      if (state.individuals.length === 0) {
+        grid.innerHTML =
+          '<div class="loading">Import DNA data to start analyzing genomic risk</div>';
+      } else {
+        grid.innerHTML =
+          '<div class="loading">Select an individual to view genomic risk analysis</div>';
+      }
+      return;
     }
 
-    connectedCallback() {
-        this.render();
-        this.initializeProcessor();
-        
-        // Subscribe to state changes
-        this.unsubscribe = useAppStore.subscribe((state) => {
-            // Reset auto-queue flag when individual changes
-            const currentIndividual = state.selectedIndividual;
-            if (this.lastIndividual !== currentIndividual) {
-                this.hasAutoQueued = false;
-                this.lastIndividual = currentIndividual;
-            }
-            this.updateTraitCards(state);
-        });
+    Debug.log(
+      1,
+      'RiskDashboard',
+      'Updating trait cards for individual:',
+      state.selectedIndividual
+    );
+
+    if (state.uploadState !== 'idle' || !state.individualReady) {
+      grid.innerHTML =
+        '<div class="loading">Individual data is loading...</div>';
+      return;
     }
 
-    async initializeProcessor() {
-        try {
-            // Create our own processor instance
-            const { AsiliProcessor } = await import('../lib/asili-processor.js');
-            this.processor = new AsiliProcessor();
-            await this.processor.initialize();
-            
-            // Initialize queue manager
-            this.queueManager = new QueueManager(this.processor);
-            
-            await this.loadAvailableTraits();
-        } catch (error) {
-            Debug.error('RiskDashboard', 'Failed to initialize processor:', error);
-        }
+    this.filterTraits(state.selectedIndividual);
+
+    // Auto-queue all uncached traits when individual is ready
+    if (this.queueManager && !this.hasAutoQueued) {
+      this.autoQueueUncachedTraits(state.selectedIndividual);
+      this.hasAutoQueued = true;
+    }
+  }
+
+  async renderTraitCardsForIndividual(individualId) {
+    const grid = this.shadowRoot.getElementById('traitsGrid');
+
+    if (this.availableTraits.length === 0) {
+      grid.innerHTML = '<div class="loading">No traits available</div>';
+      return;
     }
 
-    disconnectedCallback() {
-        this.unsubscribe?.();
+    // Apply filters and render
+    this.filterTraits(individualId);
+  }
+
+  populateCategoryFilter() {
+    const categorySelect = this.shadowRoot.getElementById('categorySelect');
+    if (!categorySelect) return;
+
+    // Get all unique categories
+    const categories = new Set();
+    this.availableTraits.forEach(trait => {
+      trait.categories?.forEach(cat => categories.add(cat));
+    });
+
+    // Sort categories, but put "Other Conditions" last
+    const sortedCategories = Array.from(categories).sort((a, b) => {
+      if (a === 'Other Conditions') return 1;
+      if (b === 'Other Conditions') return -1;
+      return a.localeCompare(b);
+    });
+
+    // Clear existing options (except "All Categories")
+    while (categorySelect.children.length > 1) {
+      categorySelect.removeChild(categorySelect.lastChild);
     }
 
-    updateTraitCards(state) {
-        const grid = this.shadowRoot.getElementById('traitsGrid');
-        if (!grid || this.availableTraits.length === 0) return;
-        
-        if (!state.selectedIndividual || !state.individualReady) {
-            if (state.individuals.length === 0) {
-                grid.innerHTML = '<div class="loading">Import DNA data to start analyzing genomic risk</div>';
-            } else {
-                grid.innerHTML = '<div class="loading">Select an individual to view genomic risk analysis</div>';
-            }
-            return;
-        }
-        
-        Debug.log(1, 'RiskDashboard', 'Updating trait cards for individual:', state.selectedIndividual);
-        
-        if (state.uploadState !== 'idle' || !state.individualReady) {
-            grid.innerHTML = '<div class="loading">Individual data is loading...</div>';
-            return;
-        }
-        
-        this.filterTraits(state.selectedIndividual);
-        
-        // Auto-queue all uncached traits when individual is ready
-        if (this.queueManager && !this.hasAutoQueued) {
-            this.autoQueueUncachedTraits(state.selectedIndividual);
-            this.hasAutoQueued = true;
-        }
+    // Add category options
+    sortedCategories.forEach(category => {
+      const option = document.createElement('option');
+      option.value = category;
+      option.textContent = category;
+      categorySelect.appendChild(option);
+    });
+  }
+
+  filterTraits(individualId = null) {
+    // If no individualId provided, get from store
+    if (!individualId) {
+      const state = useAppStore.getState();
+      individualId = state.selectedIndividual;
+    }
+    const grid = this.shadowRoot.getElementById('traitsGrid');
+    const searchInput = this.shadowRoot.getElementById('searchInput');
+    const categorySelect = this.shadowRoot.getElementById('categorySelect');
+    const sortSelect = this.shadowRoot.getElementById('sortSelect');
+    const filterStats = this.shadowRoot.getElementById('filterStats');
+
+    if (!grid || !searchInput || !categorySelect || !sortSelect) return;
+
+    const searchTerm = searchInput.value.toLowerCase().trim();
+    const selectedCategory = categorySelect.value;
+    const sortBy = sortSelect.value;
+
+    // Filter traits
+    let filteredTraits = this.availableTraits.filter(trait => {
+      // Search filter
+      const matchesSearch =
+        !searchTerm ||
+        trait.name.toLowerCase().includes(searchTerm) ||
+        trait.description?.toLowerCase().includes(searchTerm) ||
+        trait.categories?.some(cat => cat.toLowerCase().includes(searchTerm));
+
+      // Category filter
+      const matchesCategory =
+        !selectedCategory || trait.categories?.includes(selectedCategory);
+
+      return matchesSearch && matchesCategory;
+    });
+
+    // Sort traits
+    filteredTraits.sort((a, b) => {
+      switch (sortBy) {
+        case 'name-desc':
+          return b.name.localeCompare(a.name);
+        case 'variants':
+          return (b.variant_count || 0) - (a.variant_count || 0);
+        case 'pgs-count':
+          return (
+            Object.keys(b.pgs_metadata || {}).length -
+            Object.keys(a.pgs_metadata || {}).length
+          );
+        case 'category':
+          const aCat = a.categories?.[0] || 'Other';
+          const bCat = b.categories?.[0] || 'Other';
+          return aCat.localeCompare(bCat) || a.name.localeCompare(b.name);
+        default: // 'name'
+          return a.name.localeCompare(b.name);
+      }
+    });
+
+    // Update filter stats
+    filterStats.textContent = `Showing ${filteredTraits.length} of ${this.availableTraits.length} traits`;
+
+    // Render filtered traits
+    this.renderFilteredTraits(filteredTraits, individualId);
+  }
+
+  async renderFilteredTraits(filteredTraits, individualId) {
+    const grid = this.shadowRoot.getElementById('traitsGrid');
+    grid.innerHTML = '';
+
+    if (filteredTraits.length === 0) {
+      grid.innerHTML =
+        '<div class="loading">No traits match your filters</div>';
+      return;
     }
 
-    async renderTraitCardsForIndividual(individualId) {
-        const grid = this.shadowRoot.getElementById('traitsGrid');
-        
-        if (this.availableTraits.length === 0) {
-            grid.innerHTML = '<div class="loading">No traits available</div>';
-            return;
+    // Group traits by category for display
+    const categoryGroups = {};
+    filteredTraits.forEach(trait => {
+      trait.categories?.forEach(category => {
+        if (!categoryGroups[category]) {
+          categoryGroups[category] = [];
         }
-        
-        // Apply filters and render
-        this.filterTraits(individualId);
-    }
+        if (!categoryGroups[category].find(t => t.id === trait.id)) {
+          categoryGroups[category].push(trait);
+        }
+      });
+    });
 
-    populateCategoryFilter() {
-        const categorySelect = this.shadowRoot.getElementById('categorySelect');
-        if (!categorySelect) return;
-        
-        // Get all unique categories
-        const categories = new Set();
-        this.availableTraits.forEach(trait => {
-            trait.categories?.forEach(cat => categories.add(cat));
-        });
-        
-        // Sort categories, but put "Other Conditions" last
-        const sortedCategories = Array.from(categories).sort((a, b) => {
-            if (a === 'Other Conditions') return 1;
-            if (b === 'Other Conditions') return -1;
-            return a.localeCompare(b);
-        });
-        
-        // Clear existing options (except "All Categories")
-        while (categorySelect.children.length > 1) {
-            categorySelect.removeChild(categorySelect.lastChild);
-        }
-        
-        // Add category options
-        sortedCategories.forEach(category => {
-            const option = document.createElement('option');
-            option.value = category;
-            option.textContent = category;
-            categorySelect.appendChild(option);
-        });
-    }
+    // Sort categories (Other Conditions last)
+    const sortedCategories = Object.keys(categoryGroups).sort((a, b) => {
+      if (a === 'Other Conditions') return 1;
+      if (b === 'Other Conditions') return -1;
+      return a.localeCompare(b);
+    });
 
-    filterTraits(individualId = null) {
-        // If no individualId provided, get from store
-        if (!individualId) {
-            const state = useAppStore.getState();
-            individualId = state.selectedIndividual;
-        }
-        const grid = this.shadowRoot.getElementById('traitsGrid');
-        const searchInput = this.shadowRoot.getElementById('searchInput');
-        const categorySelect = this.shadowRoot.getElementById('categorySelect');
-        const sortSelect = this.shadowRoot.getElementById('sortSelect');
-        const filterStats = this.shadowRoot.getElementById('filterStats');
-        
-        if (!grid || !searchInput || !categorySelect || !sortSelect) return;
-        
-        const searchTerm = searchInput.value.toLowerCase().trim();
-        const selectedCategory = categorySelect.value;
-        const sortBy = sortSelect.value;
-        
-        // Filter traits
-        let filteredTraits = this.availableTraits.filter(trait => {
-            // Search filter
-            const matchesSearch = !searchTerm || 
-                trait.name.toLowerCase().includes(searchTerm) ||
-                trait.description?.toLowerCase().includes(searchTerm) ||
-                trait.categories?.some(cat => cat.toLowerCase().includes(searchTerm));
-            
-            // Category filter
-            const matchesCategory = !selectedCategory || 
-                trait.categories?.includes(selectedCategory);
-            
-            return matchesSearch && matchesCategory;
-        });
-        
-        // Sort traits
-        filteredTraits.sort((a, b) => {
-            switch (sortBy) {
-                case 'name-desc':
-                    return b.name.localeCompare(a.name);
-                case 'variants':
-                    return (b.variant_count || 0) - (a.variant_count || 0);
-                case 'pgs-count':
-                    return Object.keys(b.pgs_metadata || {}).length - Object.keys(a.pgs_metadata || {}).length;
-                case 'category':
-                    const aCat = a.categories?.[0] || 'Other';
-                    const bCat = b.categories?.[0] || 'Other';
-                    return aCat.localeCompare(bCat) || a.name.localeCompare(b.name);
-                default: // 'name'
-                    return a.name.localeCompare(b.name);
-            }
-        });
-        
-        // Update filter stats
-        filterStats.textContent = `Showing ${filteredTraits.length} of ${this.availableTraits.length} traits`;
-        
-        // Render filtered traits
-        this.renderFilteredTraits(filteredTraits, individualId);
-    }
+    for (const categoryName of sortedCategories) {
+      const traits = categoryGroups[categoryName];
 
-    async renderFilteredTraits(filteredTraits, individualId) {
-        const grid = this.shadowRoot.getElementById('traitsGrid');
-        grid.innerHTML = '';
-        
-        if (filteredTraits.length === 0) {
-            grid.innerHTML = '<div class="loading">No traits match your filters</div>';
-            return;
-        }
-        
-        // Group traits by category for display
-        const categoryGroups = {};
-        filteredTraits.forEach(trait => {
-            trait.categories?.forEach(category => {
-                if (!categoryGroups[category]) {
-                    categoryGroups[category] = [];
-                }
-                if (!categoryGroups[category].find(t => t.id === trait.id)) {
-                    categoryGroups[category].push(trait);
-                }
-            });
-        });
-        
-        // Sort categories (Other Conditions last)
-        const sortedCategories = Object.keys(categoryGroups).sort((a, b) => {
-            if (a === 'Other Conditions') return 1;
-            if (b === 'Other Conditions') return -1;
-            return a.localeCompare(b);
-        });
-        
-        for (const categoryName of sortedCategories) {
-            const traits = categoryGroups[categoryName];
-            
-            // Create category header
-            const categoryHeader = document.createElement('div');
-            categoryHeader.className = 'family-header';
-            categoryHeader.innerHTML = `
+      // Create category header
+      const categoryHeader = document.createElement('div');
+      categoryHeader.className = 'family-header';
+      categoryHeader.innerHTML = `
                 <h2>${categoryName}</h2>
                 <p>${traits.length} trait${traits.length > 1 ? 's' : ''} available</p>
             `;
-            grid.appendChild(categoryHeader);
-            
-            // Create category grid
-            const categoryGrid = document.createElement('div');
-            categoryGrid.className = 'family-grid';
-            
-            for (const trait of traits) {
-                Debug.log(2, 'RiskDashboard', 'Creating card for trait:', trait.name);
-                const cached = individualId ? await this.processor.getCachedResult(individualId, trait.id) : null;
-                const card = this.createTraitCard(trait, individualId, cached);
-                categoryGrid.appendChild(card);
-            }
-            
-            grid.appendChild(categoryGrid);
-        }
-    }
+      grid.appendChild(categoryHeader);
 
-    createTraitCard(trait, individualId, cached) {
-        const card = document.createElement('div');
-        card.className = 'trait-card';
-        card.dataset.traitId = trait.id;
-        card.dataset.individualId = individualId;
-        
-        card.innerHTML = `
+      // Create category grid
+      const categoryGrid = document.createElement('div');
+      categoryGrid.className = 'family-grid';
+
+      for (const trait of traits) {
+        Debug.log(2, 'RiskDashboard', 'Creating card for trait:', trait.name);
+        const cached = individualId
+          ? await this.processor.getCachedResult(individualId, trait.id)
+          : null;
+        const card = this.createTraitCard(trait, individualId, cached);
+        categoryGrid.appendChild(card);
+      }
+
+      grid.appendChild(categoryGrid);
+    }
+  }
+
+  createTraitCard(trait, individualId, cached) {
+    const card = document.createElement('div');
+    card.className = 'trait-card';
+    card.dataset.traitId = trait.id;
+    card.dataset.individualId = individualId;
+
+    card.innerHTML = `
             <div class="trait-header">
                 <h3 class="trait-name">${trait.name}</h3>
                 <span class="trait-category">${trait.categories?.[0] || 'Other'}</span>
@@ -295,58 +315,68 @@ export class RiskDashboard extends HTMLElement {
             </div>
             ${cached ? this.renderCachedResult(cached, individualId) : this.renderAnalyzeButton(trait.id, individualId)}
         `;
-        
-        return card;
+
+    return card;
+  }
+
+  async loadAvailableTraits() {
+    Debug.log(1, 'RiskDashboard', 'loadAvailableTraits starting');
+    const grid = this.shadowRoot.getElementById('traitsGrid');
+    if (!grid) {
+      Debug.log(1, 'RiskDashboard', 'No grid found in loadAvailableTraits');
+      return;
     }
 
-    async loadAvailableTraits() {
-        Debug.log(1, 'RiskDashboard', 'loadAvailableTraits starting');
-        const grid = this.shadowRoot.getElementById('traitsGrid');
-        if (!grid) {
-            Debug.log(1, 'RiskDashboard', 'No grid found in loadAvailableTraits');
-            return;
-        }
-        
-        grid.innerHTML = '<div class="loading">Loading traits...</div>';
-        
-        try {
-            if (!this.processor) {
-                throw new Error('Processor not available');
-            }
-            
-            // Get trait categories from processor
-            const traitCategories = this.processor.getTraitCategories();
-            this.availableTraits = this.processor.getAllTraits();
-            
-            Debug.log(1, 'RiskDashboard', 'Loaded traits from processor:', this.availableTraits.length);
-            
-            // Populate category filter
-            this.populateCategoryFilter();
-            
-            useAppStore.getState().setTraitsLoaded(true);
-            
-            // Show message to add individual or trigger update if individual exists
-            const state = useAppStore.getState();
-            this.updateTraitCards(state);
-            
-        } catch (error) {
-            Debug.error('RiskDashboard', 'Failed to load traits:', error);
-            grid.innerHTML = '<div class="loading">Failed to load traits</div>';
-        }
+    grid.innerHTML = '<div class="loading">Loading traits...</div>';
+
+    try {
+      if (!this.processor) {
+        throw new Error('Processor not available');
+      }
+
+      // Get trait categories from processor
+      const traitCategories = this.processor.getTraitCategories();
+      this.availableTraits = this.processor.getAllTraits();
+
+      Debug.log(
+        1,
+        'RiskDashboard',
+        'Loaded traits from processor:',
+        this.availableTraits.length
+      );
+
+      // Populate category filter
+      this.populateCategoryFilter();
+
+      useAppStore.getState().setTraitsLoaded(true);
+
+      // Show message to add individual or trigger update if individual exists
+      const state = useAppStore.getState();
+      this.updateTraitCards(state);
+    } catch (error) {
+      Debug.error('RiskDashboard', 'Failed to load traits:', error);
+      grid.innerHTML = '<div class="loading">Failed to load traits</div>';
+    }
+  }
+
+  renderCachedResult(cached, individualId) {
+    if (!cached || typeof cached.riskScore !== 'number') {
+      return '<div class="risk-display"><div class="loading">No data available</div></div>';
     }
 
-    renderCachedResult(cached, individualId) {
-        if (!cached || typeof cached.riskScore !== 'number') {
-            return '<div class="risk-display"><div class="loading">No data available</div></div>';
-        }
-        
-        // Display PGS score as standard deviations from population mean
-        const score = cached.riskScore;
-        const percentile = scoreToPercentile(score);
-        const level = percentile >= 70 ? 'high' : percentile <= 30 ? 'low' : 'medium';
-        const levelText = percentile >= 70 ? 'Higher Risk' : percentile <= 30 ? 'Lower Risk' : 'Average Risk';
-        
-        return `
+    // Display PGS score as standard deviations from population mean
+    const score = cached.riskScore;
+    const percentile = scoreToPercentile(score);
+    const level =
+      percentile >= 70 ? 'high' : percentile <= 30 ? 'low' : 'medium';
+    const levelText =
+      percentile >= 70
+        ? 'Higher Risk'
+        : percentile <= 30
+          ? 'Lower Risk'
+          : 'Average Risk';
+
+    return `
             <div class="risk-display">
                 <div class="risk-score">${formatScore(score)}</div>
                 <div class="risk-percentile">${formatPercentile(percentile)}</div>
@@ -359,26 +389,29 @@ export class RiskDashboard extends HTMLElement {
             </div>
             ${cached.pgsBreakdown ? this.renderPgsBreakdown(cached.pgsBreakdown, individualId, cached.pgsDetails) : ''}
         `;
-    }
+  }
 
-    renderAnalyzeButton(traitId, individualId) {
-        if (!this.queueManager) {
-            return `
+  renderAnalyzeButton(traitId, individualId) {
+    if (!this.queueManager) {
+      return `
                 <div class="risk-display">
                     <button class="analyze-btn" onclick="this.getRootNode().host.analyzeRisk('${traitId}', '${individualId}', this)">
                         <span>Calculate Risk</span>
                     </button>
                 </div>
             `;
-        }
-        
-        // Check if item is in queue
-        const queueItem = this.queueManager.getQueue().find(item => 
-            item.traitId === traitId && item.individualId === individualId);
-        
-        if (queueItem) {
-            if (queueItem.status === 'processing') {
-                return `
+    }
+
+    // Check if item is in queue
+    const queueItem = this.queueManager
+      .getQueue()
+      .find(
+        item => item.traitId === traitId && item.individualId === individualId
+      );
+
+    if (queueItem) {
+      if (queueItem.status === 'processing') {
+        return `
                     <div class="risk-display">
                         <div class="queue-status processing">
                             <div class="processing-indicator">⚡ Processing...</div>
@@ -389,12 +422,14 @@ export class RiskDashboard extends HTMLElement {
                         </div>
                     </div>
                 `;
-            } else if (queueItem.status === 'pending') {
-                const position = this.queueManager.getQueue()
-                    .filter(item => item.status === 'pending')
-                    .findIndex(item => item.id === queueItem.id) + 1;
-                
-                return `
+      } else if (queueItem.status === 'pending') {
+        const position =
+          this.queueManager
+            .getQueue()
+            .filter(item => item.status === 'pending')
+            .findIndex(item => item.id === queueItem.id) + 1;
+
+        return `
                     <div class="risk-display">
                         <div class="queue-status pending">
                             <div class="queue-position">#${position} in queue</div>
@@ -405,47 +440,57 @@ export class RiskDashboard extends HTMLElement {
                         </div>
                     </div>
                 `;
-            }
-        }
-        
-        return `
+      }
+    }
+
+    return `
             <div class="risk-display">
                 <button class="analyze-btn" onclick="this.getRootNode().host.addToQueue('${traitId}', '${individualId}')">
                     <span>Add to Queue</span>
                 </button>
             </div>
         `;
-    }
+  }
 
-    renderPgsBreakdown(pgsBreakdown, individualId, pgsDetails = {}) {
-        if (!pgsBreakdown || typeof pgsBreakdown !== 'object') return '';
-        
-        const entries = Object.entries(pgsBreakdown)
-            .filter(([_, data]) => (data.positive > 0 || data.negative > 0))
-            .filter(([_, data]) => Math.abs(data.positiveSum + data.negativeSum) >= 0.005)
-            .sort(([_, a], [__, b]) => (Math.abs(b.positiveSum + b.negativeSum)) - (Math.abs(a.positiveSum + a.negativeSum)));
-        
-        if (entries.length === 0) return '';
-        
-        return `
+  renderPgsBreakdown(pgsBreakdown, individualId, pgsDetails = {}) {
+    if (!pgsBreakdown || typeof pgsBreakdown !== 'object') return '';
+
+    const entries = Object.entries(pgsBreakdown)
+      .filter(([_, data]) => data.positive > 0 || data.negative > 0)
+      .filter(
+        ([_, data]) => Math.abs(data.positiveSum + data.negativeSum) >= 0.005
+      )
+      .sort(
+        ([_, a], [__, b]) =>
+          Math.abs(b.positiveSum + b.negativeSum) -
+          Math.abs(a.positiveSum + a.negativeSum)
+      );
+
+    if (entries.length === 0) return '';
+
+    return `
             <div class="pgs-breakdown">
                 <div class="breakdown-title">PGS Score Breakdown:</div>
                 <div class="pgs-list">
-                    ${entries.map(([pgsId, data]) => {
+                    ${entries
+                      .map(([pgsId, data]) => {
                         const netScore = data.positiveSum + data.negativeSum;
                         const absPositive = Math.abs(data.positiveSum);
                         const absNegative = Math.abs(data.negativeSum);
                         const total = absPositive + absNegative;
-                        
-                        const negPct = total > 0 ? (absNegative / total * 100) : 0;
-                        const posPct = total > 0 ? (absPositive / total * 100) : 0;
-                        
-                        const scoreColor = netScore >= 0 ? '#721c24' : '#155724';
-                        
+
+                        const negPct =
+                          total > 0 ? (absNegative / total) * 100 : 0;
+                        const posPct =
+                          total > 0 ? (absPositive / total) * 100 : 0;
+
+                        const scoreColor =
+                          netScore >= 0 ? '#721c24' : '#155724';
+
                         // Get metadata from pgsDetails
                         const metadata = pgsDetails[pgsId]?.metadata || {};
                         const pgsName = metadata.name || pgsId;
-                        
+
                         return `
                             <div class="pgs-item" onclick="this.getRootNode().host.showPGSBreakdown('${pgsId}', '${individualId}', this)" style="cursor: pointer;">
                                 <div class="pgs-header">
@@ -458,71 +503,88 @@ export class RiskDashboard extends HTMLElement {
                                 </div>
                             </div>
                         `;
-                    }).join('')}
+                      })
+                      .join('')}
                 </div>
             </div>
         `;
-    }
+  }
 
-    async showPGSBreakdown(pgsId, individualId, buttonElement) {
-        Debug.log(1, 'RiskDashboard', 'showPGSBreakdown start:', pgsId);
-        
-        // Get trait card from button element
-        const card = buttonElement.closest('.trait-card');
-        const traitId = card?.dataset.traitId;
-        
-        Debug.log(2, 'RiskDashboard', 'Fetching cached risk for:', traitId);
-        const cached = traitId ? await this.processor.getCachedResult(individualId, traitId) : null;
-        
-        if (cached?.pgsBreakdown && cached?.pgsDetails?.[pgsId]) {
-            // Store navigation context
-            this.currentPgsNavigation = {
-                traitId,
-                individualId,
-                pgsIds: Object.entries(cached.pgsBreakdown)
-                    .filter(([_, data]) => (data.positive > 0 || data.negative > 0))
-                    .filter(([_, data]) => Math.abs(data.positiveSum + data.negativeSum) >= 0.005)
-                    .sort(([_, a], [__, b]) => (Math.abs(b.positiveSum + b.negativeSum)) - (Math.abs(a.positiveSum + a.negativeSum)))
-                    .map(([id]) => id),
-                currentIndex: 0
-            };
-            this.currentPgsNavigation.currentIndex = this.currentPgsNavigation.pgsIds.indexOf(pgsId);
-            
-            this.showPGSBreakdownInCard(pgsId, cached, individualId, card);
-        } else {
-            alert('PGS details not available. Please recalculate the risk.');
-        }
+  async showPGSBreakdown(pgsId, individualId, buttonElement) {
+    Debug.log(1, 'RiskDashboard', 'showPGSBreakdown start:', pgsId);
+
+    // Get trait card from button element
+    const card = buttonElement.closest('.trait-card');
+    const traitId = card?.dataset.traitId;
+
+    Debug.log(2, 'RiskDashboard', 'Fetching cached risk for:', traitId);
+    const cached = traitId
+      ? await this.processor.getCachedResult(individualId, traitId)
+      : null;
+
+    if (cached?.pgsBreakdown && cached?.pgsDetails?.[pgsId]) {
+      // Store navigation context
+      this.currentPgsNavigation = {
+        traitId,
+        individualId,
+        pgsIds: Object.entries(cached.pgsBreakdown)
+          .filter(([_, data]) => data.positive > 0 || data.negative > 0)
+          .filter(
+            ([_, data]) =>
+              Math.abs(data.positiveSum + data.negativeSum) >= 0.005
+          )
+          .sort(
+            ([_, a], [__, b]) =>
+              Math.abs(b.positiveSum + b.negativeSum) -
+              Math.abs(a.positiveSum + a.negativeSum)
+          )
+          .map(([id]) => id),
+        currentIndex: 0
+      };
+      this.currentPgsNavigation.currentIndex =
+        this.currentPgsNavigation.pgsIds.indexOf(pgsId);
+
+      this.showPGSBreakdownInCard(pgsId, cached, individualId, card);
+    } else {
+      alert('PGS details not available. Please recalculate the risk.');
     }
-    
-    showPGSBreakdownInCard(pgsId, cached, individualId, card) {
-        Debug.log(1, 'RiskDashboard', 'showPGSBreakdownInCard start:', pgsId);
-        
-        const pgsBreakdown = card.querySelector('.pgs-breakdown');
-        if (!pgsBreakdown) return;
-        
-        // Get trait metadata
-        const traitId = card.dataset.traitId;
-        const trait = this.availableTraits.find(t => t.id === traitId);
-        const pgsMetadata = trait?.pgs_metadata?.[pgsId] || {};
-        const metadata = { ...cached.pgsDetails[pgsId].metadata, ...pgsMetadata };
-        
-        Debug.log(2, 'RiskDashboard', 'Processing variants for PGS:', pgsId);
-        const topVariants = cached.pgsDetails[pgsId].topVariants || [];
-        
-        // Calculate this PGS contribution to total trait score
-        const pgsContribution = cached.pgsBreakdown[pgsId];
-        const totalAbsMagnitude = Object.values(cached.pgsBreakdown).reduce((sum, pgs) => sum + Math.abs(pgs.positiveSum + pgs.negativeSum), 0);
-        const pgsScore = pgsContribution.positiveSum + pgsContribution.negativeSum;
-        const pgsPercentage = totalAbsMagnitude !== 0 ? Math.abs(pgsScore) / totalAbsMagnitude * 100 : 0;
-        
-        Debug.log(2, 'RiskDashboard', 'Rendering HTML content');
-        pgsBreakdown.innerHTML = `
+  }
+
+  showPGSBreakdownInCard(pgsId, cached, individualId, card) {
+    Debug.log(1, 'RiskDashboard', 'showPGSBreakdownInCard start:', pgsId);
+
+    const pgsBreakdown = card.querySelector('.pgs-breakdown');
+    if (!pgsBreakdown) return;
+
+    // Get trait metadata
+    const traitId = card.dataset.traitId;
+    const trait = this.availableTraits.find(t => t.id === traitId);
+    const pgsMetadata = trait?.pgs_metadata?.[pgsId] || {};
+    const metadata = { ...cached.pgsDetails[pgsId].metadata, ...pgsMetadata };
+
+    Debug.log(2, 'RiskDashboard', 'Processing variants for PGS:', pgsId);
+    const topVariants = cached.pgsDetails[pgsId].topVariants || [];
+
+    // Calculate this PGS contribution to total trait score
+    const pgsContribution = cached.pgsBreakdown[pgsId];
+    const totalAbsMagnitude = Object.values(cached.pgsBreakdown).reduce(
+      (sum, pgs) => sum + Math.abs(pgs.positiveSum + pgs.negativeSum),
+      0
+    );
+    const pgsScore = pgsContribution.positiveSum + pgsContribution.negativeSum;
+    const pgsPercentage =
+      totalAbsMagnitude !== 0
+        ? (Math.abs(pgsScore) / totalAbsMagnitude) * 100
+        : 0;
+
+    Debug.log(2, 'RiskDashboard', 'Rendering HTML content');
+    pgsBreakdown.innerHTML = `
             <div class="breakdown-header">
                 <button class="back-btn" onclick="this.getRootNode().host.showPGSList('${traitId}', '${individualId}')">← Back</button>
                 <h4 style="overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 200px; margin: 0; padding: 5px 0;">${metadata.name || metadata.pgs_name || pgsId}</h4>
                 <div class="nav-buttons">
                     <button class="nav-btn" onclick="this.getRootNode().host.navigatePGS(-1)" ${this.currentPgsNavigation?.currentIndex === 0 ? 'disabled' : ''}>↑</button>
-                    <button class="nav-btn" onclick="this.getRootNode().host.navigatePGS(1)" ${this.currentPgsNavigation?.currentIndex === (this.currentPgsNavigation?.pgsIds.length - 1) ? 'disabled' : ''}>↓</button>
+                    <button class="nav-btn" onclick="this.getRootNode().host.navigatePGS(1)" ${this.currentPgsNavigation?.currentIndex === this.currentPgsNavigation?.pgsIds.length - 1 ? 'disabled' : ''}>↓</button>
                 </div>
             </div>
             
@@ -550,7 +612,7 @@ export class RiskDashboard extends HTMLElement {
                 <div class="calculation-info">
                     <h5>Calculation Summary</h5>
                     <div style="font-size: 12px; line-height: 1.4; color: #555;">
-                        <div>• Matched ${pgsContribution.positive + pgsContribution.negative} of ${pgsContribution.total} variants in this PGS (${((pgsContribution.positive + pgsContribution.negative) / pgsContribution.total * 100).toFixed(1)}%)</div>
+                        <div>• Matched ${pgsContribution.positive + pgsContribution.negative} of ${pgsContribution.total} variants in this PGS (${(((pgsContribution.positive + pgsContribution.negative) / pgsContribution.total) * 100).toFixed(1)}%)</div>
                         <div>• ${pgsContribution.positive} variants increase risk (${pgsContribution.positiveSum >= 0 ? '+' : ''}${pgsContribution.positiveSum.toFixed(4)})</div>
                         <div>• ${pgsContribution.negative} variants decrease risk (${pgsContribution.negativeSum.toFixed(4)})</div>
                         <div style="font-weight: bold; margin-top: 8px;">• Net contribution: ${pgsScore >= 0 ? '+' : ''}${pgsScore.toFixed(4)}</div>
@@ -571,23 +633,27 @@ export class RiskDashboard extends HTMLElement {
                             <span>Effect Allele</span>
                             <span>Weight</span>
                         </div>
-                        ${topVariants.map(variant => {
+                        ${topVariants
+                          .map(variant => {
                             const variantId = variant.rsid || 'Unknown';
                             let displayId, linkUrl;
-                            
+
                             if (variantId.startsWith('rs')) {
-                                displayId = variantId;
-                                linkUrl = `https://www.ncbi.nlm.nih.gov/snp/${variantId}`;
+                              displayId = variantId;
+                              linkUrl = `https://www.ncbi.nlm.nih.gov/snp/${variantId}`;
                             } else if (variantId.includes(':')) {
-                                // Format chr:pos:ref:alt as more readable
-                                const parts = variantId.split(':');
-                                displayId = parts.length >= 3 ? `chr${parts[0]}:${parts[1]}` : variantId;
-                                linkUrl = `https://genome.ucsc.edu/cgi-bin/hgTracks?db=hg38&position=chr${parts[0]}:${parts[1]}-${parts[1]}`;
+                              // Format chr:pos:ref:alt as more readable
+                              const parts = variantId.split(':');
+                              displayId =
+                                parts.length >= 3
+                                  ? `chr${parts[0]}:${parts[1]}`
+                                  : variantId;
+                              linkUrl = `https://genome.ucsc.edu/cgi-bin/hgTracks?db=hg38&position=chr${parts[0]}:${parts[1]}-${parts[1]}`;
                             } else {
-                                displayId = variantId;
-                                linkUrl = null;
+                              displayId = variantId;
+                              linkUrl = null;
                             }
-                            
+
                             return `
                             <div class="table-row">
                                 <span class="variant-id">${linkUrl ? `<a href="${linkUrl}" target="_blank">${displayId}</a>` : displayId}</span>
@@ -595,74 +661,107 @@ export class RiskDashboard extends HTMLElement {
                                 <span class="effect-allele">${variant.effect_allele}</span>
                                 <span class="effect-weight ${variant.effect_weight >= 0 ? 'positive' : 'negative'}">${variant.effect_weight >= 0 ? '+' : ''}${variant.effect_weight.toFixed(6)}</span>
                             </div>
-                        `}).join('')}
+                        `;
+                          })
+                          .join('')}
                     </div>
                 </div>
             </div>
         `;
-        
-        pgsBreakdown.classList.add('showing-detail');
-        
-        // Create distribution chart
-        setTimeout(async () => {
-            Debug.log(2, 'RiskDashboard', 'Attempting to create chart for:', `distributionChart-${pgsId}`);
-            
-            const canvas = this.shadowRoot.getElementById(`distributionChart-${pgsId}`);
-            if (canvas) {
-                // Create chart directly since we have the PGSBreakdown class available
-                const pgsBreakdownComponent = new (await import('./pgs-breakdown.js')).PGSBreakdown();
-                
-                // Use cached distribution data if available, otherwise fall back to top variants
-                const distributionData = cached.pgsDetails[pgsId]?.distribution || topVariants;
-                await pgsBreakdownComponent.createDistributionChartOnCanvas(distributionData, canvas);
-            } else {
-                Debug.log(2, 'RiskDashboard', 'Canvas not found in shadow DOM');
-            }
-        }, 100);
-        
-        Debug.log(1, 'RiskDashboard', 'showPGSBreakdownInCard complete for:', pgsId);
-    }
-    
-    async showPGSList(traitId, individualId) {
-        const card = this.shadowRoot.querySelector(`[data-trait-id="${traitId}"]`);
-        const cached = await this.processor.getCachedResult(individualId, traitId);
-        
-        if (card && cached) {
-            const pgsBreakdown = card.querySelector('.pgs-breakdown');
-            pgsBreakdown.innerHTML = this.renderPgsBreakdown(cached.pgsBreakdown, individualId, cached.pgsDetails);
-            pgsBreakdown.classList.remove('showing-detail');
-        }
-        
-        // Clear navigation context
-        this.currentPgsNavigation = null;
-    }
-    
-    navigatePGS(direction) {
-        if (!this.currentPgsNavigation) return;
-        
-        const newIndex = this.currentPgsNavigation.currentIndex + direction;
-        if (newIndex >= 0 && newIndex < this.currentPgsNavigation.pgsIds.length) {
-            const newPgsId = this.currentPgsNavigation.pgsIds[newIndex];
-            this.currentPgsNavigation.currentIndex = newIndex;
-            
-            // Find the card and show the new PGS
-            const card = this.shadowRoot.querySelector(`[data-trait-id="${this.currentPgsNavigation.traitId}"]`);
-            if (card) {
-                this.showPGSBreakdownFromNavigation(newPgsId, this.currentPgsNavigation.individualId, card);
-            }
-        }
-    }
-    
-    async showPGSBreakdownFromNavigation(pgsId, individualId, card) {
-        const cached = await this.processor.getCachedResult(individualId, this.currentPgsNavigation.traitId);
-        
-        if (cached && cached.pgsDetails?.[pgsId]) {
-            this.showPGSBreakdownInCard(pgsId, cached, individualId, card);
-        }
+
+    pgsBreakdown.classList.add('showing-detail');
+
+    // Create distribution chart
+    setTimeout(async () => {
+      Debug.log(
+        2,
+        'RiskDashboard',
+        'Attempting to create chart for:',
+        `distributionChart-${pgsId}`
+      );
+
+      const canvas = this.shadowRoot.getElementById(
+        `distributionChart-${pgsId}`
+      );
+      if (canvas) {
+        // Create chart directly since we have the PGSBreakdown class available
+        const pgsBreakdownComponent = new (
+          await import('./pgs-breakdown.js')
+        ).PGSBreakdown();
+
+        // Use cached distribution data if available, otherwise fall back to top variants
+        const distributionData =
+          cached.pgsDetails[pgsId]?.distribution || topVariants;
+        await pgsBreakdownComponent.createDistributionChartOnCanvas(
+          distributionData,
+          canvas
+        );
+      } else {
+        Debug.log(2, 'RiskDashboard', 'Canvas not found in shadow DOM');
+      }
+    }, 100);
+
+    Debug.log(
+      1,
+      'RiskDashboard',
+      'showPGSBreakdownInCard complete for:',
+      pgsId
+    );
+  }
+
+  async showPGSList(traitId, individualId) {
+    const card = this.shadowRoot.querySelector(`[data-trait-id="${traitId}"]`);
+    const cached = await this.processor.getCachedResult(individualId, traitId);
+
+    if (card && cached) {
+      const pgsBreakdown = card.querySelector('.pgs-breakdown');
+      pgsBreakdown.innerHTML = this.renderPgsBreakdown(
+        cached.pgsBreakdown,
+        individualId,
+        cached.pgsDetails
+      );
+      pgsBreakdown.classList.remove('showing-detail');
     }
 
-    render() {
-        this.shadowRoot.innerHTML = `
+    // Clear navigation context
+    this.currentPgsNavigation = null;
+  }
+
+  navigatePGS(direction) {
+    if (!this.currentPgsNavigation) return;
+
+    const newIndex = this.currentPgsNavigation.currentIndex + direction;
+    if (newIndex >= 0 && newIndex < this.currentPgsNavigation.pgsIds.length) {
+      const newPgsId = this.currentPgsNavigation.pgsIds[newIndex];
+      this.currentPgsNavigation.currentIndex = newIndex;
+
+      // Find the card and show the new PGS
+      const card = this.shadowRoot.querySelector(
+        `[data-trait-id="${this.currentPgsNavigation.traitId}"]`
+      );
+      if (card) {
+        this.showPGSBreakdownFromNavigation(
+          newPgsId,
+          this.currentPgsNavigation.individualId,
+          card
+        );
+      }
+    }
+  }
+
+  async showPGSBreakdownFromNavigation(pgsId, individualId, card) {
+    const cached = await this.processor.getCachedResult(
+      individualId,
+      this.currentPgsNavigation.traitId
+    );
+
+    if (cached && cached.pgsDetails?.[pgsId]) {
+      this.showPGSBreakdownInCard(pgsId, cached, individualId, card);
+    }
+  }
+
+  render() {
+    this.shadowRoot.innerHTML = `
             <style>
                 .filter-bar {
                     background: #f8f9fa;
@@ -852,64 +951,86 @@ export class RiskDashboard extends HTMLElement {
                 <div class="loading">Loading traits...</div>
             </div>
         `;
-        
-        // Add event listeners for filters
-        this.shadowRoot.getElementById('searchInput').addEventListener('input', (e) => {
-            this.filterTraits();
-        });
-        
-        this.shadowRoot.getElementById('categorySelect').addEventListener('change', (e) => {
-            this.filterTraits();
-        });
-        
-        this.shadowRoot.getElementById('sortSelect').addEventListener('change', (e) => {
-            this.filterTraits();
-        });
+
+    // Add event listeners for filters
+    this.shadowRoot
+      .getElementById('searchInput')
+      .addEventListener('input', e => {
+        this.filterTraits();
+      });
+
+    this.shadowRoot
+      .getElementById('categorySelect')
+      .addEventListener('change', e => {
+        this.filterTraits();
+      });
+
+    this.shadowRoot
+      .getElementById('sortSelect')
+      .addEventListener('change', e => {
+        this.filterTraits();
+      });
+  }
+
+  async analyzeRisk(traitId, individualId, buttonElement) {
+    Debug.log(
+      1,
+      'RiskDashboard',
+      `Starting risk analysis for trait: ${traitId}, individual: ${individualId}`
+    );
+
+    if (!this.processor) {
+      Debug.error('RiskDashboard', 'Processor not initialized');
+      return;
     }
 
-    async analyzeRisk(traitId, individualId, buttonElement) {
-        Debug.log(1, 'RiskDashboard', `Starting risk analysis for trait: ${traitId}, individual: ${individualId}`);
-        
-        if (!this.processor) {
-            Debug.error('RiskDashboard', 'Processor not initialized');
-            return;
+    const trait = this.availableTraits.find(t => t.id === traitId);
+    if (!trait) {
+      Debug.error('RiskDashboard', `Trait not found: ${traitId}`);
+      return;
+    }
+
+    Debug.log(
+      2,
+      'RiskDashboard',
+      `Found trait: ${trait.name} with ${trait.variant_count} variants`
+    );
+
+    // Clear any existing error messages
+    const card = buttonElement.closest('.trait-card');
+    const existingError = card.querySelector('.error-message');
+    if (existingError) existingError.remove();
+
+    buttonElement.classList.add('loading');
+    buttonElement.textContent = 'Initializing...';
+    buttonElement.disabled = true;
+
+    try {
+      const result = await this.processor.calculateTraitRisk(
+        traitId,
+        individualId,
+        (message, percent) => {
+          const span = buttonElement.querySelector('span');
+          if (span) {
+            span.textContent = `${message} (${Math.round(percent)}%)`;
+          } else {
+            buttonElement.textContent = `${message} (${Math.round(percent)}%)`;
+          }
+          buttonElement.classList.remove('loading');
+          buttonElement.classList.add('progress');
+          buttonElement.style.setProperty('--progress', `${percent}%`);
         }
-        
-        const trait = this.availableTraits.find(t => t.id === traitId);
-        if (!trait) {
-            Debug.error('RiskDashboard', `Trait not found: ${traitId}`);
-            return;
-        }
-        
-        Debug.log(2, 'RiskDashboard', `Found trait: ${trait.name} with ${trait.variant_count} variants`);
-        
-        // Clear any existing error messages
-        const card = buttonElement.closest('.trait-card');
-        const existingError = card.querySelector('.error-message');
-        if (existingError) existingError.remove();
-        
-        buttonElement.classList.add('loading');
-        buttonElement.textContent = 'Initializing...';
-        buttonElement.disabled = true;
-        
-        try {
-            const result = await this.processor.calculateTraitRisk(traitId, individualId, (message, percent) => {
-                const span = buttonElement.querySelector('span');
-                if (span) {
-                    span.textContent = `${message} (${Math.round(percent)}%)`;
-                } else {
-                    buttonElement.textContent = `${message} (${Math.round(percent)}%)`;
-                }
-                buttonElement.classList.remove('loading');
-                buttonElement.classList.add('progress');
-                buttonElement.style.setProperty('--progress', `${percent}%`);
-            });
-            
-            Debug.log(1, 'RiskDashboard', `Risk calculation complete for ${trait.name}. Score: ${result.riskScore}`);
-            buttonElement.textContent = 'Complete!';
-            
-            // Update the card with results using the same method as cached results
-            card.innerHTML = `
+      );
+
+      Debug.log(
+        1,
+        'RiskDashboard',
+        `Risk calculation complete for ${trait.name}. Score: ${result.riskScore}`
+      );
+      buttonElement.textContent = 'Complete!';
+
+      // Update the card with results using the same method as cached results
+      card.innerHTML = `
                 <div class="trait-header">
                     <h3 class="trait-name">${trait.name}</h3>
                     <span class="trait-category">${trait.categories?.[0] || 'Other'}</span>
@@ -919,117 +1040,133 @@ export class RiskDashboard extends HTMLElement {
                 </div>
                 ${this.renderCachedResult(result, individualId)}
             `;
-            
-        } catch (error) {
-            Debug.error('RiskDashboard', `Risk calculation failed for ${traitId}:`, error.message);
-            
-            // Reset button state
-            buttonElement.classList.remove('loading', 'progress');
-            buttonElement.textContent = 'Calculate Risk';
-            buttonElement.disabled = false;
-            buttonElement.style.backgroundColor = '';
-            
-            // Add error message below button
-            const errorDiv = document.createElement('div');
-            errorDiv.className = 'error-message';
-            
-            let errorText = error.message;
-            if (error.message.includes('out of memory')) {
-                errorText = 'Memory limit exceeded. This trait has too many variants to process in the browser.';
-            } else if (error.message.includes('Data cannot be cloned')) {
-                errorText = 'Data too large to store. Try a smaller trait or refresh the page.';
-            }
-            
-            errorDiv.innerHTML = `
+    } catch (error) {
+      Debug.error(
+        'RiskDashboard',
+        `Risk calculation failed for ${traitId}:`,
+        error.message
+      );
+
+      // Reset button state
+      buttonElement.classList.remove('loading', 'progress');
+      buttonElement.textContent = 'Calculate Risk';
+      buttonElement.disabled = false;
+      buttonElement.style.backgroundColor = '';
+
+      // Add error message below button
+      const errorDiv = document.createElement('div');
+      errorDiv.className = 'error-message';
+
+      let errorText = error.message;
+      if (error.message.includes('out of memory')) {
+        errorText =
+          'Memory limit exceeded. This trait has too many variants to process in the browser.';
+      } else if (error.message.includes('Data cannot be cloned')) {
+        errorText =
+          'Data too large to store. Try a smaller trait or refresh the page.';
+      }
+
+      errorDiv.innerHTML = `
                 <div class="error-text">${errorText}</div>
                 <button class="retry-btn" onclick="this.getRootNode().host.analyzeRisk('${traitId}', '${individualId}', this.parentElement.parentElement.querySelector('.analyze-btn'))">Retry</button>
             `;
-            
-            // Insert error message after the risk-display div
-            const riskDisplay = card.querySelector('.risk-display');
-            if (riskDisplay) {
-                riskDisplay.insertAdjacentElement('afterend', errorDiv);
-            }
-        }
+
+      // Insert error message after the risk-display div
+      const riskDisplay = card.querySelector('.risk-display');
+      if (riskDisplay) {
+        riskDisplay.insertAdjacentElement('afterend', errorDiv);
+      }
     }
-    
-    addToQueue(traitId, individualId) {
-        if (!this.queueManager) {
-            // Fallback to direct calculation
-            return this.analyzeRisk(traitId, individualId, null);
-        }
-        
-        this.queueManager.add(traitId, individualId, QUEUE_PRIORITY.NORMAL);
-        this.refreshTraitCard(traitId, individualId);
+  }
+
+  addToQueue(traitId, individualId) {
+    if (!this.queueManager) {
+      // Fallback to direct calculation
+      return this.analyzeRisk(traitId, individualId, null);
     }
-    
-    moveToNext(itemId) {
-        this.queueManager?.moveToNext(itemId);
-        // Refresh all cards to update queue positions
-        this.filterTraits();
+
+    this.queueManager.add(traitId, individualId, QUEUE_PRIORITY.NORMAL);
+    this.refreshTraitCard(traitId, individualId);
+  }
+
+  moveToNext(itemId) {
+    this.queueManager?.moveToNext(itemId);
+    // Refresh all cards to update queue positions
+    this.filterTraits();
+  }
+
+  refreshTraitCard(traitId, individualId) {
+    const card = this.shadowRoot.querySelector(`[data-trait-id="${traitId}"]`);
+    if (card) {
+      const trait = this.availableTraits.find(t => t.id === traitId);
+      if (trait) {
+        const cached = null; // Will check for cached results
+        const newCard = this.createTraitCard(trait, individualId, cached);
+        card.replaceWith(newCard);
+      }
     }
-    
-    refreshTraitCard(traitId, individualId) {
-        const card = this.shadowRoot.querySelector(`[data-trait-id="${traitId}"]`);
-        if (card) {
-            const trait = this.availableTraits.find(t => t.id === traitId);
-            if (trait) {
-                const cached = null; // Will check for cached results
-                const newCard = this.createTraitCard(trait, individualId, cached);
-                card.replaceWith(newCard);
-            }
-        }
-    }
-    
-    getQueueManager() {
-        return this.queueManager;
-    }
-    
-    queueAllTraitsForIndividual(individualId) {
-        if (!this.queueManager || !individualId) return;
-        
-        const state = useAppStore.getState();
-        if (!state.selectedIndividual || !state.individualReady) return;
-        
-        // Add all available traits to queue
-        this.availableTraits.forEach(trait => {
-            // Skip if already calculated or in queue
-            const existingItem = this.queueManager.getQueue().find(item => 
-                item.traitId === trait.id && item.individualId === individualId);
-            
-            if (!existingItem) {
-                // Check if already calculated
-                this.processor.getCachedResult(individualId, trait.id).then(cached => {
-                    if (!cached) {
-                        this.queueManager.add(trait.id, individualId, QUEUE_PRIORITY.NORMAL);
-                    }
-                });
-            }
+  }
+
+  getQueueManager() {
+    return this.queueManager;
+  }
+
+  queueAllTraitsForIndividual(individualId) {
+    if (!this.queueManager || !individualId) return;
+
+    const state = useAppStore.getState();
+    if (!state.selectedIndividual || !state.individualReady) return;
+
+    // Add all available traits to queue
+    this.availableTraits.forEach(trait => {
+      // Skip if already calculated or in queue
+      const existingItem = this.queueManager
+        .getQueue()
+        .find(
+          item =>
+            item.traitId === trait.id && item.individualId === individualId
+        );
+
+      if (!existingItem) {
+        // Check if already calculated
+        this.processor.getCachedResult(individualId, trait.id).then(cached => {
+          if (!cached) {
+            this.queueManager.add(
+              trait.id,
+              individualId,
+              QUEUE_PRIORITY.NORMAL
+            );
+          }
         });
-        
-        // Refresh the display
-        setTimeout(() => this.filterTraits(), 500);
+      }
+    });
+
+    // Refresh the display
+    setTimeout(() => this.filterTraits(), 500);
+  }
+
+  queueAllTraits() {
+    const state = useAppStore.getState();
+    if (state.selectedIndividual) {
+      this.queueAllTraitsForIndividual(state.selectedIndividual);
     }
-    
-    queueAllTraits() {
-        const state = useAppStore.getState();
-        if (state.selectedIndividual) {
-            this.queueAllTraitsForIndividual(state.selectedIndividual);
-        }
+  }
+
+  async autoQueueUncachedTraits(individualId) {
+    if (!this.queueManager || !individualId) return;
+
+    for (const trait of this.availableTraits) {
+      const cached = await this.processor.getCachedResult(
+        individualId,
+        trait.id
+      );
+      if (!cached) {
+        this.queueManager.add(trait.id, individualId, QUEUE_PRIORITY.NORMAL);
+      }
     }
-    
-    async autoQueueUncachedTraits(individualId) {
-        if (!this.queueManager || !individualId) return;
-        
-        for (const trait of this.availableTraits) {
-            const cached = await this.processor.getCachedResult(individualId, trait.id);
-            if (!cached) {
-                this.queueManager.add(trait.id, individualId, QUEUE_PRIORITY.NORMAL);
-            }
-        }
-        
-        setTimeout(() => this.filterTraits(), 100);
-    }
+
+    setTimeout(() => this.filterTraits(), 100);
+  }
 }
 
 customElements.define('risk-dashboard', RiskDashboard);

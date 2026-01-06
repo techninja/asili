@@ -17,7 +17,13 @@
   "definitions": {
     "Trait": {
       "type": "object",
-      "required": ["title", "mondo_id", "pgs_ids", "expected_variants", "last_updated"],
+      "required": [
+        "title",
+        "mondo_id",
+        "pgs_ids",
+        "expected_variants",
+        "last_updated"
+      ],
       "properties": {
         "title": {
           "type": "string",

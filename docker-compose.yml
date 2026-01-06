@@ -10,13 +10,19 @@ services:
       - ./packages:/usr/share/nginx/html/packages
       - ./data_out:/usr/share/nginx/html/data
     ports:
-      - "4242:80"
+      - '4242:80'
 
   # The Data Pipeline (ETL)
   pipeline:
-    build: 
+    build:
       context: ./packages/pipeline
       dockerfile: Dockerfile
+    deploy:
+      resources:
+        limits:
+          memory: 12G
+        reservations:
+          memory: 8G
     volumes:
       - ./packages/pipeline:/app
       - /app/node_modules
