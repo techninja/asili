@@ -1,0 +1,11 @@
+dist/
+node_modules/
+data_out/
+cache/
+apps/web/deps/
+**/*.min.js
+coverage/
+**/duckdb-bundle.mjs
+pnpm-lock.yaml
+*.parquet
+*.duckdb
