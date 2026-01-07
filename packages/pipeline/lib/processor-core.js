@@ -104,49 +104,14 @@ export async function needsUpdate(traitName, config) {
       return true;
     }
 
-    // Check variant count against expected
-    if (config.expected_variants) {
-      try {
-        const verifySQL = `SELECT COUNT(*) as total FROM '${filePath}';`;
-        const verifyFile = path.join(OUTPUT_DIR, 'verify_count.sql');
-        await fs.writeFile(verifyFile, verifySQL);
-
-        const { execSync } = await import('child_process');
-        const result = execSync(`duckdb < ${verifyFile}`, {
-          cwd: OUTPUT_DIR,
-          stdio: 'pipe',
-          encoding: 'utf8'
-        });
-
-        const actualVariants = parseInt(
-          result.match(/│\s*(\d+)\s*│/)?.[1] || '0'
-        );
-        await fs.unlink(verifyFile);
-
-        // Allow <0.01% difference in variant counts
-        const tolerance = Math.max(
-          1,
-          Math.floor(config.expected_variants * 0.0001)
-        );
-        const difference = Math.abs(actualVariants - config.expected_variants);
-
-        if (difference > tolerance) {
-          console.log(
-            `    Variant count mismatch: expected ${config.expected_variants}, found ${actualVariants} (diff: ${difference}, tolerance: ${tolerance}), will regenerate`
-          );
-          return true;
-        }
-
-        console.log(
-          `    File valid (${actualVariants} variants, diff: ${difference} within tolerance ${tolerance}), skipping generation`
-        );
-        return false;
-      } catch (error) {
-        console.log(
-          `    Could not verify variant count: ${error.message}, will regenerate`
-        );
-        return true;
-      }
+    // Simple parquet integrity check
+    try {
+      await validateParquetFile(filePath);
+      console.log('    File integrity verified, skipping generation');
+      return false;
+    } catch (error) {
+      console.log(`    File integrity check failed: ${error.message}, will regenerate`);
+      return true;
     }
 
     console.log('    File exists, skipping generation');
