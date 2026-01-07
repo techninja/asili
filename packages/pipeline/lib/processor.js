@@ -260,8 +260,8 @@ async function streamProcessWithDuckDB(traitName, config) {
       }
     }
 
-    if (totalVariants < 100) {
-      console.log(`  - Skipped (${totalVariants} variants < 100 minimum)`);
+    if (totalVariants === 0) {
+      console.log(`  - Skipped (no variants found)`);
       await fs.unlink(dbPath);
       return { totalVariants: 0, fileName: null, pgsIds: [] };
     }
