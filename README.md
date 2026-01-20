@@ -2,6 +2,8 @@
 
 _Swahili for "Root"_ - Your personal family genomic risk assistant that never owns your data.
 
+<img src="assets/screenshot.png">
+
 ## Overview
 
 Asili is a privacy-first genomic risk analysis platform that processes DNA data entirely on your own hardware. Built on IndexedDB and DuckDB WASM architecture, it ensures your genetic information never leaves your control while providing comprehensive polygenic risk score (PGS) calculations.
