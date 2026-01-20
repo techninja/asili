@@ -1,0 +1,34 @@
+# Hybrid Server Dockerfile - Web UI + Server-side Processing
+
+FROM node:22-slim
+
+# Install pnpm and build dependencies
+RUN apt-get update && apt-get install -y \
+    python3 \
+    make \
+    g++ \
+    && rm -rf /var/lib/apt/lists/* && \
+    npm install -g pnpm
+
+WORKDIR /app
+
+# Copy workspace and lock files
+COPY pnpm-workspace.yaml pnpm-lock.yaml package.json ./
+COPY apps/calc/package.json ./apps/calc/
+COPY apps/web/package.json ./apps/web/
+COPY packages/core/package.json ./packages/core/
+
+# Install dependencies
+ENV NODE_ENV=production
+RUN pnpm install --frozen-lockfile --prod
+
+# Copy application code
+COPY . .
+
+# Set Node.js performance flags
+ENV NODE_OPTIONS="--max-old-space-size=8192 --max-semi-space-size=128"
+ENV UV_THREADPOOL_SIZE=16
+
+EXPOSE 80
+
+CMD ["node", "apps/web/simple-server.js"]

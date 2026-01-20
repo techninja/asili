@@ -1,152 +1,283 @@
 ## Development Plan: Local-Only DNA Research Tool
 
-**Goal:** Build a privacy-first genomic research tool where user data never leaves the browser, powered by a "Data Lakehouse" architecture using DuckDB WASM and Parquet.
+**Goal:** Build a privacy-first genomic research tool where user data never leaves their control, powered by a "Data Lakehouse" architecture using DuckDB WASM and Parquet.
 
 **Core Philosophy:**
 
-1. **Privacy:** User DNA is read locally. It is never uploaded.
-2. **Performance:** Range requests fetch only necessary science data.
-3. **TDD:** Tests are written before features to ensure stability.
-4. **Automation:** GitHub Actions handle linting, testing, and deployment.
+1. **Privacy:** User DNA is processed locally. It is never uploaded to external servers.
+2. **Performance:** Range requests fetch only necessary genomic data.
+3. **Flexibility:** Multiple deployment modes (browser-only, hybrid server, containerized).
+4. **Open Source:** Engine is open, data curation can be monetized.
 
-## Phase 1: The "Walking Skeleton" (Architecture Validation)
+---
 
-**Objective:** Prove the end-to-end flow locally: Pipeline -> CDN -> Browser -> DuckDB Query.
+## ✅ Phase 1: The "Walking Skeleton" (COMPLETE)
 
-### 1.1 Repo & Monorepo Structure
+**Objective:** Prove the end-to-end flow: Pipeline → CDN → Browser → DuckDB Query.
 
-Establish a clean directory structure to separate concerns.
+### Completed Features
 
-- `apps/web`: Web Components Frontend (Static hosting).
-- `packages/pipeline`: Python ETL scripts.
-- `packages/shared`: Shared types/constants.
-- `infra/`: Docker & Deployment config.
+- ✅ Monorepo structure with `apps/` and `packages/`
+- ✅ Pipeline generates Parquet files with proper schema
+- ✅ Docker Compose orchestration for local development
+- ✅ DuckDB WASM integration in browser
+- ✅ HTTP Range Request support for efficient data loading
 
-### 1.2 Testing Infrastructure (TDD Setup)
+---
 
-- **Frontend:** Write tests for web components using Web Test Runner.
-  - _Task:_ Create a failing test for a `DuckDBProvider` class.
-- **Pipeline:** Install `pytest`.
-  - _Task:_ Create a failing test that checks if a generated Parquet file has the correct schema.
+## ✅ Phase 2: The Science Pipeline (COMPLETE)
 
-### 1.3 The Core Loop (MVP)
+**Objective:** Production-ready data generation with scientific accuracy.
 
-- **Pipeline:** Write the Python script to generate a valid `Alzheimers_Risk.parquet` with dummy data.
-  - _Pass Criteria:_ Pytest validates column types and ZSTD compression.
+### Completed Features
 
-- **Docker:** Configure Nginx to serve this file with `Access-Control-Allow-Origin` and `Access-Control-Expose-Headers: Content-Length, Content-Range`.
+- ✅ Schema validation with proper chromosome handling
+- ✅ Sorting optimization (chr → pos) for merge joins
+- ✅ ZSTD compression for Parquet files
+- ✅ Trait manifest generation with metadata
+- ✅ PGS Catalog integration
+- ✅ Batch processing for large datasets
 
-- **Frontend:** Implement `DuckDBProvider` class.
-  - _Pass Criteria:_ Web Test Runner confirms the class returns a ready connection.
-  - _Feature:_ Query the Parquet file via HTTP from the web components app.
+---
 
-## Phase 2: The Science Pipeline (Data Engineering)
+## ✅ Phase 3: The User Experience (COMPLETE)
 
-**Objective:** Hardening the data generation to ensure scientific accuracy and query performance.
+**Objective:** Seamless DNA file parsing and visualization.
 
-### 2.1 Schema Validation & Type Safety
+### Completed Features
 
-- **TDD:** Write a test that rejects input data with missing columns or invalid chromosome names (e.g., "23" instead of "X").
-- **Implementation:** Use `Pydantic` or `Pandas` schema validation in the ETL script.
+- ✅ Multi-format DNA file parsing (23andMe, AncestryDNA, MyHeritage)
+- ✅ Web Worker-based parsing for non-blocking UI
+- ✅ IndexedDB persistence for user data
+- ✅ Individual/family member management
+- ✅ Risk score visualization components
+- ✅ Virtual scrolling for large trait lists
+- ✅ Real-time progress tracking
 
-### 2.2 Sorting & Optimization
+---
 
-- **Performance:** DuckDB performs best with **Merge Joins**.
-- **TDD:** Write a test asserting that output Parquet files are sorted by `chr` (natural sort) -> `pos`.
-- **Implementation:** Implement the sort logic in Python before writing to Parquet.
+## ✅ Phase 4: Hybrid Architecture (COMPLETE)
 
-### 2.3 Automating Updates
+**Objective:** Support both browser-only and server-assisted processing.
 
-- **CI/CD:** Create a GitHub Action `data-pipeline.yml`.
-  - _Trigger:_ Weekly schedule or manual dispatch.
-  - _Action:_ Pulls from PGS Catalog, runs tests, builds Parquet, uploads to Staging Bucket.
+### Completed Features
 
-## Phase 3: The User Experience (Client-Side Parsing)
+- ✅ Unified processor core (`@asili/core`)
+- ✅ Browser-based processing with DuckDB WASM
+- ✅ Server-side calculation server for heavy workloads
+- ✅ WebSocket-based real-time updates
+- ✅ Queue management for batch calculations
+- ✅ Cache synchronization between browser and server
+- ✅ Docker deployment options (static, hybrid, containerized)
 
-**Objective:** allowing users to drag-and-drop their 23andMe/Ancestry files.
+---
 
-### 3.1 DNA File Parsing (Web Workers)
+## ✅ Phase 5: Production Features (COMPLETE)
 
-- **Challenge:** Parsing 20MB text files freezes the UI.
+**Objective:** Enterprise-ready features for reliability and scale.
 
-- **TDD:**
-  - Create `parser.test.ts` with a mock 23andMe text string.
-  - Assert it returns a structured ArrayBuffer/Arrow Table.
+### Completed Features
 
-- **Implementation:** Build a Web Worker to stream-parse the file into a local DuckDB table.
+- ✅ Multi-individual support (family genomics)
+- ✅ Persistent storage with SQLite + Parquet
+- ✅ Cache export/import functionality
+- ✅ Progress tracking and job management
+- ✅ Error handling and recovery
+- ✅ Memory-efficient processing
+- ✅ Comprehensive logging and debugging
 
-### 3.2 Persistence (IndexedDB)
+---
 
-- **Goal:** User only uploads once.
-- **TDD:** Test that data survives a page reload using `fake-indexeddb`.
-- **Implementation:** Configure DuckDB WASM to persist the imported table to OPFS (Origin Private File System) or IndexedDB.
+## 🚧 Phase 6: Open Source Preparation (IN PROGRESS)
 
-### 3.3 Visualization Components
+**Objective:** Clean up codebase and prepare for public release.
 
-- **TDD:** Snapshot tests for `risk-card` and `manhattan-plot` web components.
-- **Implementation:** Build UI to display "Your Risk: 1.2x" vs "Average".
+### Tasks
 
-## Phase 4: Business Model (Auth & Payments)
+#### Documentation
 
-**Objective:** Gate premium "Trait Packs" (e.g., "Elite Athletics Pack") while keeping the engine Open Source.
+- [x] Update README.md with current architecture
+- [ ] Create CONTRIBUTING.md with development guidelines
+- [ ] Add LICENSE file (MIT recommended)
+- [ ] Document API endpoints and WebSocket protocol
+- [ ] Create deployment guides for each mode
+- [ ] Add architecture diagrams
+- [ ] Write user documentation for DNA upload and analysis
 
-### 4.1 Authentication
+#### Code Cleanup
 
-- **Choice:** Firebase Auth (easiest integration) or Supabase.
-- **Implementation:** Add "Login" button. User ID is used _only_ for subscription status, not for DNA storage.
+- [ ] Remove abandoned test files and mock data
+- [ ] Consolidate Docker configurations
+- [ ] Remove unused dependencies
+- [ ] Add JSDoc comments to public APIs
+- [ ] Standardize error messages
+- [ ] Clean up console.log statements (use proper logging)
 
-### 4.2 Secured CDN (Signed URLs)
+#### Testing
 
-- **Architecture:**
-  - Public Packs (Free): `cdn.example.com/free/caffeine.parquet`
-  - Private Packs (Paid): `cdn.example.com/premium/athletics.parquet` (403 Forbidden by default).
+- [ ] Add unit tests for core genomic calculations
+- [ ] Integration tests for DNA parsing
+- [ ] End-to-end tests for risk calculation
+- [ ] Performance benchmarks
+- [ ] Browser compatibility tests
 
-- **TDD:** Integration test where an unauthenticated request returns 403, and a signed URL returns 200.
+#### CI/CD
 
-- **Implementation:**
-  - Use CloudFront (AWS) or Firebase Hosting.
-  - Write a Cloud Function: `generate_signed_url(user_id, file_path)`.
-  - Frontend calls function -> gets temp URL -> passes to DuckDB.
+- [ ] GitHub Actions for linting and formatting
+- [ ] Automated testing on PR
+- [ ] Docker image builds and publishing
+- [ ] Automated releases with semantic versioning
 
-### 4.3 Stripe Integration
+#### Security
 
-- **Flow:** User clicks "Buy Pack" -> Stripe Checkout -> Webhook -> Updates User Claims in Firebase.
+- [ ] Security audit of data handling
+- [ ] Input validation for DNA files
+- [ ] Rate limiting for server endpoints
+- [ ] CORS configuration review
+- [ ] Dependency vulnerability scanning
 
-## Phase 5: CI/CD & Deployment
+---
 
-**Objective:** Automate the path to production.
+## 📋 Phase 7: Community & Monetization (FUTURE)
 
-### 5.1 GitHub Actions Workflows
+**Objective:** Build community and sustainable business model.
 
-1. `ci-web.yml`: Runs on every PR to `main`.
-   - `npm ci`
-   - `npm run build` (copies static files)
-   - Web Test Runner for component tests
+### Planned Features
 
-2. `ci-pipeline.yml`: Runs when `packages/pipeline` changes.
-   - `pytest`
-   - `flake8` (Python linting)
+#### Open Source Engine
 
-### 5.2 Deployment Environments
+- Public GitHub repository with AGPLv3 license
+- Community contributions for new DNA formats
+- Plugin system for custom trait calculations
+- Developer documentation and examples
 
-- **Staging:**
-  - Web: `staging.dna-app.com` (S3 + CloudFront static hosting).
-  - Data: S3 Bucket `dna-data-staging`.
+**AGPLv3 Protection:**
+- Prevents proprietary forks
+- Requires sharing of modifications
+- Network copyleft for web services
+- Ensures community benefits from improvements
 
-- **Production:**
-  - Triggered by Creating a Release Tag in GitHub.
-  - Promotes Staging build to Prod.
+#### Premium Data Curation
 
-## Phase 6: Open Source Strategy
+- **Free Tier:** Basic traits from PGS Catalog
+- **Premium Packs:** Curated trait collections
+  - Athletic Performance Pack
+  - Longevity & Healthspan Pack
+  - Nutrition & Metabolism Pack
+  - Mental Health & Cognition Pack
 
-**Objective:** Open source the _Engine_, sell the _Data curation_.
+#### Authentication & Payments
 
-1. **Repository:** Public GitHub repo.
+- Firebase Auth or Supabase for user accounts
+- Stripe integration for premium pack purchases
+- Signed URLs for premium Parquet files
+- Subscription management
 
-2. **License:** AGPLv3 (Engine) to ensure improvements are shared.
+#### Advanced Features
 
-3. **Data separation:**
-   - The `pipeline/` code is public.
-   - The _configuration_ for premium packs (specific weights, proprietary curation) is in a private repo or env variables.
+- Family risk aggregation and inheritance patterns
+- Trait correlation analysis
+- Export to PDF reports
+- Integration with health tracking apps
+- Research data contribution (opt-in, anonymized)
 
-4. **Community:** Add `CONTRIBUTING.md` allowing users to submit PRs for new _public_ traits (e.g., "I added a parser for MyHeritage files").
+---
+
+## Current Architecture Summary
+
+### Deployment Modes
+
+1. **Browser-Only** (`docker-compose.yml`)
+   - Static hosting with Nginx
+   - All processing in browser with DuckDB WASM
+   - Best for: Privacy-focused users, static hosting
+
+2. **Hybrid Server** (`docker-compose.hybrid.yml`)
+   - Web UI + calculation server
+   - Server handles heavy computations
+   - WebSocket for real-time updates
+   - Best for: Home servers, family use
+
+3. **Containerized** (Future)
+   - Single Docker image with all components
+   - Multi-user support
+   - Best for: Self-hosting, enterprise
+
+### Technology Stack
+
+- **Frontend:** Web Components, DuckDB WASM, IndexedDB
+- **Backend:** Node.js, DuckDB (native), SQLite
+- **Data:** Parquet files with ZSTD compression
+- **Pipeline:** Node.js ETL with PGS Catalog integration
+- **Deployment:** Docker, Nginx, static hosting
+
+### Data Flow
+
+```
+PGS Catalog → Pipeline → Parquet Files → CDN/Server
+                                            ↓
+User DNA File → Browser/Server → DuckDB → Risk Scores
+                                            ↓
+                                    IndexedDB/SQLite
+```
+
+---
+
+## Next Steps
+
+1. **Immediate (This Week)**
+   - Clean up test files and abandoned code
+   - Add CONTRIBUTING.md and LICENSE
+   - Document API endpoints
+   - Add JSDoc comments to core modules
+
+2. **Short Term (This Month)**
+   - Write comprehensive tests
+   - Set up GitHub Actions CI/CD
+   - Create deployment guides
+   - Security audit
+
+3. **Medium Term (Next Quarter)**
+   - Public beta release
+   - Community feedback and iteration
+   - Premium pack development
+   - Authentication integration
+
+4. **Long Term (6-12 Months)**
+   - Mobile app development
+   - Advanced analytics features
+   - Research partnerships
+   - Scale to thousands of users
+
+---
+
+## Success Metrics
+
+- **Privacy:** Zero data breaches, all processing local
+- **Performance:** <5s for single trait calculation
+- **Usability:** <3 clicks from DNA upload to first result
+- **Community:** 100+ GitHub stars, 10+ contributors
+- **Business:** 1000+ users, 100+ premium subscribers
+
+---
+
+## Contributing
+
+We welcome contributions! Areas where help is needed:
+
+- DNA file format parsers (new providers)
+- Trait curation and validation
+- Performance optimization
+- Documentation and tutorials
+- Testing and bug reports
+- UI/UX improvements
+
+See CONTRIBUTING.md for guidelines (coming soon).
+
+---
+
+## License
+
+MIT License - See LICENSE file for details.
+
+Your DNA data is yours alone. Asili simply provides the tools to analyze it privately.
