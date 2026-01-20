@@ -10,7 +10,7 @@ export class BrowserStorageManager extends StorageManager {
   constructor(config = {}) {
     super(config);
     this.dbName = config.dbName || 'asili-storage';
-    this.version = config.version || 2;
+    this.version = config.version || 3;
     this.db = null;
   }
 
@@ -52,9 +52,10 @@ export class BrowserStorageManager extends StorageManager {
 
         // Risk scores cache
         if (!db.objectStoreNames.contains('risk_scores')) {
-          db.createObjectStore('risk_scores', {
+          const riskStore = db.createObjectStore('risk_scores', {
             keyPath: ['traitId', 'individualId']
           });
+          riskStore.createIndex('individualId', 'individualId', { unique: false });
         }
       };
     });

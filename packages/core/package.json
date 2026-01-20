@@ -9,7 +9,9 @@
     "./queue": "./src/queue/index.js",
     "./interfaces": "./src/interfaces/index.js"
   },
-  "dependencies": {},
+  "dependencies": {
+    "duckdb": "^1.4.3"
+  },
   "peerDependencies": {
     "@duckdb/duckdb-wasm": "^1.33.1-dev5.0"
   }

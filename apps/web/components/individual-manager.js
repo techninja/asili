@@ -37,8 +37,17 @@ export class IndividualManager extends HTMLElement {
       this.updateUI(state);
     });
 
-    // Initialize processor and load individuals
-    await this.initializeProcessor();
+    // Don't auto-initialize processor - wait for it to be set externally
+    // await this.initializeProcessor();
+    // setTimeout(() => this.loadIndividuals(), 100);
+  }
+
+  // Allow external processor to be set
+  setProcessor(processor) {
+    this.processor = processor;
+    Debug.log('IndividualManager', 'External processor set');
+    
+    // Load individuals now that we have a processor
     setTimeout(() => this.loadIndividuals(), 100);
   }
 
@@ -69,18 +78,24 @@ export class IndividualManager extends HTMLElement {
       const individuals = await this.processor.storage.getIndividuals();
       const store = useAppStore.getState();
 
+      Debug.log(1, 'IndividualManager', `Loaded ${individuals.length} individuals:`, individuals.map(ind => `${ind.name} (${ind.status})`));
+      
       store.setIndividuals(individuals);
 
-      // Auto-select first complete individual if none selected and we have individuals
-      const completeIndividuals = individuals.filter(
-        ind => ind.status === 'complete'
+      // Auto-select first ready individual if none selected and we have individuals
+      const readyIndividuals = individuals.filter(
+        ind => ind.status === 'ready' || ind.status === 'complete'
       );
+      
+      Debug.log(2, 'IndividualManager', `Found ${readyIndividuals.length} ready individuals`);
+      
       if (
-        completeIndividuals.length > 0 &&
+        readyIndividuals.length > 0 &&
         !store.selectedIndividual &&
         store.uploadState === 'idle'
       ) {
-        store.setSelectedIndividual(completeIndividuals[0].id);
+        Debug.log(1, 'IndividualManager', `Auto-selecting individual: ${readyIndividuals[0].name}`);
+        store.setSelectedIndividual(readyIndividuals[0].id);
       }
     } catch (error) {
       Debug.error('IndividualManager', 'Failed to load individuals:', error);
@@ -179,7 +194,7 @@ export class IndividualManager extends HTMLElement {
                 <div class="single-user-state">
                     <div class="individual-display">
                         <span class="emoji" id="userEmoji">${individual.emoji || '👤'}</span>
-                        <span class="name ${individual.status !== 'complete' ? 'failed' : ''}" id="userName">${individual.name}${individual.status !== 'complete' ? ' (Failed Import)' : ''}</span>
+                        <span class="name ${individual.status !== 'complete' && individual.status !== 'ready' ? 'failed' : ''}" id="userName">${individual.name}${individual.status !== 'complete' && individual.status !== 'ready' ? ' (Failed Import)' : ''}</span>
                         <button class="edit-btn" id="editBtn">✏️</button>
                     </div>
                     <div class="actions">
@@ -246,11 +261,11 @@ export class IndividualManager extends HTMLElement {
                             ${state.individuals
                               .map(ind => {
                                 const status =
-                                  ind.status === 'complete'
+                                  ind.status === 'complete' || ind.status === 'ready'
                                     ? ''
                                     : ' (Failed Import)';
                                 const disabled =
-                                  ind.status !== 'complete' ? 'disabled' : '';
+                                  ind.status !== 'complete' && ind.status !== 'ready' ? 'disabled' : '';
                                 return `<option value="${ind.id}" ${ind.id === state.selectedIndividual ? 'selected' : ''} ${disabled}>
                                     ${ind.emoji || '👤'} ${ind.name}${status}
                                 </option>`;

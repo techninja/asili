@@ -9,7 +9,7 @@
     </script>
 
     <!-- Preload critical WASM -->
-    <link rel="preload" href="/dist/duckdb-eh.wasm" as="fetch" crossorigin />
+    <link rel="preload" href="/deps/wasm/duckdb-eh.wasm" as="fetch" crossorigin />
 
     <!-- Load Chart.js async -->
     <script>
@@ -30,6 +30,7 @@
           "@duckdb/duckdb-wasm": "./duckdb-bundle.mjs",
           "zustand": "/node_modules/zustand/esm/vanilla.mjs",
           "@asili/core": "/packages/core/src/index.js",
+          "@asili/core/": "/packages/core/src/",
           "@asili/debug": "/packages/core/src/utils/debug.js"
         }
       }

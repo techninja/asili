@@ -28,13 +28,15 @@ export class QueueManager {
     });
   }
 
-  add(traitId, individualId, priority = QUEUE_PRIORITY.NORMAL) {
+  add(traitId, individualId, priority = QUEUE_PRIORITY.NORMAL, trait = null) {
     const existing = this.queue.find(
       item => item.traitId === traitId && item.individualId === individualId
     );
 
     if (existing) {
       existing.priority = Math.max(existing.priority, priority);
+      // Update trait data if provided
+      if (trait) existing.trait = trait;
       this.sortQueue();
       this.emit('updated', existing);
       return existing.id;
@@ -44,6 +46,7 @@ export class QueueManager {
       id: `${traitId}_${individualId}_${Date.now()}`,
       traitId,
       individualId,
+      trait, // Store trait data
       priority,
       status: QUEUE_STATUS.PENDING,
       addedAt: Date.now(),
@@ -147,9 +150,10 @@ export class QueueManager {
       const result = await this.processor.calculateTraitRisk(
         nextItem.traitId,
         nextItem.individualId,
-        (message, percent) => {
+        (message, percent, extraData) => {
           nextItem.progress = percent;
-          this.emit('progress', { item: nextItem, message, percent });
+          nextItem.statusMessage = message;
+          this.emit('progress', { item: nextItem, message, percent, ...extraData });
         }
       );
 
@@ -157,7 +161,8 @@ export class QueueManager {
       this.timeEstimator.recordCompletion(
         nextItem.traitId,
         duration,
-        result.matchedVariants
+        result.matchedVariants,
+        result.totalRows || result.matchedVariants
       );
 
       nextItem.status = QUEUE_STATUS.COMPLETED;
@@ -211,13 +216,13 @@ export class QueueManager {
     return [...this.queue];
   }
 
-  clear() {
-    const pendingItems = this.queue.filter(
-      item => item.status === QUEUE_STATUS.PENDING
-    );
-    this.queue = this.queue.filter(
-      item => item.status !== QUEUE_STATUS.PENDING
-    );
-    this.emit('cleared', pendingItems);
+  // Add method to queue all traits for an individual
+  addAllTraits(individualId, traits, priority = QUEUE_PRIORITY.NORMAL) {
+    const addedIds = [];
+    traits.forEach(trait => {
+      const id = this.add(trait.id, individualId, priority, trait);
+      addedIds.push(id);
+    });
+    return addedIds;
   }
 }

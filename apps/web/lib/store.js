@@ -11,6 +11,8 @@ export const useAppStore = createStore((set, get) => ({
   cancelImport: false,
   duckdbReady: false,
   traitsLoaded: false,
+  totalAvailableTraits: 0,
+  completedTraitsCount: 0,
 
   // Actions
   setSelectedIndividual: (id, ready = true) =>
@@ -28,6 +30,10 @@ export const useAppStore = createStore((set, get) => ({
   setDuckDBReady: ready => set({ duckdbReady: ready }),
 
   setTraitsLoaded: loaded => set({ traitsLoaded: loaded }),
+
+  setTotalAvailableTraits: count => set({ totalAvailableTraits: count }),
+
+  setCompletedTraitsCount: count => set({ completedTraitsCount: count }),
 
   // Computed getters
   hasIndividuals: () => get().individuals.length > 0,

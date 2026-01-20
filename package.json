@@ -4,10 +4,17 @@
   "type": "module",
   "description": "Swahili for \"Root\", Asili is your personal family genomic risk assistant that never owns your data.",
   "main": "manage-traits.js",
+  "imports": {
+    "@asili/core": "./packages/core/src/index.js",
+    "@asili/core/*": "./packages/core/src/*",
+    "@asili/debug": "./packages/core/src/utils/debug.js"
+  },
   "scripts": {
     "traits": "node packages/pipeline/manage-traits.js",
     "etl": "docker compose run --rm pipeline pnpm run etl",
     "start": "docker compose up -d",
+    "calc-server": "node apps/calc/server.js",
+    "build:calc-server": "docker build -f apps/calc/Dockerfile -t asili-calc-server .",
     "test:core": "cd packages/core && node test.js",
     "build:webapp": "docker build -f apps/web/Dockerfile -t asili-webapp .",
     "lint": "eslint .",
@@ -19,7 +26,8 @@
     "ajv": "^8.17.1",
     "ajv-formats": "^3.0.1",
     "chalk": "^5.3.0",
-    "prompts": "^2.4.2"
+    "prompts": "^2.4.2",
+    "ws": "^8.18.3"
   },
   "devDependencies": {
     "@eslint/js": "^9.15.0",
@@ -34,5 +42,5 @@
     "cli"
   ],
   "author": "techninja (James Todd)",
-  "license": "MIT"
+  "license": "AGPL-3.0-or-later"
 }

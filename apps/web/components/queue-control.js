@@ -1,22 +1,45 @@
 import { Debug } from '@asili/debug';
+import { useAppStore } from '../lib/store.js';
 
 export class QueueControl extends HTMLElement {
   constructor() {
     super();
     this.attachShadow({ mode: 'open' });
     this.queueManager = null;
+    this.riskDashboard = null;
     this.isExpanded = false;
     this.unsubscribe = null;
-    this.chartData = [];
-    this.maxDataPoints = 60;
+    this.variantsPerSecond = 0;
+    this.totalTraits = 0;
+    this.cachedTraitsCount = 0;
+  }
+
+  setRiskDashboard(riskDashboard) {
+    this.riskDashboard = riskDashboard;
+  }
+
+  setProcessor(processor) {
+    this.processor = processor;
+    this.loadProgressFromServer();
   }
 
   connectedCallback() {
     this.render();
+    
+    // Subscribe to store changes for individual selection
+    this.storeUnsubscribe = useAppStore.subscribe((state, prevState) => {
+      if (state.selectedIndividual !== prevState.selectedIndividual) {
+        this.loadProgressFromServer();
+      }
+    });
+    
+    // Initial load
+    this.loadProgressFromServer();
   }
 
   disconnectedCallback() {
     this.unsubscribe?.();
+    this.storeUnsubscribe?.();
   }
 
   setQueueManager(queueManager) {
@@ -24,12 +47,47 @@ export class QueueControl extends HTMLElement {
     this.queueManager = queueManager;
 
     if (queueManager) {
-      this.unsubscribe = queueManager.subscribe(event => {
+      this.unsubscribe = queueManager.subscribe(async event => {
         this.updateDisplay(event);
+
+        // Track speed from progress events
+        if (event.event === 'progress') {
+          // Extract speed from statusMessage if available
+          if (event.data?.message) {
+            const speedMatch = event.data.message.match(/\((\d+(?:,\d+)*)\/(sec|s)\)/);
+            if (speedMatch) {
+              this.variantsPerSecond = parseInt(speedMatch[1].replace(/,/g, ''));
+              if (this.isExpanded) {
+                this.updateDetails(this.queueManager.getQueueState());
+              }
+            }
+          }
+          // Also try structured data
+          if (event.data?.throughput) {
+            this.variantsPerSecond = event.data.throughput;
+            if (this.isExpanded) {
+              this.updateDetails(this.queueManager.getQueueState());
+            }
+          }
+        }
+
+        // Update individual cards based on queue events
+        if (event.event === 'processing') {
+          this.updateCardForProcessing(event.data.traitId, event.data.individualId);
+        } else if (event.event === 'progress') {
+          this.updateCardProgress(event.data.traitId, event.data.individualId, event.data.percent, event.data.message);
+        } else if (event.event === 'itemCompleted') {
+          await this.updateCardCompleted(event.data.item.traitId, event.data.item.individualId);
+          this.loadProgressFromServer();
+          this.variantsPerSecond = 0;
+        }
 
         // Notify risk dashboard to refresh cards when queue items complete
         if (event.event === 'itemCompleted' || event.event === 'itemFailed') {
-          this.notifyRiskDashboard();
+          if (event.event === 'itemCompleted') {
+            const currentCount = useAppStore.getState().completedTraitsCount;
+            useAppStore.getState().setCompletedTraitsCount(currentCount + 1);
+          }
         }
       });
       this.updateDisplay({ queue: queueManager.getQueueState() });
@@ -44,6 +102,53 @@ export class QueueControl extends HTMLElement {
     }
   }
 
+  updateCardForProcessing(traitId, individualId) {
+    const riskDashboard = document.querySelector('risk-dashboard');
+    if (riskDashboard) {
+      const card = riskDashboard.shadowRoot.querySelector(`[data-trait-id="${traitId}"]`);
+      if (card) {
+        const riskDisplay = card.querySelector('.risk-display');
+        if (riskDisplay) {
+          riskDisplay.innerHTML = `
+            <button class="analyze-btn progress" disabled style="--progress: 0%">
+              <span>⚡ Processing... 0%</span>
+            </button>
+          `;
+        }
+      }
+    }
+  }
+
+  updateCardProgress(traitId, individualId, progress, message) {
+    const riskDashboard = document.querySelector('risk-dashboard');
+    if (riskDashboard) {
+      const card = riskDashboard.shadowRoot.querySelector(`[data-trait-id="${traitId}"]`);
+      if (card) {
+        const button = card.querySelector('.analyze-btn.progress');
+        if (button) {
+          const span = button.querySelector('span');
+          if (span) {
+            span.textContent = `⚡ ${message} ${Math.round(progress)}%`;
+          }
+          button.style.setProperty('--progress', `${progress}%`);
+        }
+      }
+    }
+  }
+
+  async updateCardCompleted(traitId, individualId) {
+    const riskDashboard = document.querySelector('risk-dashboard');
+    if (riskDashboard && riskDashboard.refreshTraitCard) {
+      // Clear cache first so fresh data is loaded
+      const hybridProcessor = riskDashboard.processor;
+      if (hybridProcessor) {
+        hybridProcessor.cacheData = null;
+        hybridProcessor.cachePromise = null;
+      }
+      await riskDashboard.refreshTraitCard(traitId, individualId);
+    }
+  }
+
   updateDisplay(event) {
     const state = event.queue;
     const widget = this.shadowRoot.querySelector('.queue-widget');
@@ -52,45 +157,43 @@ export class QueueControl extends HTMLElement {
 
     if (!widget || !summary) return;
 
-    // Update summary
-    const timeDisplay =
-      state.isProcessing && state.estimatedTimeRemaining > 0
-        ? this.formatTime(state.estimatedTimeRemaining)
-        : '--';
+    // Update summary with dynamic time estimates
+    const totalAvailableTraits = this.getTotalAvailableTraits();
+    const completedTraits = this.cachedTraitsCount;
+    const overallProgress = totalAvailableTraits > 0 ? (completedTraits / totalAvailableTraits) * 100 : 0;
+    const currentItem = this.queueManager?.getQueue().find(item => item.status === 'processing');
+    
+    // Get updated queue time estimate
+    const queueTimeMs = this.queueManager?.timeEstimator?.estimateQueueTime(this.queueManager.getQueue()) || 0;
+    const timeDisplay = state.isProcessing && queueTimeMs > 0 ? this.formatTime(queueTimeMs) : '--';
 
     summary.innerHTML = `
       <div class="queue-status ${state.isProcessing ? 'active' : 'idle'}">
         ${state.isProcessing ? (state.isPaused ? '⏸️' : '⚡') : '▶️'}
       </div>
       <div class="queue-info">
-        <div class="queue-count">${state.pending + state.processing}</div>
+        <div class="queue-count">${state.total}</div>
         <div class="queue-label">in queue</div>
+        <div class="summary-progress-bar">
+          <div class="summary-progress-fill" style="width: ${overallProgress}%"></div>
+        </div>
+        <div class="overall-progress">${Math.round(overallProgress)}% complete (${completedTraits}/${totalAvailableTraits})</div>
+        ${currentItem ? `
+          <div class="current-progress-bar">
+            <div class="current-progress-fill" style="width: ${currentItem.progress}%"></div>
+          </div>
+          <div class="current-progress">${Math.round(currentItem.progress)}% current</div>
+        ` : ''}
       </div>
       <div class="queue-time">
         ${timeDisplay}
       </div>
     `;
 
-    // Update chart data
-    if (state.currentItem?.progress) {
-      this.chartData.push({
-        timestamp: Date.now(),
-        cpu: Math.random() * 30 + 40, // Mock CPU usage
-        memory: Math.random() * 20 + 60 // Mock memory usage
-      });
-
-      if (this.chartData.length > this.maxDataPoints) {
-        this.chartData.shift();
-      }
-    }
-
     // Update details if expanded
     if (this.isExpanded && details) {
       this.updateDetails(state);
     }
-
-    // Update chart
-    this.updateChart();
   }
 
   updateDetails(state) {
@@ -116,11 +219,15 @@ export class QueueControl extends HTMLElement {
           ? `
         <div class="current-item">
           <div class="item-header">Currently Processing:</div>
-          <div class="item-name">${this.getTraitName(currentItem.traitId)}</div>
+          <div class="item-name">${this.getCurrentItemName(currentItem)}</div>
+          ${currentItem.statusMessage ? `<div class="status-message">${currentItem.statusMessage}</div>` : ''}
           <div class="progress-bar">
             <div class="progress-fill" style="width: ${currentItem.progress}%"></div>
           </div>
-          <div class="progress-text">${Math.round(currentItem.progress)}%</div>
+          <div class="progress-info">
+            <span class="progress-text">${Math.round(currentItem.progress)}%</span>
+            <span class="time-remaining">${this.getItemTimeRemaining(currentItem)}</span>
+          </div>
         </div>
       `
           : ''
@@ -135,7 +242,7 @@ export class QueueControl extends HTMLElement {
           <div class="queue-item">
             <div class="item-info">
               <span class="item-position">#${index + 1}</span>
-              <span class="item-name">${this.getTraitName(item.traitId)}</span>
+              <span class="item-name">${this.getTraitName(item)}</span>
             </div>
             <div class="item-actions">
               <button class="action-btn next" onclick="this.getRootNode().host.moveToNext('${item.id}')"
@@ -148,66 +255,118 @@ export class QueueControl extends HTMLElement {
         ${pendingItems.length > 5 ? `<div class="more-items">...and ${pendingItems.length - 5} more</div>` : ''}
       </div>
       
-      <div class="stats-chart">
-        <canvas id="statsChart" width="200" height="60"></canvas>
-      </div>
-      
       <div class="queue-stats">
         <div class="stat">
           <span class="stat-label">Processed:</span>
-          <span class="stat-value">${state.stats.processed}</span>
+          <span class="stat-value">${this.cachedTraitsCount}</span>
         </div>
         <div class="stat">
-          <span class="stat-label">Failed:</span>
-          <span class="stat-value">${state.stats.failed}</span>
-        </div>
-        <div class="stat">
-          <span class="stat-label">Avg Time:</span>
-          <span class="stat-value">${this.formatTime(state.stats.totalTime / Math.max(state.stats.processed, 1))}</span>
+          <span class="stat-label">Speed:</span>
+          <span class="stat-value">${this.variantsPerSecond > 0 ? this.formatVariantCount(this.variantsPerSecond) + '/s' : '--'}</span>
         </div>
       </div>
     `;
   }
 
-  updateChart() {
-    if (!this.isExpanded || this.chartData.length < 2) return;
-
-    const canvas = this.shadowRoot.getElementById('statsChart');
-    if (!canvas) return;
-
-    const ctx = canvas.getContext('2d');
-    const width = canvas.width;
-    const height = canvas.height;
-
-    ctx.clearRect(0, 0, width, height);
-
-    // Draw CPU line (red)
-    ctx.strokeStyle = '#ff4444';
-    ctx.lineWidth = 1;
-    ctx.beginPath();
-    this.chartData.forEach((point, i) => {
-      const x = (i / (this.chartData.length - 1)) * width;
-      const y = height - (point.cpu / 100) * height;
-      if (i === 0) ctx.moveTo(x, y);
-      else ctx.lineTo(x, y);
-    });
-    ctx.stroke();
-
-    // Draw Memory line (blue)
-    ctx.strokeStyle = '#4444ff';
-    ctx.beginPath();
-    this.chartData.forEach((point, i) => {
-      const x = (i / (this.chartData.length - 1)) * width;
-      const y = height - (point.memory / 100) * height;
-      if (i === 0) ctx.moveTo(x, y);
-      else ctx.lineTo(x, y);
-    });
-    ctx.stroke();
+getTraitName(item) {
+    const { traitId, trait } = item;
+    
+    // Try to get trait from risk dashboard if not in item
+    const traitData = trait || this.riskDashboard?.availableTraits?.find(t => t.id === traitId);
+    
+    if (traitData) {
+      const variantCount = this.formatVariantCount(traitData.variant_count);
+      const pgsCount = Object.keys(traitData.pgs_metadata || {}).length;
+      const timeEstimate = this.estimateProcessingTime(traitData.variant_count);
+      return `
+        <div class="trait-title">${traitData.name}</div>
+        <div class="trait-meta">
+          <span class="pgs-count">${pgsCount} PGS</span>
+          <span class="variant-count">${variantCount} variants</span>
+          <span class="time-estimate">⏳ ${timeEstimate}</span>
+        </div>
+      `;
+    }
+    
+    return traitId.replace(/^MONDO_|^EFO_/, '').replace(/_/g, ' ');
   }
 
-  getTraitName(traitId) {
-    // This would need to be connected to the trait data
+  getCurrentItemName(item) {
+    const { traitId, trait } = item;
+    
+    // Try to get trait from risk dashboard if not in item
+    const traitData = trait || this.riskDashboard?.availableTraits?.find(t => t.id === traitId);
+    
+    if (traitData) {
+      const variantCount = this.formatVariantCount(traitData.variant_count);
+      return `${traitData.name} - ${variantCount}`;
+    }
+    
     return traitId.replace(/^MONDO_|^EFO_/, '').replace(/_/g, ' ');
+  }
+
+  getItemTimeRemaining(item) {
+    const traitData = item.trait || this.riskDashboard?.availableTraits?.find(t => t.id === item.traitId);
+    if (!traitData?.variant_count || !item.progress) return '--';
+    
+    const performance = this.queueManager?.timeEstimator?.getCurrentPerformance();
+    const variantsPerSecond = performance?.variantsPerSecond || 100000;
+    
+    const totalVariants = traitData.variant_count;
+    const remainingVariants = totalVariants * (1 - item.progress / 100);
+    const remainingSeconds = remainingVariants / variantsPerSecond;
+    
+    return this.formatTime(remainingSeconds * 1000);
+  }
+
+  async loadProgressFromServer() {
+    const selectedIndividual = useAppStore.getState().selectedIndividual;
+    
+    if (!selectedIndividual) {
+      this.cachedTraitsCount = 0;
+      this.totalTraits = 0;
+      return;
+    }
+    
+    try {
+      const response = await fetch('/status');
+      const data = await response.json();
+      
+      console.log('[QueueControl] Server progress data:', data.progress);
+      
+      this.totalTraits = data.progress?.totalTraits || 0;
+      this.cachedTraitsCount = data.progress?.cachedByIndividual?.[selectedIndividual] || 0;
+      
+      console.log('[QueueControl] Set totalTraits:', this.totalTraits, 'cachedTraitsCount:', this.cachedTraitsCount);
+      
+      if (this.queueManager) {
+        this.updateDisplay({ queue: this.queueManager.getQueueState() });
+      }
+    } catch (error) {
+      console.error('[QueueControl] Failed to load progress from server:', error);
+    }
+  }
+
+  getTotalAvailableTraits() {
+    return this.totalTraits || this.riskDashboard?.availableTraits?.length || 0;
+  }
+
+  formatVariantCount(count) {
+    if (!count) return 'unknown';
+    if (count >= 1000000) return `${(count / 1000000).toFixed(0)}mm`;
+    if (count >= 1000) return `${(count / 1000).toFixed(0)}k`;
+    return count.toLocaleString();
+  }
+
+  estimateProcessingTime(variantCount) {
+    if (!variantCount) return '~1m';
+    
+    // Get current performance from queue manager's time estimator
+    const performance = this.queueManager?.timeEstimator?.getCurrentPerformance();
+    const variantsPerSecond = performance?.variantsPerSecond || 100000;
+    
+    const seconds = Math.max(30, variantCount / variantsPerSecond);
+    return this.formatTime(seconds * 1000);
   }
 
   formatTime(ms) {
@@ -323,6 +482,53 @@ export class QueueControl extends HTMLElement {
           color: #007acc;
         }
         
+        .summary-progress-bar {
+          height: 3px;
+          background: #eee;
+          border-radius: 2px;
+          overflow: hidden;
+          margin: 4px 0 2px 0;
+        }
+        
+        .summary-progress-fill {
+          height: 100%;
+          background: #007acc;
+          transition: width 0.3s ease;
+        }
+        
+        .current-progress-bar {
+          height: 2px;
+          background: #eee;
+          border-radius: 1px;
+          overflow: hidden;
+          margin: 2px 0;
+        }
+        
+        .current-progress-fill {
+          height: 100%;
+          background: #28a745;
+          transition: width 0.3s ease;
+        }
+        
+        .current-progress {
+          font-size: 10px;
+          color: #28a745;
+          font-weight: 500;
+        }
+        
+        .overall-progress {
+          font-size: 11px;
+          color: #007acc;
+          font-weight: 500;
+        }
+        
+        .status-message {
+          font-size: 11px;
+          color: #666;
+          margin: 4px 0;
+          font-style: italic;
+        }
+        
         .queue-label {
           font-size: 12px;
           color: #666;
@@ -392,7 +598,36 @@ export class QueueControl extends HTMLElement {
         .item-name {
           font-weight: bold;
           margin-bottom: 8px;
-          font-size: 14px;
+          font-size: 12px;
+          line-height: 1.3;
+        }
+        
+        .trait-title {
+          font-weight: bold;
+          font-size: 11px;
+          line-height: 1.2;
+          margin-bottom: 2px;
+        }
+        
+        .trait-meta {
+          display: flex;
+          gap: 8px;
+          font-size: 10px;
+          color: #666;
+        }
+        
+        .pgs-count {
+          color: #28a745;
+          font-weight: 500;
+        }
+        
+        .variant-count {
+          color: #6c757d;
+        }
+        
+        .time-estimate {
+          color: #007acc;
+          font-weight: 500;
         }
         
         .progress-bar {
@@ -407,6 +642,18 @@ export class QueueControl extends HTMLElement {
           height: 100%;
           background: #007acc;
           transition: width 0.3s ease;
+        }
+        
+        .progress-info {
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+        }
+        
+        .time-remaining {
+          font-size: 11px;
+          color: #007acc;
+          font-weight: 500;
         }
         
         .progress-text {
@@ -466,16 +713,6 @@ export class QueueControl extends HTMLElement {
           color: #666;
           text-align: center;
           padding: 8px 0;
-        }
-        
-        .stats-chart {
-          margin: 16px 0;
-          text-align: center;
-        }
-        
-        .stats-chart canvas {
-          border: 1px solid #eee;
-          border-radius: 4px;
         }
         
         .queue-stats {

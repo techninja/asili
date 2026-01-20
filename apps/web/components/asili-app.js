@@ -1,10 +1,9 @@
-import { AsiliProcessor } from '../lib/asili-processor.js';
+import { HybridProcessor } from '../lib/hybrid-processor.js';
 import { IndividualManager } from './individual-manager.js';
 import { RiskDashboard } from './risk-dashboard.js';
 import { ProgressBar } from './progress-bar.js';
 import { QueueControl } from './queue-control.js';
 import { useAppStore } from '../lib/store.js';
-import { PROGRESS_STAGES } from '../../packages/core/src/index.js';
 
 class AsiliApp extends HTMLElement {
   constructor() {
@@ -17,28 +16,44 @@ class AsiliApp extends HTMLElement {
   async connectedCallback() {
     this.render();
 
-    // Wait for risk dashboard to initialize, then connect queue control
-    setTimeout(() => {
-      const riskDashboard = this.shadowRoot.querySelector('risk-dashboard');
-      const queueControl = this.shadowRoot.querySelector('queue-control');
+    // Initialize hybrid processor
+    this.processor = new HybridProcessor();
+    await this.processor.initialize();
 
-      if (riskDashboard && queueControl) {
-        // Wait for risk dashboard to have its queue manager ready
-        const checkQueueManager = () => {
-          const queueManager = riskDashboard.getQueueManager?.();
-          if (queueManager) {
-            queueControl.setQueueManager(queueManager);
-          } else {
-            setTimeout(checkQueueManager, 500);
-          }
-        };
-        checkQueueManager();
+    // Set processor on components immediately after initialization
+    const riskDashboard = this.shadowRoot.querySelector('risk-dashboard');
+    const queueControl = this.shadowRoot.querySelector('queue-control');
+    const individualManager = this.shadowRoot.querySelector('individual-manager');
+
+    if (riskDashboard) {
+      riskDashboard.setProcessor(this.processor);
+    }
+
+    if (individualManager) {
+      individualManager.setProcessor(this.processor);
+    }
+
+    if (queueControl) {
+      const queueManager = this.processor.getQueueManager();
+      if (queueManager) {
+        queueControl.setQueueManager(queueManager);
+        queueControl.setRiskDashboard(riskDashboard);
+        queueControl.setProcessor(this.processor);
       }
-    }, 1000);
+    }
+
+    // Subscribe to store changes to show/hide analysis section
+    this.storeUnsubscribe = useAppStore.subscribe(state => {
+      const analysisSection = this.shadowRoot.querySelector('.analysis-section');
+      if (analysisSection) {
+        analysisSection.style.display = state.selectedIndividual && state.individualReady ? 'block' : 'none';
+      }
+    });
   }
 
   disconnectedCallback() {
     this.progressUnsubscribe?.();
+    this.storeUnsubscribe?.();
     this.processor?.cleanup();
   }
 
@@ -56,8 +71,10 @@ class AsiliApp extends HTMLElement {
                     <p>Your personal genomic risk assistant</p>
                 </header>
                 <individual-manager></individual-manager>
-                <risk-dashboard class="dashboard"></risk-dashboard>
-                <queue-control></queue-control>
+                <div class="analysis-section" style="display: none;">
+                    <risk-dashboard class="dashboard"></risk-dashboard>
+                    <queue-control></queue-control>
+                </div>
             </div>
         `;
   }

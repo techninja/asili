@@ -95,3 +95,4 @@ web_modules/
 # Asili local data
 data_out/
 cache/
+server-data/

@@ -2,6 +2,8 @@
  * Streaming utilities for memory-efficient parquet processing
  */
 
+import { SharedRiskCalculator } from './shared-calculator.js';
+
 export class StreamingProcessor {
   constructor(conn, config = {}) {
     this.conn = conn;
@@ -151,99 +153,34 @@ export class StreamingProcessor {
 
 /**
  * Memory-efficient aggregator for PGS calculations
+ * Now uses SharedRiskCalculator for consistent logic
  */
-export class PGSAggregator {
+export class PGSAggregator extends SharedRiskCalculator {
   constructor() {
-    this.pgsBreakdown = new Map();
-    this.pgsDetails = new Map();
-    this.pgsTopVariants = new Map();
-    this.totalScore = 0;
-    this.totalMatches = 0;
+    super();
   }
 
-  initializePGS(pgsId, metadata = {}) {
-    if (!this.pgsBreakdown.has(pgsId)) {
-      this.pgsBreakdown.set(pgsId, {
-        positive: 0,
-        negative: 0,
-        positiveSum: 0,
-        negativeSum: 0,
-        total: 0
-      });
-
-      this.pgsDetails.set(pgsId, {
-        topVariants: [],
-        metadata
-      });
-
-      this.pgsTopVariants.set(pgsId, []);
-    }
-  }
-
+  // Alias method for backward compatibility
   addVariant(pgsId, variant, genotype, effectWeight) {
-    const breakdown = this.pgsBreakdown.get(pgsId);
-    breakdown.total++;
-
-    if (effectWeight > 0) {
-      breakdown.positive++;
-      breakdown.positiveSum += effectWeight;
-    } else {
-      breakdown.negative++;
-      breakdown.negativeSum += effectWeight;
-    }
-
-    this.totalScore += effectWeight;
-    this.totalMatches++;
-
-    // Track top variants
-    const topVariants = this.pgsTopVariants.get(pgsId);
-    const variantData = {
-      rsid: variant.variant_id,
+    const variantRow = {
+      variant_id: variant.variant_id,
+      pgs_id: pgsId,
       effect_allele: variant.effect_allele,
-      effect_weight: effectWeight,
-      userGenotype: genotype
+      effect_weight: effectWeight
     };
-
-    if (topVariants.length < 20) {
-      topVariants.push(variantData);
-    } else {
-      // Replace lowest impact variant if this one is higher
-      const minIndex = topVariants.reduce(
-        (minIdx, curr, idx, arr) =>
-          Math.abs(curr.effect_weight) < Math.abs(arr[minIdx].effect_weight)
-            ? idx
-            : minIdx,
-        0
-      );
-
-      if (
-        Math.abs(effectWeight) > Math.abs(topVariants[minIndex].effect_weight)
-      ) {
-        topVariants[minIndex] = variantData;
-      }
-    }
-  }
-
-  finalize() {
-    // Sort top variants for each PGS
-    for (const [pgsId, topVariants] of this.pgsTopVariants) {
-      topVariants.sort(
-        (a, b) => Math.abs(b.effect_weight) - Math.abs(a.effect_weight)
-      );
-      this.pgsDetails.get(pgsId).topVariants = topVariants;
-    }
-
-    return {
-      riskScore: this.totalScore,
-      totalMatches: this.totalMatches,
-      pgsBreakdown: Object.fromEntries(this.pgsBreakdown),
-      pgsDetails: Object.fromEntries(this.pgsDetails)
+    
+    // Create a mock DNA lookup for this single variant
+    const mockDNA = {
+      rsid: variant.variant_id,
+      chromosome: variant.chromosome || '1',
+      position: variant.position || 0,
+      allele1: genotype[0] || 'A',
+      allele2: genotype[1] || genotype[0] || 'A'
     };
-  }
-
-  cleanup() {
-    this.pgsBreakdown.clear();
-    this.pgsDetails.clear();
-    this.pgsTopVariants.clear();
+    
+    const dnaLookup = new Map();
+    dnaLookup.set(variant.variant_id, mockDNA);
+    
+    return this.processVariant(variantRow, dnaLookup);
   }
 }

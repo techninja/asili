@@ -1,262 +1,262 @@
-# @asili/core
+# Asili Core Trait Processing System
 
-Core genomic processing library for Asili - provides unified interfaces and progress tracking across browser, mobile, and server environments.
+This document describes the enhanced trait processing architecture that enables comprehensive genomic risk calculation for all traits, supporting both browser and server environments.
 
-## Features
+## Architecture Overview
 
-- **Unified Progress Tracking**: Consistent progress updates across all platforms
-- **Platform-Agnostic Interfaces**: Common APIs for genomic processing, storage, and risk calculation
-- **Browser Implementation**: DuckDB WASM + IndexedDB for client-side processing
-- **Extensible Architecture**: Easy to add new platforms and implementations
+The system consists of several key components:
 
-## Installation
+### Core Components
 
-```bash
-npm install @asili/core
-```
+1. **TraitProcessor** - Handles batch processing of multiple traits
+2. **JobQueue** - Manages background processing jobs with priorities
+3. **AsiliCore** - Unified API that orchestrates all components
+4. **ServerGenomicProcessor** - Node.js implementation for server-side processing
 
-## Quick Start
+### Key Features
+
+- **Batch Processing**: Calculate risk scores for all traits in one operation
+- **Background Jobs**: Queue processing tasks that run without keeping browser open
+- **Progress Tracking**: Real-time updates on processing status
+- **Caching**: Intelligent caching to avoid recalculating existing results
+- **Cross-Platform**: Works in both browser and Node.js environments
+
+## Usage Examples
 
 ### Browser Environment
 
 ```javascript
-import { createBrowserProcessor, PROGRESS_STAGES } from '@asili/core';
+import { createAsiliCore, createBrowserProcessor, createBrowserStorage } from '@asili/core';
 
-// Create processor with progress tracking
+// Initialize
 const { processor, progressTracker } = await createBrowserProcessor();
+const storage = await createBrowserStorage();
+const core = await createAsiliCore(processor, storage, progressTracker);
 
-// Subscribe to progress updates
-progressTracker.subscribe(status => {
-  console.log(`${status.stage}: ${status.message} (${status.progress}%)`);
+// Load trait manifest
+const response = await fetch('/data/trait_manifest.json');
+const traitManifest = await response.json();
+
+// Process all traits immediately (browser must stay open)
+const results = await core.processAllTraitsImmediate('user123', traitManifest);
+
+// Or queue for background processing
+const jobId = core.queueAllTraits('user123', traitManifest);
+
+// Process single trait with high priority
+const result = await core.processSingleTrait('user123', 'MONDO:0005148', trait);
+
+// Generate comprehensive risk report
+const report = await core.generateRiskReport('user123', traitManifest);
+```
+
+### Server Environment (Future)
+
+```javascript
+import { createAsiliCore, ServerGenomicProcessor } from '@asili/core';
+
+// Initialize server components
+const processor = new ServerGenomicProcessor({ dataPath: '/data' });
+const storage = new ServerStorageManager({ dbPath: '/db' });
+const core = await createAsiliCore(processor, storage);
+
+// Queue processing job
+const jobId = core.queueAllTraits('user123', traitManifest, {
+  batchSize: 5, // Process 5 traits concurrently
+  priority: 'normal'
 });
 
-// Load genomic dataset
-const dataset = await processor.loadDataset({
-  type: 'url',
-  source: '/data/trait_data.parquet'
+// Monitor progress via events
+core.subscribe(event => {
+  if (event.source === 'jobQueue' && event.event === 'jobCompleted') {
+    // Notify user via websocket, email, etc.
+    notifyUser(event.data);
+  }
 });
-
-// Calculate risk scores
-const dnaData = {
-  /* parsed DNA data */
-};
-const traits = [{ id: 'trait1', name: 'Trait 1', pgsIds: ['PGS000001'] }];
-const scores = await processor.calculatePGS(dnaData, traits);
 ```
 
-### Storage Management
+## API Reference
+
+### AsiliCore
+
+Main interface for trait processing operations.
+
+#### Methods
+
+- `processAllTraitsImmediate(individualId, traitManifest, options)` - Process all traits immediately
+- `queueAllTraits(individualId, traitManifest, options)` - Queue all traits for background processing
+- `processSingleTrait(individualId, traitId, traitData, options)` - Process single trait immediately
+- `generateRiskReport(individualId, traitManifest)` - Generate comprehensive risk report
+- `getStatus()` - Get current processing status
+- `subscribe(callback)` - Subscribe to processing events
+
+### TraitProcessor
+
+Handles the actual trait processing logic.
+
+#### Events
+
+- `jobStarted` - Processing job has started
+- `progress` - Processing progress update
+- `traitCompleted` - Individual trait completed
+- `traitFailed` - Individual trait failed
+- `jobCompleted` - Entire job completed
+- `jobFailed` - Job failed
+
+### JobQueue
+
+Manages background processing jobs with priorities.
+
+#### Job Types
+
+- `processAllTraits` - Process all traits for an individual
+- `processSingleTrait` - Process a single trait
+
+#### Job Priorities
+
+- `LOW` (1) - Background processing
+- `NORMAL` (2) - Standard processing
+- `HIGH` (3) - Priority processing
+- `URGENT` (4) - Immediate processing
+
+## Processing Modes
+
+### Immediate Processing (Browser)
+
+- Processes traits one by one in the browser
+- Requires browser tab to stay open
+- Real-time progress updates
+- Suitable for small numbers of traits or when user wants to wait
 
 ```javascript
-import { createBrowserStorage } from '@asili/core';
-
-const storage = createBrowserStorage({
-  dbName: 'my-genomic-data',
-  version: 1
+const results = await core.processAllTraitsImmediate(individualId, traitManifest, {
+  batchSize: 1,        // Process one trait at a time
+  yieldInterval: 5     // Yield control every 5 traits
 });
-
-// Store data
-await storage.store('user_results', riskScores);
-
-// Retrieve data
-const results = await storage.retrieve('user_results');
 ```
 
-### Risk Calculation
+### Background Processing (Queue)
+
+- Queues traits for processing
+- Can continue when browser is closed (future server implementation)
+- Suitable for processing all traits without user waiting
 
 ```javascript
-import { createRiskCalculator } from '@asili/core';
-
-const calculator = createRiskCalculator({
-  populationMean: 0,
-  populationStd: 1
+const jobId = core.queueAllTraits(individualId, traitManifest, {
+  priority: JOB_PRIORITY.NORMAL,
+  batchSize: 1
 });
-
-const riskScore = await calculator.calculateRisk(dnaData, trait, pgsData);
 ```
 
-## Progress Tracking
+## Risk Report Generation
 
-The library provides unified progress tracking with standardized stages and substages:
+The system can generate comprehensive risk reports that include:
 
-### Progress Stages
-
-- `IDLE`: No processing active
-- `INITIALIZING`: Setting up components
-- `LOADING_DATA`: Loading genomic datasets
-- `PROCESSING_DNA`: Parsing and validating DNA data
-- `CALCULATING_PGS`: Computing polygenic risk scores
-- `FINALIZING`: Completing processing
-- `COMPLETE`: Processing finished successfully
-- `ERROR`: Processing failed
-
-### Progress Substages
-
-- **Loading**: `FETCHING_TRAITS`, `LOADING_PGS_FILES`, `PREPARING_DATABASE`
-- **Processing**: `PARSING_DNA_FILE`, `VALIDATING_FORMAT`, `NORMALIZING_DATA`
-- **Calculating**: `MATCHING_VARIANTS`, `COMPUTING_SCORES`, `AGGREGATING_RESULTS`
-
-### Usage
+- Summary statistics by trait category
+- Top risk traits
+- Missing traits (automatically queued for processing)
+- Processing metadata
 
 ```javascript
-import { ProgressTracker, PROGRESS_STAGES } from '@asili/core';
+const report = await core.generateRiskReport(individualId, traitManifest);
 
-const tracker = new ProgressTracker();
-
-// Subscribe to updates
-const unsubscribe = tracker.subscribe(status => {
-  updateUI(status);
-});
-
-// Update progress
-tracker.setStage(PROGRESS_STAGES.LOADING_DATA, 'Loading datasets...');
-tracker.setProgress(50, 'Halfway done...');
-tracker.complete('Processing finished!');
-
-// Cleanup
-unsubscribe();
-```
-
-## Interfaces
-
-### GenomicProcessor
-
-Base interface for genomic data processing:
-
-```javascript
-class GenomicProcessor {
-  async loadDataset(source) {
-    /* Load genomic dataset */
-  }
-  async calculatePGS(dna, traits) {
-    /* Calculate risk scores */
-  }
-  async cacheResults(results) {
-    /* Cache processing results */
-  }
-}
-```
-
-### StorageManager
-
-Base interface for data storage:
-
-```javascript
-class StorageManager {
-  async store(key, data) {
-    /* Store data */
-  }
-  async retrieve(key) {
-    /* Retrieve data */
-  }
-  async clear() {
-    /* Clear all data */
-  }
-  async list() {
-    /* List stored keys */
-  }
-}
-```
-
-### RiskCalculator
-
-Base interface for risk score calculation:
-
-```javascript
-class RiskCalculator {
-  async calculateRisk(dna, trait, pgsData) {
-    /* Calculate single trait risk */
-  }
-  async batchCalculate(dna, traits, datasets) {
-    /* Calculate multiple traits */
-  }
-}
-```
-
-## Data Types
-
-### DNAData
-
-```javascript
+// Report structure:
 {
-  format: 'string',      // DNA file format
-  variants: [            // Array of genetic variants
-    {
-      rsid: 'rs123',
-      chromosome: '1',
-      position: 1000,
-      genotype: 'AA'
-    }
-  ],
-  metadata: {}           // File metadata
+  individualId: 'user123',
+  generatedAt: '2024-01-07T12:00:00Z',
+  totalTraits: 150,
+  calculatedTraits: 120,
+  missingTraits: 30,
+  results: [...], // Array of calculated results
+  summary: {
+    categories: { ... }, // Results grouped by category
+    riskLevels: { low: 50, moderate: 60, high: 10 },
+    topRisks: [...] // Top 10 highest risk traits
+  },
+  queuedJobId: 'job_123' // If missing traits were queued
 }
 ```
 
-### TraitConfig
+## Integration with Web Components
+
+The system integrates seamlessly with web components:
 
 ```javascript
-{
-  id: 'string',          // Trait identifier
-  name: 'string',        // Human-readable name
-  category: 'string',    // Trait category
-  pgsIds: ['string']     // Associated PGS identifiers
-}
+// Enhanced trait processor component
+const processor = document.querySelector('enhanced-trait-processor');
+processor.setCurrentIndividual('user123');
+
+// Listen for events
+processor.addEventListener('traitCompleted', (event) => {
+  console.log('Trait completed:', event.detail);
+});
+
+processor.addEventListener('jobCompleted', (event) => {
+  console.log('All traits processed:', event.detail);
+});
 ```
 
-### RiskScore
+## Performance Considerations
 
-```javascript
-{
-  traitId: 'string',     // Trait identifier
-  score: 0.5,            // Raw polygenic score
-  percentile: 75,        // Population percentile (1-99)
-  interpretation: 'string', // Risk interpretation
-  metadata: {}           // Calculation metadata
-}
-```
+### Browser Environment
 
-## Platform Implementations
+- Memory usage scales with number of traits being processed
+- Large trait datasets may require yielding control to prevent UI blocking
+- Caching reduces redundant calculations
 
-### Browser (Current)
+### Server Environment (Future)
 
-- **Processor**: `BrowserGenomicProcessor` - Uses DuckDB WASM for SQL processing
-- **Storage**: `BrowserStorageManager` - Uses IndexedDB for persistent storage
-- **Calculator**: `BasicRiskCalculator` - Standard PGS calculation algorithms
+- Can process multiple traits concurrently
+- No memory limitations from browser environment
+- Persistent job queue survives server restarts
+- Can notify users when processing completes
 
-### Future Platforms
+## Error Handling
 
-- **Server**: Node.js implementation with native DuckDB
-- **Mobile**: React Native with native modules for performance
-- **Desktop**: Electron wrapper for desktop applications
+The system provides comprehensive error handling:
+
+- Individual trait failures don't stop batch processing
+- Failed traits are reported in results with error messages
+- Jobs can be cancelled if needed
+- Automatic retry logic for transient failures (future enhancement)
+
+## Caching Strategy
+
+- Results are cached automatically after calculation
+- Cache keys include trait version to detect updates
+- Cached results are used when available and current
+- Cache can be cleared per individual or globally
+
+## Future Enhancements
+
+1. **Server-Side Processing**: Full Node.js implementation for background processing
+2. **WebSocket Communication**: Real-time updates between server and browser
+3. **Distributed Processing**: Scale across multiple server instances
+4. **Advanced Scheduling**: Time-based and resource-aware job scheduling
+5. **Result Notifications**: Email/SMS notifications when processing completes
+6. **API Endpoints**: REST API for external integrations
+
+## Migration from Existing System
+
+The new system is designed to be backward compatible:
+
+1. Existing `AsiliProcessor` continues to work
+2. New `AsiliCore` provides enhanced capabilities
+3. Gradual migration path for existing applications
+4. Same storage format for cached results
 
 ## Testing
 
-Run the test suite:
+Run the test suite to verify functionality:
 
 ```bash
 cd packages/core
-node test.js
+npm test
 ```
 
-## Architecture
-
-The library follows a modular architecture with clear separation of concerns:
-
-```
-@asili/core/
-├── interfaces/        # Platform-agnostic interfaces
-├── progress/          # Unified progress tracking
-├── genomic-processor/ # Data processing implementations
-├── storage-manager/   # Storage implementations
-└── risk-calculator/   # Risk calculation implementations
-```
-
-## Contributing
-
-1. Implement new platform-specific classes extending the base interfaces
-2. Add comprehensive tests for new implementations
-3. Update documentation with usage examples
-4. Ensure progress tracking integration
-
-## License
-
-MIT License - See main project LICENSE for details.
+Example tests cover:
+- Trait processing with mock data
+- Job queue management
+- Error handling scenarios
+- Cache behavior
+- Event emission and subscription

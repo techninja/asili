@@ -1,27 +1,49 @@
-# Build stage
-FROM node:22-slim as builder
+FROM node:22-slim
 
-WORKDIR /app
+# Install build dependencies for native modules
+RUN apt-get update && apt-get install -y \
+    python3 \
+    make \
+    g++ \
+    && rm -rf /var/lib/apt/lists/*
 
 # Install pnpm
 RUN npm install -g pnpm
 
-# Copy source
-COPY . .
+# Set working directory
+WORKDIR /app
 
-# Install and build
-RUN pnpm install --no-frozen-lockfile
-RUN cd apps/web && pnpm run bundle
+# Copy workspace files
+COPY pnpm-workspace.yaml ./
+COPY package.json ./
+COPY pnpm-lock.yaml ./
+COPY apps/web/package.json ./apps/web/
+COPY packages/core/package.json ./packages/core/
+
+# Install all dependencies via workspace
+RUN pnpm install --frozen-lockfile
+
+# Copy application files
+COPY apps/web/ ./apps/web/
+COPY packages/core/src ./packages/core/src
+COPY packages/core/package.json ./packages/core/
+COPY settings-generator.js ./
+
+# Build dependencies during Docker build (run from web app directory)
 RUN cd apps/web && pnpm run build
 
-# Production stage
-FROM nginx:alpine
+# Create required directories
+RUN mkdir -p /app/data_out \
+    && mkdir -p /app/server-data
 
-# Copy built webapp with all files
-COPY --from=builder /app/apps/web/dist /usr/share/nginx/html/app
-COPY --from=builder /app/packages /usr/share/nginx/html/packages
+# Set working directory to web app
+WORKDIR /app/apps/web
 
-# Copy nginx config
-COPY cdn/nginx.conf /etc/nginx/conf.d/default.conf
+# Make entrypoint executable
+RUN chmod +x entrypoint.sh
 
+# Expose port
 EXPOSE 80
+
+# Start unified server
+CMD ["sh", "entrypoint.sh"]

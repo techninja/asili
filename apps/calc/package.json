@@ -1,0 +1,25 @@
+{
+  "name": "@asili/calc-server",
+  "version": "1.0.0",
+  "description": "Asili Local Risk Calculation Server",
+  "type": "module",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node --watch server.js",
+    "test": "node test.js"
+  },
+  "dependencies": {
+    "duckdb": "^1.4.3",
+    "ws": "^8.18.3"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "keywords": [
+    "genomics",
+    "risk-calculation",
+    "dna",
+    "polygenic-risk-score"
+  ]
+}
