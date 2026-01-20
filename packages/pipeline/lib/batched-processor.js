@@ -8,7 +8,6 @@ import pgsApiClient from '../pgs-api-client.js';
 import {
   collectPgsMetadata,
   needsUpdate,
-  loadExistingManifest,
   collectSourceHashes,
   countVariantsInFile,
   runDuckDBQuery,
@@ -16,6 +15,7 @@ import {
   prepareFileForProcessing
 } from './processor-core.js';
 import { updateOutputManifest } from './manifest.js';
+import { getAllTraitMetadata } from './manifest-db-check.js';
 import {
   detectFormat,
   generateColumnExpressions,
@@ -26,10 +26,12 @@ import {
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const OUTPUT_DIR = '/output';
 const BATCH_DIR = path.join(OUTPUT_DIR, 'batches');
+const PACKS_DIR = path.join(OUTPUT_DIR, 'packs');
 const gunzipAsync = promisify(gunzip);
 
 // Ensure batch directory exists
 await fs.mkdir(BATCH_DIR, { recursive: true });
+await fs.mkdir(PACKS_DIR, { recursive: true });
 
 async function createBatches(pgsIds, maxVariantsPerBatch = null) {
   console.log(`📦 Analyzing ${pgsIds.length} PGS files for batching...`);
@@ -321,7 +323,7 @@ async function mergeBatchResults(batchFiles, traitName) {
   console.log(`    Merging ${validBatchFiles.length} valid batch files`);
 
   const safeFileName = traitName.replace(':', '_');
-  const finalOutputPath = path.join(OUTPUT_DIR, `${safeFileName}_hg38.parquet`);
+  const finalOutputPath = path.join(PACKS_DIR, `${safeFileName}_hg38.parquet`);
 
   // For large numbers of files, use hierarchical merge to avoid memory issues
   if (validBatchFiles.length > 5) {
@@ -428,17 +430,17 @@ async function directAppend(batchFiles, outputPath, baseName) {
   }
 }
 
-export async function generateTraitPackBatched(traitName, config) {
+export async function generateTraitPackBatched(traitName, config, allMetadataCache = null) {
   const traitTitle = config.title || traitName;
   console.log(
     `🧬 Starting batched processing for ${traitTitle} (${traitName})`
   );
   console.log(`   Target: ${config.pgs_ids.length} PGS files`);
 
-  // First collect metadata like the original pipeline
-  const existingManifest = await loadExistingManifest();
-  const existingMetadata =
-    existingManifest.traits?.[traitName]?.pgs_metadata || {};
+  // Use cached metadata if provided, otherwise fetch for this trait only
+  const mondoId = config.mondo_id || traitName;
+  const existingMetadata = allMetadataCache?.[mondoId] || {};
+  console.log(`    Loaded ${Object.keys(existingMetadata).length} existing PGS metadata entries`);
 
   console.log(
     `  - Checking metadata for ${config.pgs_ids.length} PGS scores...`
@@ -448,6 +450,7 @@ export async function generateTraitPackBatched(traitName, config) {
   );
 
   let pgsMetadata = existingMetadata;
+  let hasNewMetadata = false;
   if (missingMetadataIds.length > 0) {
     console.log(
       `    Found ${missingMetadataIds.length} PGS scores missing metadata`
@@ -457,6 +460,7 @@ export async function generateTraitPackBatched(traitName, config) {
       existingMetadata
     );
     pgsMetadata = { ...existingMetadata, ...newMetadata };
+    hasNewMetadata = true;
 
     // Save metadata immediately to avoid re-collection if merge fails
     await updateOutputManifest({
@@ -476,7 +480,7 @@ export async function generateTraitPackBatched(traitName, config) {
   }
 
   const safeFileName = traitName.replace(':', '_');
-  const finalOutputPath = path.join(OUTPUT_DIR, `${safeFileName}_hg38.parquet`);
+  const finalOutputPath = path.join(PACKS_DIR, `${safeFileName}_hg38.parquet`);
 
   // Check if final output already exists and is up-to-date
   const needsFileUpdate = await needsUpdate(traitName, config);
@@ -488,7 +492,7 @@ export async function generateTraitPackBatched(traitName, config) {
       variant_count: config.expected_variants || 0,
       fileName: `${safeFileName}_hg38.parquet`,
       source_hashes: {},
-      pgs_metadata: pgsMetadata,
+      pgs_metadata: hasNewMetadata ? pgsMetadata : {},
       metadata_only: true
     };
   }

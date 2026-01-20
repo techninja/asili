@@ -5,7 +5,11 @@ import Ajv from 'ajv';
 import addFormats from 'ajv-formats';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
-const OUTPUT_DIR = '/output';
+
+// Use hardcoded paths for Docker environment
+const PATHS = {
+  TRAIT_MANIFEST: '/output/trait_manifest.json'
+};
 
 let manifestSchema = null;
 let ajv = null;
@@ -24,7 +28,7 @@ async function loadSchema() {
 }
 
 export async function loadTraitManifest() {
-  const manifestPath = path.join(OUTPUT_DIR, 'trait_manifest.json');
+  const manifestPath = PATHS.TRAIT_MANIFEST;
 
   try {
     const data = await fs.readFile(manifestPath, 'utf8');
@@ -71,7 +75,7 @@ export async function saveTraitManifest(manifest) {
     );
   }
 
-  const manifestPath = path.join(OUTPUT_DIR, 'trait_manifest.json');
+  const manifestPath = PATHS.TRAIT_MANIFEST;
   const tempPath = manifestPath + '.tmp';
 
   // Atomic write: write to temp file then rename

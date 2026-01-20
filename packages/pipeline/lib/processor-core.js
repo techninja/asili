@@ -7,14 +7,62 @@ import pgsApiClient from '../pgs-api-client.js';
 import { updateOutputManifest } from './manifest.js';
 
 const OUTPUT_DIR = '/output';
+const PATHS = {
+  DATA_OUT: OUTPUT_DIR,
+  TRAIT_MANIFEST: '/output/trait_manifest.json',
+  getTraitFile: (traitId) => `/output/packs/${traitId.replace(/:/g, '_')}_hg38.parquet`
+};
 const gunzipAsync = promisify(gunzip);
 
 // Global metadata cache to avoid duplicate API calls
 const globalMetadataCache = new Map();
 
+// Filter for excluding problematic PGS scores
+const EXCLUDED_PGS_IDS = ['PGS002724']; // GIGASTROKE
+
+const LEGITIMATE_NR_METHODS = [
+  'sparssnp', 'snpnet', 'penalized regression', 'lasso', 'ridge regression',
+  'elastic net', 'ldpred', 'ldpred2', 'prsice', 'lassosum', 'bigstatsr', 'bigsnpr'
+];
+
+const INTEGRATIVE_METHOD_KEYWORDS = [
+  'integrative', 'meta-analysis', 'meta analysis', 'component', 'composite',
+  'combined', 'ensemble', 'multi-trait', 'multitrait', 'cross-trait', 'crosstrait'
+];
+
+export function shouldExcludePGS(pgsId, scoreData) {
+  if (EXCLUDED_PGS_IDS.includes(pgsId)) {
+    return true;
+  }
+  
+  const methodName = (scoreData.method_name || '').toLowerCase();
+  const weightType = scoreData.weight_type || '';
+  
+  for (const keyword of INTEGRATIVE_METHOD_KEYWORDS) {
+    if (methodName.includes(keyword)) {
+      return true;
+    }
+  }
+  
+  if (weightType === 'NR') {
+    for (const legitMethod of LEGITIMATE_NR_METHODS) {
+      if (methodName.includes(legitMethod)) {
+        return false;
+      }
+    }
+    if (!methodName || methodName.trim() === '') {
+      return true;
+    }
+    return false;
+  }
+  
+  return false;
+}
+
 export async function collectPgsMetadata(pgsIds, existingMetadata = {}) {
   const metadata = {};
   const uncachedIds = [];
+  const excludedIds = [];
 
   // Check existing manifest metadata first, then global cache
   for (const pgsId of pgsIds) {
@@ -47,6 +95,14 @@ export async function collectPgsMetadata(pgsIds, existingMetadata = {}) {
 
     try {
       const scoreData = await pgsApiClient.getScore(pgsId);
+      
+      // Check if PGS should be excluded
+      if (shouldExcludePGS(pgsId, scoreData)) {
+        console.log(`      ⚠ Excluding ${pgsId}: Integrative PGS with incompatible weights`);
+        excludedIds.push(pgsId);
+        continue;
+      }
+      
       const pgsMetadata = {
         name: scoreData.name || '',
         trait: scoreData.trait_reported || '',
@@ -84,6 +140,10 @@ export async function collectPgsMetadata(pgsIds, existingMetadata = {}) {
       await new Promise(resolve => setTimeout(resolve, 200));
     }
   }
+  
+  if (excludedIds.length > 0) {
+    console.log(`    Excluded ${excludedIds.length} integrative PGS scores: ${excludedIds.join(', ')}`);
+  }
 
   return metadata;
 }
@@ -93,16 +153,10 @@ export async function needsUpdate(traitName, config) {
 
   // Check if file exists
   const safeFileName = traitName.replace(':', '_');
-  const filePath = path.join(OUTPUT_DIR, `${safeFileName}_hg38.parquet`);
+  const filePath = path.join('/output/packs', `${safeFileName}_hg38.parquet`);
   try {
     const stats = await fs.stat(filePath);
     console.log(`    Output file exists: ${filePath} (${stats.size} bytes)`);
-
-    // Check if file is too small (likely corrupted)
-    if (stats.size < 10000) {
-      console.log(`    File too small (${stats.size} bytes), will regenerate`);
-      return true;
-    }
 
     // Simple parquet integrity check
     try {
@@ -123,7 +177,7 @@ export async function needsUpdate(traitName, config) {
 }
 
 export async function loadExistingManifest() {
-  const manifestPath = path.join(OUTPUT_DIR, 'trait_manifest.json');
+  const manifestPath = PATHS.TRAIT_MANIFEST;
   try {
     const content = await fs.readFile(manifestPath, 'utf8');
     return JSON.parse(content);

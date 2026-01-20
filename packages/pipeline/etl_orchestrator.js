@@ -5,7 +5,9 @@ import path from 'path';
 import { fileURLToPath } from 'url';
 import { loadTraitCatalog, getTraitConfigs } from './lib/catalog.js';
 import { generateTraitPack } from './lib/processor.js';
-import { updateOutputManifest } from './lib/manifest.js';
+import { updateOutputManifest, finalizeManifest } from './lib/manifest.js';
+import { initManifestDB } from './lib/manifest-db.js';
+import { getCompletedTraits, getAllTraitMetadata } from './lib/manifest-db-check.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
@@ -19,18 +21,36 @@ async function main() {
   const errors = [];
 
   try {
+    // Initialize manifest database
+    console.log('🗄️  Initializing manifest database...');
+    await initManifestDB();
+    
     // Load trait catalog
     console.log('📋 Loading trait catalog...');
     const catalog = await loadTraitCatalog();
     const traitConfigs = getTraitConfigs(catalog);
 
-    console.log(
-      `📊 Found ${Object.keys(traitConfigs).length} trait configurations`
-    );
+    // Get already completed traits (have metadata and will be validated during processing)
+    const completedTraits = await getCompletedTraits();
+    console.log(`✓ ${Object.keys(completedTraits).length} traits have complete metadata`);
+    
+    // Load all existing metadata once
+    console.log('📚 Loading all trait metadata...');
+    const allMetadata = await getAllTraitMetadata();
+    console.log(`✓ Loaded metadata for ${Object.keys(allMetadata).length} traits`);
+    
+    // Filter to traits missing metadata
+    const incompleteTraits = Object.entries(traitConfigs).filter(([traitName, config]) => {
+      const expectedCount = config.pgs_ids?.length || 0;
+      const completedCount = completedTraits[traitName] || 0;
+      return !(completedCount > 0 && completedCount === expectedCount);
+    });
+    
+    console.log(`📊 Processing ${incompleteTraits.length} traits (${Object.keys(traitConfigs).length - incompleteTraits.length} complete)`);
     console.log('');
 
-    // Process each trait - sort by variant count (largest first) for better memory management
-    const sortedTraits = Object.entries(traitConfigs).sort(
+    // Process incomplete traits - sort by variant count (largest first)
+    const sortedTraits = incompleteTraits.sort(
       ([, a], [, b]) => (b.expected_variants || 0) - (a.expected_variants || 0)
     );
 
@@ -40,8 +60,13 @@ async function main() {
 
       try {
         console.log(`🔄 Processing: ${displayName}`);
-        const result = await generateTraitPack(traitName, config);
-        await updateOutputManifest({ [traitName]: result });
+        const result = await generateTraitPack(traitName, config, allMetadata);
+        
+        // Only update DB if we actually generated new files or collected new metadata
+        const hasNewData = !result.metadata_only || Object.keys(result.pgs_metadata || {}).length > 0;
+        if (hasNewData) {
+          await updateOutputManifest({ [traitName]: result });
+        }
 
         const traitDuration = Math.round((Date.now() - traitStartTime) / 1000);
 
@@ -84,6 +109,11 @@ async function main() {
     console.log(`📈 Processed: ${processedCount} traits`);
     console.log(`⚠️  Errors: ${errorCount} traits`);
     console.log(`⏱️  Total Duration: ${durationStr}`);
+
+    // Export final manifests
+    console.log('');
+    console.log('📦 Exporting manifests...');
+    await finalizeManifest();
 
     if (errors.length > 0) {
       console.log('');

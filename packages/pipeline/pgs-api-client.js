@@ -220,6 +220,23 @@ class PGSApiClient {
 
     return filePath;
   }
+
+  async getPGSFile(pgsId) {
+    const fileName = `${pgsId}.txt.gz`;
+    const filePath = path.join(PGS_FILES_DIR, fileName);
+    
+    try {
+      await fs.access(filePath);
+      const { execSync } = await import('child_process');
+      return execSync(`zcat ${filePath}`, { encoding: 'utf8', maxBuffer: 50 * 1024 * 1024 });
+    } catch {
+      const scoreData = await this.getScore(pgsId);
+      const downloadUrl = scoreData.ftp_scoring_file;
+      await this.downloadPGSFile(pgsId, downloadUrl);
+      const { execSync } = await import('child_process');
+      return execSync(`zcat ${filePath}`, { encoding: 'utf8', maxBuffer: 50 * 1024 * 1024 });
+    }
+  }
 }
 
 // Singleton instance

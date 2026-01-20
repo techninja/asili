@@ -21,13 +21,15 @@ import {
   createStandardSchema,
   createStandardizedExportQuery,
   validateParquetFile,
-  prepareFileForProcessing
+  prepareFileForProcessing,
+  shouldExcludePGS
 } from './processor-core.js';
 import { updateOutputManifest } from './manifest.js';
 import { detectFormat, generateInsertSQL } from './harmonization.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const OUTPUT_DIR = '/output';
+const PACKS_DIR = path.join(OUTPUT_DIR, 'packs');
 const TEMP_SQL_DIR = path.join(OUTPUT_DIR, 'temp_sql');
 const gunzipAsync = promisify(gunzip);
 
@@ -40,7 +42,7 @@ async function streamProcessWithDuckDB(traitName, config) {
   console.log(`  - ${traitName}: Streaming process with DuckDB...`);
 
   const safeFileName = traitName.replace(':', '_');
-  const outputPath = path.join(OUTPUT_DIR, `${safeFileName}_hg38.parquet`);
+  const outputPath = path.join(PACKS_DIR, `${safeFileName}_hg38.parquet`);
   const dbPath = path.join(OUTPUT_DIR, `${safeFileName}.duckdb`);
   const { execSync } = await import('child_process');
 
@@ -87,11 +89,12 @@ async function streamProcessWithDuckDB(traitName, config) {
   }
 
   if (!resuming) {
-    // Clear and recreate temp SQL directory
+    // Clear and recreate temp SQL directory and ensure packs directory exists
     try {
       await fs.rm(TEMP_SQL_DIR, { recursive: true, force: true });
     } catch {}
     await fs.mkdir(TEMP_SQL_DIR, { recursive: true });
+    await fs.mkdir(PACKS_DIR, { recursive: true });
 
     // Initialize DuckDB with staging schema
     const initSQL = `
@@ -134,6 +137,17 @@ async function streamProcessWithDuckDB(traitName, config) {
 
     // Stream each PGS file directly into DuckDB
     for (const pgsId of config.pgs_ids) {
+      // Check if this PGS should be excluded
+      try {
+        const scoreData = await pgsApiClient.getScore(pgsId);
+        if (shouldExcludePGS(pgsId, scoreData)) {
+          console.log(`        Excluding ${pgsId}: Integrative PGS with incompatible weights`);
+          continue;
+        }
+      } catch (error) {
+        console.log(`        Error checking ${pgsId} metadata: ${error.message}`);
+      }
+      
       // Check if this PGS is already processed
       if (resuming) {
         console.log(`        Checking if ${pgsId} already processed...`);
@@ -348,9 +362,11 @@ async function streamProcessWithDuckDB(traitName, config) {
   }
 }
 
+export { shouldExcludePGS } from './processor-core.js';
+
 import { generateTraitPackBatched } from './batched-processor.js';
 
-export async function generateTraitPack(traitName, config) {
+export async function generateTraitPack(traitName, config, allMetadataCache = null) {
   // Check if we should use batched processing for large datasets
   if (
     config.pgs_ids.length > 10 ||
@@ -359,18 +375,21 @@ export async function generateTraitPack(traitName, config) {
     console.log(
       `  - Using batched processing for ${traitName} (${config.pgs_ids.length} PGS files)`
     );
-    return await generateTraitPackBatched(traitName, config);
+    return await generateTraitPackBatched(traitName, config, allMetadataCache);
   }
 
   // Use original processing for smaller datasets
-  return await generateTraitPackOriginal(traitName, config);
+  return await generateTraitPackOriginal(traitName, config, allMetadataCache);
 }
 
-async function generateTraitPackOriginal(traitName, config) {
-  // Load existing manifest to check for existing metadata
-  const existingManifest = await loadExistingManifest();
-  const existingMetadata =
-    existingManifest.traits?.[traitName]?.pgs_metadata || {};
+async function generateTraitPackOriginal(traitName, config, allMetadataCache = null) {
+  // Use cached metadata if provided, otherwise load from manifest
+  const mondoId = config.mondo_id || traitName;
+  const existingMetadata = allMetadataCache?.[mondoId] || {};
+  if (!allMetadataCache) {
+    const existingManifest = await loadExistingManifest();
+    Object.assign(existingMetadata, existingManifest.traits?.[traitName]?.pgs_metadata || {});
+  }
 
   // Only collect metadata that doesn't exist in manifest
   console.log(
