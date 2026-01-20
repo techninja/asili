@@ -198,9 +198,18 @@ class AsiliCalcServer {
   async handleDNA(req, res, route) {
     if (req.method === 'POST' && route === '/dna/upload') {
       console.log('🧬 DNA upload request received');
-      
-      const body = await this.readBody(req);
-      const data = JSON.parse(body);
+
+      // Use Express parsed body if available, otherwise read manually
+      let data;
+      if (req.body && Object.keys(req.body).length > 0) {
+        console.log('📦 Using Express parsed body');
+        data = req.body;
+      } else {
+        console.log('📖 Reading body manually');
+        const body = await this.readBody(req);
+        data = JSON.parse(body);
+      }
+
       console.log('📊 Parsed data for individual:', data?.individualId);
       
       try {

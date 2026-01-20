@@ -42,9 +42,18 @@ const calcServer = new AsiliCalcServer({
 
 await calcServer.start();
 
+app.post('/dna/upload', async (req, res) => {
+  req.url = '/dna/upload';
+  await calcServer.handleDNA(req, res, '/dna/upload');
+});
 app.post('/calculate/risk', (req, res) => calcServer.handleRequest(req, res));
 app.get('/individuals', (req, res) => calcServer.handleRequest(req, res));
+app.put('/individuals/:id', (req, res) => {
+  req.url = `/individuals/${req.params.id}`;
+  calcServer.handleRequest(req, res);
+});
 app.get('/api/risk-score/:individualId/:traitId', (req, res) => calcServer.handleRequest(req, res));
+app.get('/queue/status', (req, res) => calcServer.handleRequest(req, res));
 app.get('/status', (req, res) => calcServer.handleRequest(req, res));
 app.get('/health', (req, res) => calcServer.handleRequest(req, res));
 
