@@ -29,7 +29,7 @@ export class TraitCard extends HTMLElement {
         }
       });
     }, { rootMargin: '50px' });
-    
+
     observer.observe(this);
   }
 
@@ -41,7 +41,7 @@ export class TraitCard extends HTMLElement {
     this.trait = trait;
     this.individualId = individualId;
     this.dataset.traitId = trait.id;
-    
+
     if (this.shadowRoot?.querySelector('.content')) {
       this.updateDisplay();
     }
@@ -49,21 +49,32 @@ export class TraitCard extends HTMLElement {
 
   async loadCachedResult() {
     if (!this.trait || !this.individualId) return;
-    
+
     // Check if already in store
     const state = useTraitStore.getState().getTraitState(this.trait.id);
-    if (state.cached || state.queueItem || state.loading) return;
-    
-    // Set loading state
-    useTraitStore.getState().setTraitLoading(this.trait.id, true);
-    
-    // Get processor from window (set by risk-dashboard)
+    if (state.cached || state.loading) return;
+
+    // Check queue status first
     const processor = window.__asiliProcessor;
-    if (!processor) {
-      useTraitStore.getState().setTraitLoading(this.trait.id, false);
-      return;
+    if (!processor) return;
+
+    const queueManager = processor.getQueueManager();
+    if (queueManager) {
+      const queue = queueManager.getQueue();
+      const queueItem = queue.find(item =>
+        item.traitId === this.trait.id && item.individualId === this.individualId
+      );
+      if (queueItem) {
+        useTraitStore.getState().setTraitQueue(this.trait.id, queueItem);
+        return;
+      }
     }
-    
+
+    // If not in queue, check cache
+    if (state.queueItem) return;
+
+    useTraitStore.getState().setTraitLoading(this.trait.id, true);
+
     try {
       const cached = await processor.getCachedResult(this.individualId, this.trait.id);
       if (cached) {
@@ -82,7 +93,7 @@ export class TraitCard extends HTMLElement {
       if (pgsItem?.dataset.pgsId) {
         this.selectPgs(pgsItem.dataset.pgsId);
       }
-      
+
       if (e.target.closest('.add-queue-btn')) {
         this.addToQueue();
       }
@@ -104,18 +115,18 @@ export class TraitCard extends HTMLElement {
 
   updateDisplay() {
     if (!this.trait) return;
-    
+
     const content = this.shadowRoot?.querySelector('.content');
     if (!content) return;
-    
+
     const state = useTraitStore.getState().getTraitState(this.trait.id);
-    
+
     content.innerHTML = `
       <div class="trait-header">
         <h3>${this.trait.name}</h3>
         <span class="category">${this.trait.categories?.[0] || 'Other'}</span>
       </div>
-      ${this.trait.description ? 
+      ${this.trait.description ?
         `<div class="description">${this.trait.description}</div>` : ''}
       <div class="stats">${Object.keys(this.trait.pgs_metadata || {}).length} PGS | ${this.trait.variant_count?.toLocaleString() || '?'} variants</div>
       ${this.renderContent(state)}
@@ -126,19 +137,19 @@ export class TraitCard extends HTMLElement {
     if (state.selectedPgsId && state.cached) {
       return `<pgs-breakdown trait-id="${this.trait.id}" pgs-id="${state.selectedPgsId}"></pgs-breakdown>`;
     }
-    
+
     if (state.cached) {
       return this.renderResults(state.cached);
     }
-    
+
     if (state.queueItem) {
       return this.renderQueue(state.queueItem);
     }
-    
+
     if (state.loading) {
       return '<div class="loading-state">⏳ Checking cache...</div>';
     }
-    
+
     return '<button class="add-queue-btn">Add to Queue</button>';
   }
 
@@ -146,7 +157,7 @@ export class TraitCard extends HTMLElement {
     const score = cached.riskScore;
     const percentile = this.scoreToPercentile(score);
     const level = percentile >= 70 ? 'high' : percentile <= 30 ? 'low' : 'medium';
-    
+
     return `
       <div class="results">
         <div class="score">${this.formatScore(score)}</div>
@@ -180,24 +191,25 @@ export class TraitCard extends HTMLElement {
 
   renderPgsList(pgsBreakdown, pgsDetails) {
     if (!pgsBreakdown) return '';
-    
+
     const entries = Object.entries(pgsBreakdown)
       .filter(([_, data]) => Math.abs(data.positiveSum + data.negativeSum) >= 0.005)
       .sort(([_, a], [__, b]) => Math.abs(b.positiveSum + b.negativeSum) - Math.abs(a.positiveSum + a.negativeSum));
-    
+
     return `
       <div class="pgs-list">
         ${entries.map(([pgsId, data]) => {
-          const score = data.positiveSum + data.negativeSum;
-          const name = pgsDetails[pgsId]?.metadata?.name || pgsId;
-          const absPositive = Math.abs(data.positiveSum);
-          const absNegative = Math.abs(data.negativeSum);
-          const total = absPositive + absNegative;
-          const negPct = total > 0 ? (absNegative / total) * 100 : 0;
-          const posPct = total > 0 ? (absPositive / total) * 100 : 0;
-          const scoreColor = score >= 0 ? '#721c24' : '#155724';
-          
-          return `<div class="pgs-item" data-pgs-id="${pgsId}">
+      const score = data.positiveSum + data.negativeSum;
+      // Fallback to trait metadata if pgsDetails is missing
+      const name = pgsDetails?.[pgsId]?.metadata?.name || this.trait?.pgs_metadata?.[pgsId]?.name || pgsId;
+      const absPositive = Math.abs(data.positiveSum);
+      const absNegative = Math.abs(data.negativeSum);
+      const total = absPositive + absNegative;
+      const negPct = total > 0 ? (absNegative / total) * 100 : 0;
+      const posPct = total > 0 ? (absPositive / total) * 100 : 0;
+      const scoreColor = score >= 0 ? '#721c24' : '#155724';
+
+      return `<div class="pgs-item" data-pgs-id="${pgsId}">
             <div style="display: flex; justify-content: space-between; align-items: center; padding: 5px;">
               <span>${name}</span>
               <span class="score" style="color: ${scoreColor}">${this.formatScore(score)}</span>
@@ -207,7 +219,7 @@ export class TraitCard extends HTMLElement {
               <div style="background: #f8d7da !important; height: 100%; width: ${posPct}%; float: left;" title="${data.positive} variants: ${this.formatScore(data.positiveSum)}"></div>
             </div>
           </div>`;
-        }).join('')}
+    }).join('')}
       </div>
     `;
   }
@@ -215,25 +227,25 @@ export class TraitCard extends HTMLElement {
   selectPgs(pgsId) {
     const state = useTraitStore.getState().getTraitState(this.trait.id);
     if (!state.cached?.pgsBreakdown) return;
-    
+
     // Use same sorting as renderPgsList
     const sortedPgsIds = Object.entries(state.cached.pgsBreakdown)
       .filter(([_, data]) => Math.abs(data.positiveSum + data.negativeSum) >= 0.005)
       .sort(([_, a], [__, b]) => Math.abs(b.positiveSum + b.negativeSum) - Math.abs(a.positiveSum + a.negativeSum))
       .map(([pgsId]) => pgsId);
-    
+
     const navigation = {
       pgsIds: sortedPgsIds,
       currentIndex: sortedPgsIds.indexOf(pgsId)
     };
-    
+
     useTraitStore.getState().setSelectedPgs(this.trait.id, pgsId, navigation);
   }
 
   addToQueue() {
     const state = useTraitStore.getState().getTraitState(this.trait.id);
     if (state.loading) return; // Don't add to queue while checking cache
-    
+
     this.dispatchEvent(new CustomEvent('add-to-queue', {
       detail: { traitId: this.trait.id, individualId: this.individualId },
       bubbles: true,

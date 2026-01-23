@@ -156,8 +156,8 @@ export class StreamingProcessor {
  * Now uses SharedRiskCalculator for consistent logic
  */
 export class PGSAggregator extends SharedRiskCalculator {
-  constructor() {
-    super();
+  constructor(normalizationParams = {}) {
+    super(normalizationParams);
   }
 
   // Alias method for backward compatibility

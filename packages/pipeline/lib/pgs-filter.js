@@ -1,8 +1,6 @@
 // Unified PGS filtering logic for Asili
 // Used during trait management to validate PGS scores before adding to catalog
 
-const EXCLUDED_PGS_IDS = ['PGS002724']; // GIGASTROKE
-
 const LEGITIMATE_NR_METHODS = [
   'sparssnp', 'snpnet', 'penalized regression', 'lasso', 'ridge regression',
   'elastic net', 'ldpred', 'ldpred2', 'prsice', 'lassosum', 'bigstatsr', 'bigsnpr'
@@ -10,7 +8,8 @@ const LEGITIMATE_NR_METHODS = [
 
 const INTEGRATIVE_METHOD_KEYWORDS = [
   'integrative', 'meta-analysis', 'meta analysis', 'component', 'composite',
-  'combined', 'ensemble', 'multi-trait', 'multitrait', 'cross-trait', 'crosstrait'
+  'combined', 'ensemble', 'multi-trait', 'multitrait', 'cross-trait', 'crosstrait',
+  'linear weight combination', 'weighted combination'
 ];
 
 const WEIGHT_THRESHOLDS = {
@@ -42,7 +41,7 @@ async function validateWeights(pgsId, pgsApiClient) {
     
     // Check for suspiciously uniform weights (all nearly identical)
     if (variance < WEIGHT_THRESHOLDS.min_variance && Math.abs(mean) > 10) {
-      return { valid: false, reason: `Suspicious uniform weights: mean=${mean.toFixed(2)}, variance=${variance.toFixed(6)}` };
+      return { valid: false, reason: `Suspicious uniform weights (likely meta-score): mean=${mean.toFixed(2)}, variance=${variance.toExponential(2)}` };
     }
     
     return { valid: true };
@@ -52,15 +51,12 @@ async function validateWeights(pgsId, pgsApiClient) {
 }
 
 async function shouldExcludePGS(pgsId, scoreData, pgsApiClient = null) {
-  if (EXCLUDED_PGS_IDS.includes(pgsId)) {
-    return { exclude: true, reason: 'Known integrative PGS' };
-  }
-  
   const methodName = (scoreData.method_name || '').toLowerCase();
+  const methodParams = (scoreData.method_params || '').toLowerCase();
   const weightType = scoreData.weight_type || '';
   
   for (const keyword of INTEGRATIVE_METHOD_KEYWORDS) {
-    if (methodName.includes(keyword)) {
+    if (methodName.includes(keyword) || methodParams.includes(keyword)) {
       return { exclude: true, reason: `Integrative method: ${keyword}` };
     }
   }
@@ -88,4 +84,4 @@ async function shouldExcludePGS(pgsId, scoreData, pgsApiClient = null) {
   return { exclude: false, reason: 'Standard PGS score' };
 }
 
-export { shouldExcludePGS, EXCLUDED_PGS_IDS, LEGITIMATE_NR_METHODS, INTEGRATIVE_METHOD_KEYWORDS };
+export { shouldExcludePGS, LEGITIMATE_NR_METHODS, INTEGRATIVE_METHOD_KEYWORDS };

@@ -239,6 +239,19 @@ export class UnifiedProcessor {
 
       Debug.log(2, 'UnifiedProcessor', `Using trait data source: ${traitSource}`);
 
+      // Extract normalization parameters from pgs_ids
+      const normalizationParams = {};
+      if (trait.pgs_ids) {
+        trait.pgs_ids.forEach(pgs => {
+          if (typeof pgs === 'object' && pgs.id) {
+            normalizationParams[pgs.id] = {
+              norm_mean: pgs.norm_mean || 0,
+              norm_sd: pgs.norm_sd || null
+            };
+          }
+        });
+      }
+
       // Calculate risk using genomic processor
       const result = await this.genomicProcessor.calculateRisk(
         traitSource,
@@ -247,7 +260,8 @@ export class UnifiedProcessor {
           Debug.log(3, 'UnifiedProcessor', `Risk calculation progress: ${message} (${percent}%)`);
           progressCallback?.(message, percent);
         },
-        trait.pgs_metadata
+        trait.pgs_metadata,
+        normalizationParams
       );
 
       Debug.log(1, 'UnifiedProcessor', `Risk calculation complete. Score: ${result.riskScore}`);

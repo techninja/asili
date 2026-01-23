@@ -6,9 +6,10 @@
 import { Debug } from '../utils/debug.js';
 
 export class SharedRiskCalculator {
-  constructor() {
+  constructor(normalizationParams = {}) {
     this.pgsBreakdown = new Map();
     this.pgsDetails = new Map();
+    this.normalizationParams = normalizationParams; // { pgsId: { norm_mean, norm_sd } }
     this.totalMatches = 0;
     this.totalScore = 0;
   }
@@ -158,6 +159,22 @@ export class SharedRiskCalculator {
    * Finalize results and return formatted output
    */
   finalize() {
+    // Apply normalization to each PGS score before summing
+    let normalizedTotal = 0;
+    
+    for (const [pgsId, details] of this.pgsDetails.entries()) {
+      const params = this.normalizationParams[pgsId];
+      if (params && params.norm_sd && params.norm_sd > 0) {
+        // Apply z-score normalization: z = (raw - mean) / sd
+        details.normalized_score = (details.score - params.norm_mean) / params.norm_sd;
+        normalizedTotal += details.normalized_score;
+      } else {
+        // No normalization needed
+        details.normalized_score = details.score;
+        normalizedTotal += details.score;
+      }
+    }
+    
     // Sort top variants for each PGS by effect weight magnitude
     for (const details of this.pgsDetails.values()) {
       if (details.topVariants) {
@@ -168,7 +185,8 @@ export class SharedRiskCalculator {
     }
 
     return {
-      riskScore: this.totalScore,
+      riskScore: normalizedTotal, // Use normalized total
+      rawScore: this.totalScore, // Keep raw score for reference
       totalMatches: this.totalMatches,
       pgsBreakdown: Object.fromEntries(this.pgsBreakdown),
       pgsDetails: Object.fromEntries(this.pgsDetails),

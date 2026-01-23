@@ -129,7 +129,7 @@ export class ServerGenomicProcessor extends GenomicProcessor {
     };
   }
 
-  async calculateRisk(traitUrl, userDNA, progressCallback, pgsMetadata = {}) {
+  async calculateRisk(traitUrl, userDNA, progressCallback, pgsMetadata = {}, normalizationParams = {}) {
     Debug.log(1, 'ServerGenomicProcessor', `Starting risk calculation with ${userDNA.length} variants`);
     
     await this.initialize();
@@ -210,7 +210,7 @@ export class ServerGenomicProcessor extends GenomicProcessor {
       progressCallback?.('Merging results...', 90);
       
       // Merge results from all workers
-      const merged = this._mergeResults(results);
+      const merged = this._mergeResults(results, normalizationParams);
       
       // Log final performance stats
       const stats = perfMonitor.getStats();
@@ -248,8 +248,8 @@ export class ServerGenomicProcessor extends GenomicProcessor {
     });
   }
 
-  _mergeResults(results) {
-    const calculator = new SharedRiskCalculator();
+  _mergeResults(results, normalizationParams = {}) {
+    const calculator = new SharedRiskCalculator(normalizationParams);
     
     for (const result of results) {
       if (result.error) throw new Error(result.error);

@@ -7,6 +7,7 @@ import Ajv from 'ajv';
 import addFormats from 'ajv-formats';
 import pgsApiClient from './pgs-api-client.js';
 import { shouldExcludePGS } from './lib/pgs-filter.js';
+import { calculateWeightStats } from './lib/weight-stats.js';
 
 function generateCanonicalURI(traitId) {
   if (traitId.startsWith('MONDO:')) {
@@ -436,28 +437,43 @@ async function refreshTraitData() {
     // Validate existing PGS IDs and calculate unique variant count
     let totalVariants = 0;
     let uniqueVariants = 0;
-    const variantSet = new Set();
+    const pgsWithNorm = [];
+    const seenIds = new Set();
 
     for (const pgsId of trait.pgs_ids) {
+      const id = typeof pgsId === 'string' ? pgsId : pgsId.id;
+      
+      // Skip duplicates
+      if (seenIds.has(id)) {
+        console.log(chalk.yellow(`  ⚠ ${id}: Duplicate, skipping`));
+        continue;
+      }
+      seenIds.add(id);
+      
       try {
-        const data = await pgsApiClient.getScore(pgsId);
+        const data = await pgsApiClient.getScore(id);
         if (data.variants_number) {
           totalVariants += data.variants_number;
-
-          // For unique count estimation, we'd need to actually process the files
-          // For now, use a rough estimate based on typical overlap patterns
-          const estimatedUnique = Math.floor(data.variants_number * 0.7); // Assume 30% overlap
+          const estimatedUnique = Math.floor(data.variants_number * 0.7);
           uniqueVariants += estimatedUnique;
         }
-        console.log(
-          chalk.green(
-            `  ✓ ${pgsId}: ${data.variants_number?.toLocaleString()} variants`
-          )
-        );
+        
+        // Calculate normalization parameters
+        const stats = await calculateWeightStats(id, pgsApiClient);
+        if (stats && stats.sd > 0 && (Math.abs(stats.min) > 1.0 || Math.abs(stats.max) > 1.0)) {
+          pgsWithNorm.push({ id, norm_mean: stats.mean, norm_sd: stats.sd });
+          console.log(chalk.yellow(`  ✓ ${id}: ${data.variants_number?.toLocaleString()} variants (needs normalization)`));
+        } else {
+          pgsWithNorm.push(id);
+          console.log(chalk.green(`  ✓ ${id}: ${data.variants_number?.toLocaleString()} variants`));
+        }
       } catch (error) {
-        console.log(chalk.yellow(`  ⚠ ${pgsId}: ${error.message}`));
+        pgsWithNorm.push(id);
+        console.log(chalk.yellow(`  ⚠ ${id}: ${error.message}`));
       }
     }
+    
+    trait.pgs_ids = pgsWithNorm;
 
     console.log(
       chalk.blue(
@@ -678,13 +694,21 @@ async function processSingleTrait(input, catalog) {
   // Calculate variant counts with improved filtering
   let totalVariants = 0;
   let uniqueVariants = 0;
-  const filteredPgsIds = [];
+  const pgsWithNorm = [];
   const excludedPgsIds = [];
   const excludedPgsDetails = [];
+  const seenIds = new Set();
 
   if (pgsIds.length > 0) {
     console.log(chalk.blue('Filtering and calculating variant counts...'));
     for (const pgsId of pgsIds) {
+      // Skip duplicates
+      if (seenIds.has(pgsId)) {
+        console.log(chalk.yellow(`  ⚠ ${pgsId}: Duplicate, skipping`));
+        continue;
+      }
+      seenIds.add(pgsId);
+      
       try {
         const data = await pgsApiClient.getScore(pgsId);
         const filterResult = await shouldExcludePGS(pgsId, data, pgsApiClient);
@@ -701,20 +725,24 @@ async function processSingleTrait(input, catalog) {
           continue;
         }
         
-        filteredPgsIds.push(pgsId);
         if (data.variants_number) {
           totalVariants += data.variants_number;
           const estimatedUnique = Math.floor(data.variants_number * 0.7);
           uniqueVariants += estimatedUnique;
         }
-        console.log(
-          chalk.green(
-            `  ✓ ${pgsId}: ${data.variants_number?.toLocaleString()} variants`
-          )
-        );
+        
+        // Calculate normalization parameters
+        const stats = await calculateWeightStats(pgsId, pgsApiClient);
+        if (stats && stats.sd > 0 && (Math.abs(stats.min) > 1.0 || Math.abs(stats.max) > 1.0)) {
+          pgsWithNorm.push({ id: pgsId, norm_mean: stats.mean, norm_sd: stats.sd });
+          console.log(chalk.yellow(`  ✓ ${pgsId}: ${data.variants_number?.toLocaleString()} variants (needs normalization)`));
+        } else {
+          pgsWithNorm.push(pgsId);
+          console.log(chalk.green(`  ✓ ${pgsId}: ${data.variants_number?.toLocaleString()} variants`));
+        }
       } catch (error) {
         console.log(chalk.yellow(`  ⚠ ${pgsId}: ${error.message}`));
-        filteredPgsIds.push(pgsId);
+        pgsWithNorm.push(pgsId);
       }
     }
     
@@ -730,7 +758,7 @@ async function processSingleTrait(input, catalog) {
   }
 
   // Don't add traits with no valid PGS scores
-  if (filteredPgsIds.length === 0) {
+  if (pgsWithNorm.length === 0) {
     console.log(chalk.red(`❌ Trait has no valid PGS scores after filtering - not adding to catalog`));
     if (excludedPgsIds.length > 0) {
       console.log(chalk.yellow(`   All ${excludedPgsIds.length} PGS scores were integrative/meta`));
@@ -741,7 +769,7 @@ async function processSingleTrait(input, catalog) {
   const traitData = {
     title: selectedTrait.title,
     mondo_id: canonicalId,
-    pgs_ids: filteredPgsIds, // Use filtered PGS IDs
+    pgs_ids: pgsWithNorm,
     last_updated: new Date().toISOString(),
     expected_variants: totalVariants,
     estimated_unique_variants: uniqueVariants
@@ -771,7 +799,7 @@ async function processSingleTrait(input, catalog) {
   );
   console.log(
     chalk.blue(
-      `   ${filteredPgsIds.length} PGS scores (${excludedPgsIds.length} excluded), ${totalVariants.toLocaleString()} total variants`
+      `   ${pgsWithNorm.length} PGS scores (${excludedPgsIds.length} excluded), ${totalVariants.toLocaleString()} total variants`
     )
   );
 }

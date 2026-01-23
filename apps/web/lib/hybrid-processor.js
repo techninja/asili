@@ -66,13 +66,19 @@ export class HybridProcessor {
         }
       }
       
-      // Sync new result to IndexedDB in background
+      // Sync new result to IndexedDB and update trait store immediately
       if (this.localProcessor?.unifiedProcessor?.storage && data.success) {
         this.localProcessor.unifiedProcessor.storage.storeRiskScore(
           data.individualId,
           data.traitId,
           data.data
-        ).catch(err => Debug.log(1, 'HybridProcessor', 'Failed to sync result to IndexedDB:', err));
+        ).then(() => {
+          // Import trait store and update immediately with the result
+          import('./trait-store.js').then(({ useTraitStore }) => {
+            useTraitStore.getState().setTraitCache(data.traitId, data.data);
+            Debug.log(2, 'HybridProcessor', `Updated trait store for ${data.traitId}`);
+          });
+        }).catch(err => Debug.log(1, 'HybridProcessor', 'Failed to sync result to IndexedDB:', err));
       }
     });
 
@@ -197,6 +203,7 @@ export class HybridProcessor {
         if (response.ok) {
           const cached = await response.json();
           Debug.log(3, 'HybridProcessor', `Got ${traitId} from API`);
+          Debug.log(3, 'HybridProcessor', `API result has pgsDetails: ${!!cached.pgsDetails}, keys: ${cached.pgsDetails ? Object.keys(cached.pgsDetails).length : 0}`);
           
           // Store in IndexedDB for next time
           const storage = this.localProcessor.unifiedProcessor?.storage;

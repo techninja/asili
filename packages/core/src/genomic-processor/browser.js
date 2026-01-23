@@ -131,7 +131,7 @@ export class BrowserGenomicProcessor extends GenomicProcessor {
     };
   }
 
-  async calculateRisk(traitUrl, userDNA, progressCallback, pgsMetadata = {}) {
+  async calculateRisk(traitUrl, userDNA, progressCallback, pgsMetadata = {}, normalizationParams = {}) {
     Debug.log(
       1,
       'BrowserGenomicProcessor',
@@ -178,7 +178,7 @@ export class BrowserGenomicProcessor extends GenomicProcessor {
     );
 
     // Initialize aggregator
-    const aggregator = new PGSAggregator();
+    const aggregator = new PGSAggregator(normalizationParams);
 
     // Process parquet file in streaming chunks
     const processedRows = await streamProcessor.processParquetStream(

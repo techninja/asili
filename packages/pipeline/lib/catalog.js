@@ -14,11 +14,18 @@ export function getTraitConfigs(catalog) {
   const configs = {};
 
   for (const [mondoId, trait] of Object.entries(catalog.traits)) {
-    // Use the key as the authoritative MONDO ID
+    // Normalize PGS IDs to objects with normalization params
+    const normalizedPgs = trait.pgs_ids.map(pgs => {
+      if (typeof pgs === 'string') {
+        return { id: pgs, norm_mean: null, norm_sd: null };
+      }
+      return pgs;
+    });
+    
     configs[mondoId] = {
-      pgs_ids: trait.pgs_ids,
+      pgs_ids: normalizedPgs,
       name: trait.title,
-      mondo_id: mondoId, // Use key, not trait.mondo_id
+      mondo_id: mondoId,
       expected_variants: trait.expected_variants,
       description: trait.description || '',
       weight: 1.0

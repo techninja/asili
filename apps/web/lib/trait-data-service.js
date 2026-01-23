@@ -39,6 +39,15 @@ export class TraitDataService {
 
   // Update trait cache data
   async updateTraitCache(traitId, individualId) {
+    // Check if cache was already set (e.g., from WebSocket result)
+    const currentState = useTraitStore.getState().getTraitState(traitId);
+    if (currentState.cached) {
+      Debug.log(3, 'TraitDataService', `Cache already loaded for ${traitId}, skipping fetch`);
+      // Clear queue status since we have the result
+      useTraitStore.getState().setTraitQueue(traitId, null);
+      return;
+    }
+    
     const cached = await this.processor?.getCachedResult(individualId, traitId);
     if (cached) {
       Debug.log(3, 'TraitDataService', `Cache found for ${traitId}`);

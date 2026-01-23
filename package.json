@@ -11,6 +11,7 @@
   },
   "scripts": {
     "traits": "node packages/pipeline/manage-traits.js",
+    "checkpgs": "node scripts/check-pgs.js",
     "etl": "docker compose run --rm pipeline pnpm run etl",
     "start": "docker compose up -d",
     "calc-server": "node apps/calc/server.js",
