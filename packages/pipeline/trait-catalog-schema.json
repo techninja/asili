@@ -40,30 +40,22 @@
         "pgs_ids": {
           "type": "array",
           "items": {
-            "oneOf": [
-              {
+            "type": "object",
+            "required": ["id"],
+            "properties": {
+              "id": {
                 "type": "string",
                 "pattern": "^PGS[0-9]{6}$"
               },
-              {
-                "type": "object",
-                "required": ["id"],
-                "properties": {
-                  "id": {
-                    "type": "string",
-                    "pattern": "^PGS[0-9]{6}$"
-                  },
-                  "norm_mean": {
-                    "type": "number"
-                  },
-                  "norm_sd": {
-                    "type": "number",
-                    "exclusiveMinimum": 0
-                  }
-                },
-                "additionalProperties": false
+              "norm_mean": {
+                "type": "number"
+              },
+              "norm_sd": {
+                "type": "number",
+                "exclusiveMinimum": 0
               }
-            ]
+            },
+            "additionalProperties": false
           },
           "uniqueItems": true
         },

@@ -102,8 +102,24 @@
         "pgs_ids": {
           "type": "array",
           "items": {
-            "type": "string"
-          }
+            "type": "object",
+            "required": ["id"],
+            "properties": {
+              "id": {
+                "type": "string",
+                "pattern": "^PGS[0-9]{6}$"
+              },
+              "norm_mean": {
+                "type": "number"
+              },
+              "norm_sd": {
+                "type": "number",
+                "exclusiveMinimum": 0
+              }
+            },
+            "additionalProperties": false
+          },
+          "uniqueItems": true
         },
         "mondo_id": {
           "type": "string"

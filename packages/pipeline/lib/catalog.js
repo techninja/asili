@@ -14,16 +14,25 @@ export function getTraitConfigs(catalog) {
   const configs = {};
 
   for (const [mondoId, trait] of Object.entries(catalog.traits)) {
-    // Normalize PGS IDs to objects with normalization params
-    const normalizedPgs = trait.pgs_ids.map(pgs => {
-      if (typeof pgs === 'string') {
-        return { id: pgs, norm_mean: null, norm_sd: null };
+    // Extract PGS IDs (handle both string and object formats)
+    const pgsIds = trait.pgs_ids.map(pgs => 
+      typeof pgs === 'string' ? pgs : pgs.id
+    );
+    
+    // Build normalization params map
+    const normalizationParams = {};
+    trait.pgs_ids.forEach(pgs => {
+      if (typeof pgs === 'object' && pgs.id) {
+        normalizationParams[pgs.id] = {
+          norm_mean: pgs.norm_mean || 0,
+          norm_sd: pgs.norm_sd || null
+        };
       }
-      return pgs;
     });
     
     configs[mondoId] = {
-      pgs_ids: normalizedPgs,
+      pgs_ids: pgsIds,
+      normalization_params: normalizationParams,
       name: trait.title,
       mondo_id: mondoId,
       expected_variants: trait.expected_variants,

@@ -385,6 +385,8 @@ async function refreshTraitData() {
     const excludedPgsIds = [];
     const excludedPgsDetails = [];
     
+    console.log(chalk.gray(`  Filtering ${allPgsIds.length} PGS scores...`));
+    
     for (const pgsId of allPgsIds) {
       try {
         const scoreData = await pgsApiClient.getScore(pgsId);
@@ -419,39 +421,20 @@ async function refreshTraitData() {
       continue;
     }
 
-    // Compare with existing IDs
-    const existingIds = new Set(trait.pgs_ids);
-    const newIds = filteredPgsIds.filter(id => !existingIds.has(id));
+    console.log(chalk.gray(`  Processing ${filteredPgsIds.length} PGS scores...`));
 
-    if (newIds.length > 0) {
-      console.log(chalk.blue(`  Found ${newIds.length} additional PGS scores`));
-      trait.pgs_ids = [...trait.pgs_ids, ...newIds];
-    } else if (filteredPgsIds.length > 0) {
-      console.log(
-        chalk.blue(`  Confirmed ${filteredPgsIds.length} existing PGS scores`)
-      );
-      // Update the list to match what the API returns (in case some were removed)
-      trait.pgs_ids = filteredPgsIds;
-    }
-
-    // Validate existing PGS IDs and calculate unique variant count
+    // Process filtered PGS IDs with normalization
     let totalVariants = 0;
     let uniqueVariants = 0;
     const pgsWithNorm = [];
     const seenIds = new Set();
 
-    for (const pgsId of trait.pgs_ids) {
-      const id = typeof pgsId === 'string' ? pgsId : pgsId.id;
-      
-      // Skip duplicates
-      if (seenIds.has(id)) {
-        console.log(chalk.yellow(`  ⚠ ${id}: Duplicate, skipping`));
-        continue;
-      }
-      seenIds.add(id);
+    for (const pgsId of filteredPgsIds) {
+      if (seenIds.has(pgsId)) continue;
+      seenIds.add(pgsId);
       
       try {
-        const data = await pgsApiClient.getScore(id);
+        const data = await pgsApiClient.getScore(pgsId);
         if (data.variants_number) {
           totalVariants += data.variants_number;
           const estimatedUnique = Math.floor(data.variants_number * 0.7);
@@ -459,17 +442,17 @@ async function refreshTraitData() {
         }
         
         // Calculate normalization parameters
-        const stats = await calculateWeightStats(id, pgsApiClient);
-        if (stats && stats.sd > 0 && (Math.abs(stats.min) > 1.0 || Math.abs(stats.max) > 1.0)) {
-          pgsWithNorm.push({ id, norm_mean: stats.mean, norm_sd: stats.sd });
-          console.log(chalk.yellow(`  ✓ ${id}: ${data.variants_number?.toLocaleString()} variants (needs normalization)`));
+        const stats = await calculateWeightStats(pgsId, pgsApiClient);
+        if (stats && stats.sd > 0) {
+          pgsWithNorm.push({ id: pgsId, norm_mean: stats.mean, norm_sd: stats.sd });
+          console.log(chalk.green(`  ✓ ${pgsId}: ${data.variants_number?.toLocaleString()} variants`));
         } else {
-          pgsWithNorm.push(id);
-          console.log(chalk.green(`  ✓ ${id}: ${data.variants_number?.toLocaleString()} variants`));
+          pgsWithNorm.push({ id: pgsId });
+          console.log(chalk.green(`  ✓ ${pgsId}: ${data.variants_number?.toLocaleString()} variants`));
         }
       } catch (error) {
-        pgsWithNorm.push(id);
-        console.log(chalk.yellow(`  ⚠ ${id}: ${error.message}`));
+        pgsWithNorm.push({ id: pgsId });
+        console.log(chalk.yellow(`  ⚠ ${pgsId}: ${error.message}`));
       }
     }
     
@@ -733,16 +716,16 @@ async function processSingleTrait(input, catalog) {
         
         // Calculate normalization parameters
         const stats = await calculateWeightStats(pgsId, pgsApiClient);
-        if (stats && stats.sd > 0 && (Math.abs(stats.min) > 1.0 || Math.abs(stats.max) > 1.0)) {
+        if (stats && stats.sd > 0) {
           pgsWithNorm.push({ id: pgsId, norm_mean: stats.mean, norm_sd: stats.sd });
-          console.log(chalk.yellow(`  ✓ ${pgsId}: ${data.variants_number?.toLocaleString()} variants (needs normalization)`));
+          console.log(chalk.green(`  ✓ ${pgsId}: ${data.variants_number?.toLocaleString()} variants`));
         } else {
-          pgsWithNorm.push(pgsId);
+          pgsWithNorm.push({ id: pgsId });
           console.log(chalk.green(`  ✓ ${pgsId}: ${data.variants_number?.toLocaleString()} variants`));
         }
       } catch (error) {
         console.log(chalk.yellow(`  ⚠ ${pgsId}: ${error.message}`));
-        pgsWithNorm.push(pgsId);
+        pgsWithNorm.push({ id: pgsId });
       }
     }
     

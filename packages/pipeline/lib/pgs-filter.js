@@ -20,12 +20,44 @@ const WEIGHT_THRESHOLDS = {
 async function validateWeights(pgsId, pgsApiClient) {
   try {
     const fileContent = await pgsApiClient.getPGSFile(pgsId);
-    const lines = fileContent.split('\n').filter(l => l && !l.startsWith('#'));
-    if (lines.length < 2) return { valid: true };
     
-    const weights = lines.slice(1, Math.min(1001, lines.length))
-      .map(l => parseFloat(l.split('\t')[5]))
-      .filter(w => !isNaN(w));
+    // Find header and weight column
+    let weightColIdx = -1;
+    let pos = 0;
+    
+    while (pos < fileContent.length) {
+      const nextNewline = fileContent.indexOf('\n', pos);
+      if (nextNewline === -1) break;
+      
+      const line = fileContent.slice(pos, nextNewline);
+      pos = nextNewline + 1;
+      
+      if (line.startsWith('#')) continue;
+      
+      const cols = line.split('\t');
+      weightColIdx = cols.findIndex(c => c === 'effect_weight' || c === 'weight');
+      if (weightColIdx === -1) return { valid: true };
+      break;
+    }
+    
+    // Sample up to 1000 weights
+    const weights = [];
+    let count = 0;
+    
+    while (pos < fileContent.length && weights.length < 1000) {
+      const nextNewline = fileContent.indexOf('\n', pos);
+      if (nextNewline === -1) break;
+      
+      const line = fileContent.slice(pos, nextNewline);
+      pos = nextNewline + 1;
+      
+      if (!line) continue;
+      
+      const weight = parseFloat(line.split('\t')[weightColIdx]);
+      if (!isNaN(weight)) {
+        weights.push(weight);
+      }
+    }
     
     if (weights.length === 0) return { valid: true };
     
@@ -40,8 +72,8 @@ async function validateWeights(pgsId, pgsApiClient) {
     }
     
     // Check for suspiciously uniform weights (all nearly identical)
-    if (variance < WEIGHT_THRESHOLDS.min_variance && Math.abs(mean) > 10) {
-      return { valid: false, reason: `Suspicious uniform weights (likely meta-score): mean=${mean.toFixed(2)}, variance=${variance.toExponential(2)}` };
+    if (variance < WEIGHT_THRESHOLDS.min_variance) {
+      return { valid: false, reason: `Zero variance weights (all identical): mean=${mean.toFixed(2)}` };
     }
     
     return { valid: true };
