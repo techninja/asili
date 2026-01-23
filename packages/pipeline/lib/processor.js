@@ -282,7 +282,7 @@ async function streamProcessWithDuckDB(traitName, config) {
 
     // Export to final parquet with ZSTD compression
     console.log('    Enforcing standard schema...');
-    const exportSQL = createStandardizedExportQuery('pgs_staging', outputPath);
+    const exportSQL = createStandardizedExportQuery('pgs_staging', outputPath, config.normalization_params);
 
     const exportFile = path.join(OUTPUT_DIR, 'export.sql');
     await fs.writeFile(exportFile, exportSQL);

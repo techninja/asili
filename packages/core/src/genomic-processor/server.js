@@ -170,7 +170,8 @@ export class ServerGenomicProcessor extends GenomicProcessor {
               userDNA,
               offset: i * chunkSize,
               limit: chunkSize,
-              pgsMetadata
+              pgsMetadata,
+              normalizationParams
             }
           });
           

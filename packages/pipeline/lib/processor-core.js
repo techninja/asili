@@ -313,7 +313,8 @@ export function createStandardSchema() {
     `;
 }
 
-export function createStandardizedExportQuery(tableName, outputPath) {
+export function createStandardizedExportQuery(tableName, outputPath, normalizationParams = {}) {
+  // Keep raw weights - normalization will be applied to final sum
   return `
         CREATE OR REPLACE TABLE ${tableName}_standardized AS
         SELECT 

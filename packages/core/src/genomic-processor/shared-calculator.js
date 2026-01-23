@@ -9,9 +9,9 @@ export class SharedRiskCalculator {
   constructor(normalizationParams = {}) {
     this.pgsBreakdown = new Map();
     this.pgsDetails = new Map();
-    this.normalizationParams = normalizationParams; // { pgsId: { norm_mean, norm_sd } }
     this.totalMatches = 0;
     this.totalScore = 0;
+    this.normalizationParams = normalizationParams;
   }
 
   /**
@@ -121,7 +121,9 @@ export class SharedRiskCalculator {
         rsid: variantRow.variant_id,
         effect_allele: variantRow.effect_allele,
         effect_weight: effectWeight,
-        userGenotype: `${variant.allele1}${variant.allele2}`
+        userGenotype: `${variant.allele1}${variant.allele2}`,
+        chromosome: variant.chromosome,
+        contribution: contribution
       });
       
       return true;
@@ -159,24 +161,26 @@ export class SharedRiskCalculator {
    * Finalize results and return formatted output
    */
   finalize() {
-    // Apply normalization to each PGS score
-    let normalizedTotal = 0;
-    let normalizedCount = 0;
-    let rawTotal = 0;
+    // Calculate per-PGS normalized scores
+    const normalizedPgsScores = new Map();
     
     for (const [pgsId, details] of this.pgsDetails.entries()) {
+      const rawScore = details.score;
       const params = this.normalizationParams[pgsId];
+      
+      // Apply normalization if parameters exist
       if (params && params.norm_sd && params.norm_sd > 0) {
-        // Apply z-score normalization: z = (raw - mean) / sd
-        details.normalized_score = (details.score - params.norm_mean) / params.norm_sd;
-        normalizedTotal += details.normalized_score;
-        normalizedCount++;
+        const zScore = (rawScore - params.norm_mean) / params.norm_sd;
+        normalizedPgsScores.set(pgsId, zScore);
+        details.normalizedScore = zScore;
       } else {
-        // No normalization params - keep raw score but don't add to normalized total
-        details.normalized_score = null;
+        normalizedPgsScores.set(pgsId, rawScore);
+        details.normalizedScore = rawScore;
       }
-      rawTotal += details.score;
     }
+    
+    // Total risk score is sum of normalized PGS scores
+    const totalScore = Array.from(normalizedPgsScores.values()).reduce((sum, score) => sum + score, 0);
     
     // Sort top variants for each PGS by effect weight magnitude
     for (const details of this.pgsDetails.values()) {
@@ -186,15 +190,9 @@ export class SharedRiskCalculator {
         );
       }
     }
-
-    // Use normalized total if we have normalization params, otherwise use raw total
-    const finalScore = normalizedCount > 0 ? normalizedTotal : rawTotal;
     
     return {
-      riskScore: finalScore,
-      rawScore: rawTotal,
-      normalizedScore: normalizedCount > 0 ? normalizedTotal : null,
-      normalizedCount,
+      riskScore: totalScore,
       totalMatches: this.totalMatches,
       pgsBreakdown: Object.fromEntries(this.pgsBreakdown),
       pgsDetails: Object.fromEntries(this.pgsDetails),

@@ -7,7 +7,7 @@ import { parentPort, workerData } from 'worker_threads';
 import { SharedRiskCalculator } from './shared-calculator.js';
 import duckdb from 'duckdb';
 
-const { traitUrl, userDNA, offset, limit, pgsMetadata } = workerData;
+const { traitUrl, userDNA, offset, limit, pgsMetadata, normalizationParams } = workerData;
 
 const db = new duckdb.Database(':memory:');
 const conn = db.connect();
@@ -26,7 +26,7 @@ await new Promise((resolve, reject) => {
   });
 });
 
-const calculator = new SharedRiskCalculator();
+const calculator = new SharedRiskCalculator(normalizationParams || {});
 const dnaLookup = calculator.createDNALookup(userDNA);
 
 // Stream processing with 100k batch size
