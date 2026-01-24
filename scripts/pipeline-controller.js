@@ -77,7 +77,7 @@ function buildCommand(mode, options) {
 
   // Adjust paths for host execution
   if (options.onHost) {
-    cmd = cmd.replace(/\/output/g, './data_out');
+    cmd = cmd.replace(/\/output/g, '../../data_out');
   }
 
   // Add options to command
