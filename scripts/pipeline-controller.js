@@ -33,13 +33,14 @@ function printUsage() {
     }
   }
   console.log('\nOptions:');
+  console.log('  --on-host            Run directly on host (faster for Linux)');
   console.log('  --traits <id1,id2>   Only process specific trait IDs');
   console.log('  --populations <pop>  Compute for specific populations (ALL,EUR,AFR,EAS,SAS,AMR)');
   console.log('\nExamples:');
   console.log('  pnpm pipeline etl');
-  console.log('  pnpm pipeline empirical-setup');
+  console.log('  pnpm pipeline empirical-setup --on-host');
   console.log('  pnpm pipeline empirical --traits EFO_0005106,MONDO_0005010');
-  console.log('  pnpm pipeline empirical --populations EUR,AFR');
+  console.log('  pnpm pipeline empirical --populations EUR,AFR --on-host');
 }
 
 function parseArgs() {
@@ -58,7 +59,9 @@ function parseArgs() {
 
   const options = {};
   for (let i = 1; i < args.length; i++) {
-    if (args[i] === '--traits' && args[i + 1]) {
+    if (args[i] === '--on-host') {
+      options.onHost = true;
+    } else if (args[i] === '--traits' && args[i + 1]) {
       options.traits = args[++i].split(',');
     } else if (args[i] === '--populations' && args[i + 1]) {
       options.populations = args[++i].split(',');
@@ -68,9 +71,14 @@ function parseArgs() {
   return { mode, options };
 }
 
-function buildDockerCommand(mode, options) {
+function buildCommand(mode, options) {
   const config = MODES[mode];
   let cmd = config.cmd;
+
+  // Adjust paths for host execution
+  if (options.onHost) {
+    cmd = cmd.replace(/\/output/g, './data_out');
+  }
 
   // Add options to command
   if (options.traits) {
@@ -80,28 +88,28 @@ function buildDockerCommand(mode, options) {
     cmd += ` --populations ${options.populations.join(',')}`;
   }
 
-  // Build docker compose command - no extra volume mount needed
-  const dockerCmd = [
-    'docker', 'compose', 'run', '--rm',
-    'pipeline',
-    'sh', '-c', cmd
-  ];
+  if (options.onHost) {
+    return ['sh', '-c', cmd];
+  }
 
-  return dockerCmd;
+  return ['docker', 'compose', 'run', '--rm', 'pipeline', 'sh', '-c', cmd];
 }
 
 function runPipeline(mode, options) {
   console.log(`🚀 Starting pipeline mode: ${mode}`);
+  if (options.onHost) {
+    console.log('   Running on host system (not in Docker)');
+  }
   if (Object.keys(options).length > 0) {
     console.log(`   Options: ${JSON.stringify(options)}`);
   }
   console.log('');
 
-  const dockerCmd = buildDockerCommand(mode, options);
+  const cmd = buildCommand(mode, options);
   
-  const proc = spawn(dockerCmd[0], dockerCmd.slice(1), {
+  const proc = spawn(cmd[0], cmd.slice(1), {
     stdio: 'inherit',
-    cwd: process.cwd()
+    cwd: options.onHost ? './packages/pipeline' : process.cwd()
   });
 
   proc.on('exit', (code) => {
