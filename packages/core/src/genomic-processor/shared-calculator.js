@@ -159,28 +159,16 @@ export class SharedRiskCalculator {
 
   /**
    * Finalize results and return formatted output
+   * Note: Returns raw PGS score sums, not z-scores
+   * Normalization params in catalog are weight statistics, not score statistics
    */
   finalize() {
-    // Calculate per-PGS normalized scores
-    const normalizedPgsScores = new Map();
+    let totalScore = 0;
     
     for (const [pgsId, details] of this.pgsDetails.entries()) {
-      const rawScore = details.score;
-      const params = this.normalizationParams[pgsId];
-      
-      // Apply normalization if parameters exist
-      if (params && params.norm_sd && params.norm_sd > 0) {
-        const zScore = (rawScore - params.norm_mean) / params.norm_sd;
-        normalizedPgsScores.set(pgsId, zScore);
-        details.normalizedScore = zScore;
-      } else {
-        normalizedPgsScores.set(pgsId, rawScore);
-        details.normalizedScore = rawScore;
-      }
+      totalScore += details.score;
+      details.normalizedScore = details.score;
     }
-    
-    // Total risk score is sum of normalized PGS scores
-    const totalScore = Array.from(normalizedPgsScores.values()).reduce((sum, score) => sum + score, 0);
     
     // Sort top variants for each PGS by effect weight magnitude
     for (const details of this.pgsDetails.values()) {
@@ -198,6 +186,38 @@ export class SharedRiskCalculator {
       pgsDetails: Object.fromEntries(this.pgsDetails),
       calculatedAt: new Date().toISOString()
     };
+  }
+
+  /**
+   * Calculate z-score from raw score using empirical distribution
+   */
+  static calculateZScore(rawScore, empiricalStats) {
+    if (!empiricalStats || !empiricalStats.mean || !empiricalStats.sd) return null;
+    return (rawScore - empiricalStats.mean) / empiricalStats.sd;
+  }
+
+  /**
+   * Calculate percentile from z-score using normal CDF approximation
+   */
+  static calculatePercentile(zScore) {
+    if (zScore === null || zScore === undefined) return null;
+    
+    // Approximation of error function for normal CDF
+    const erf = (x) => {
+      const sign = x >= 0 ? 1 : -1;
+      x = Math.abs(x);
+      const a1 = 0.254829592;
+      const a2 = -0.284496736;
+      const a3 = 1.421413741;
+      const a4 = -1.453152027;
+      const a5 = 1.061405429;
+      const p = 0.3275911;
+      const t = 1.0 / (1.0 + p * x);
+      const y = 1.0 - (((((a5 * t + a4) * t) + a3) * t + a2) * t + a1) * t * Math.exp(-x * x);
+      return sign * y;
+    };
+    
+    return 0.5 * (1 + erf(zScore / Math.sqrt(2))) * 100;
   }
 
   /**

@@ -6,37 +6,23 @@ const OUTPUT_DIR = '/output';
 const MANIFEST_DB = path.join(OUTPUT_DIR, 'manifest.duckdb');
 
 export async function initManifestDB() {
-  const sql = `
-    CREATE TABLE IF NOT EXISTS traits (
-      mondo_id VARCHAR PRIMARY KEY,
-      name VARCHAR NOT NULL,
-      description VARCHAR,
-      categories VARCHAR NOT NULL,
-      variant_count BIGINT,
-      file_path VARCHAR,
-      pgs_ids VARCHAR,
-      pgs_metadata VARCHAR,
-      source_hashes VARCHAR,
-      last_updated VARCHAR,
-      actual_variants BIGINT,
-      file_size_mb DOUBLE,
-      last_processed VARCHAR,
-      expected_variants BIGINT,
-      weight DOUBLE,
-      last_validated VARCHAR,
-      canonical_uri VARCHAR,
-      excluded_pgs VARCHAR
-    );
-  `;
+  // Run migrations
+  const migrationsDir = path.join(path.dirname(new URL(import.meta.url).pathname), '../migrations');
+  const migrations = (await fs.readdir(migrationsDir))
+    .filter(f => f.endsWith('.sql'))
+    .sort();
   
-  const sqlFile = path.join(OUTPUT_DIR, 'init_manifest.sql');
-  await fs.writeFile(sqlFile, sql);
-  execSync(`duckdb ${MANIFEST_DB} < ${sqlFile}`, { cwd: OUTPUT_DIR, stdio: 'pipe' });
-  await fs.unlink(sqlFile);
+  for (const migration of migrations) {
+    const migrationPath = path.join(migrationsDir, migration);
+    const sql = await fs.readFile(migrationPath, 'utf-8');
+    const tempFile = path.join(OUTPUT_DIR, `migration_${migration}`);
+    await fs.writeFile(tempFile, sql);
+    execSync(`duckdb ${MANIFEST_DB} < ${tempFile}`, { cwd: OUTPUT_DIR, stdio: 'pipe' });
+    await fs.unlink(tempFile);
+  }
 }
 
 export async function upsertTrait(mondoId, traitData) {
-  console.log(`  📝 Writing ${mondoId} to manifest DB`);
   const sql = `
     INSERT OR REPLACE INTO traits VALUES (
       '${mondoId}',
@@ -56,14 +42,12 @@ export async function upsertTrait(mondoId, traitData) {
       ${traitData.weight || 1.0},
       ${traitData.last_validated ? `'${traitData.last_validated}'` : 'NULL'},
       ${traitData.canonical_uri ? `'${traitData.canonical_uri}'` : 'NULL'},
-      '${JSON.stringify(traitData.excluded_pgs || []).replace(/'/g, "''")}'
+      '${JSON.stringify(traitData.excluded_pgs || []).replace(/'/g, "''")}',
+      ${traitData.empirical_stats ? `'${JSON.stringify(traitData.empirical_stats).replace(/'/g, "''")}'` : 'NULL'}
     );
   `;
   
-  const sqlFile = path.join(OUTPUT_DIR, `upsert_${mondoId.replace(':', '_')}.sql`);
-  await fs.writeFile(sqlFile, sql);
-  execSync(`duckdb ${MANIFEST_DB} < ${sqlFile}`, { cwd: OUTPUT_DIR, stdio: 'pipe' });
-  await fs.unlink(sqlFile);
+  execSync(`duckdb ${MANIFEST_DB} "${sql.replace(/"/g, '\\"')}"`, { cwd: OUTPUT_DIR, stdio: 'pipe' });
 }
 
 export async function exportManifests() {
@@ -84,7 +68,7 @@ export async function exportManifests() {
   const traits = {};
   
   for (const row of rows) {
-    traits[row.mondo_id] = {
+    const traitData = {
       name: row.name,
       description: row.description,
       categories: JSON.parse(row.categories),
@@ -104,6 +88,13 @@ export async function exportManifests() {
       canonical_uri: row.canonical_uri,
       excluded_pgs: JSON.parse(row.excluded_pgs)
     };
+    
+    // Add empirical stats if available
+    if (row.empirical_stats) {
+      traitData.empirical_stats = JSON.parse(row.empirical_stats);
+    }
+    
+    traits[row.mondo_id] = traitData;
   }
   
   const manifest = {

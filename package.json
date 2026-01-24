@@ -13,6 +13,7 @@
     "traits": "node packages/pipeline/manage-traits.js",
     "checkpgs": "node scripts/check-pgs.js",
     "etl": "docker compose run --rm pipeline pnpm run etl",
+    "pipeline": "node scripts/pipeline-controller.js",
     "start": "docker compose up -d",
     "calc-server": "node apps/calc/server.js",
     "build:calc-server": "docker build -f apps/calc/Dockerfile -t asili-calc-server .",

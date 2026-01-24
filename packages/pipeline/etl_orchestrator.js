@@ -62,21 +62,15 @@ async function main() {
         console.log(`🔄 Processing: ${displayName}`);
         const result = await generateTraitPack(traitName, config, allMetadata);
         
-        // Only update DB if we actually generated new files or collected new metadata
-        const hasNewData = !result.metadata_only || Object.keys(result.pgs_metadata || {}).length > 0;
-        if (hasNewData) {
+        // Only update DB if we actually generated new files (not just metadata check)
+        if (!result.metadata_only) {
           await updateOutputManifest({ [traitName]: result });
-        }
-
-        const traitDuration = Math.round((Date.now() - traitStartTime) / 1000);
-
-        if (result.metadata_only) {
           console.log(
-            `   ✅ Updated metadata for ${displayName} (${traitDuration}s)`
+            `   ✅ Generated ${displayName} (${result.variant_count} variants, ${Math.round((Date.now() - traitStartTime) / 1000)}s)`
           );
         } else {
           console.log(
-            `   ✅ Generated ${displayName} (${result.variant_count} variants, ${traitDuration}s)`
+            `   ✅ Skipped ${displayName} - up to date (${Math.round((Date.now() - traitStartTime) / 1000)}s)`
           );
         }
 

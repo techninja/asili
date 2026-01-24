@@ -14,8 +14,8 @@ services:
   # The Data Pipeline (ETL)
   pipeline:
     build:
-      context: ./packages/pipeline
-      dockerfile: Dockerfile
+      context: .
+      dockerfile: ./packages/pipeline/Dockerfile
     deploy:
       resources:
         limits:
@@ -23,7 +23,9 @@ services:
         reservations:
           memory: 8G
     volumes:
-      - ./packages/pipeline:/app
-      - /app/node_modules
+      - ./packages/pipeline:/app/packages/pipeline
+      - ./packages/core:/app/packages/core
+      - /app/packages/pipeline/node_modules
+      - /app/packages/core/node_modules
       - ./data_out:/output
       - ./cache:/cache
