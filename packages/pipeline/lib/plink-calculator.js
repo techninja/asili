@@ -32,7 +32,7 @@ export async function calculatePGSWithPlink(plinkDir, traitParquet, sampleMetada
     
     try {
       execSync(
-        `plink2 --bfile ${plinkPrefix} --score ${scoreFile} 1 2 3 --out ${outPrefix}`,
+        `plink2 --bfile ${plinkPrefix} --score ${scoreFile} 1 2 3 --out ${outPrefix} --allow-no-variants`,
         { stdio: 'pipe' }
       );
       
