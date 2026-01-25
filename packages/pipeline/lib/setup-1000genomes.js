@@ -75,9 +75,12 @@ console.log(`Total size: ${totalSize}`);
 console.log(`Downloaded chromosomes: ${chrCount}\n`);
 
 // Convert to PLINK2 binary format
-const bedPath = join(genomesDir, 'chr1.bed');
-if (!existsSync(bedPath)) {
-  console.log('=== Converting VCF to PLINK2 binary format ===');
+const chromosomes = [...Array(22).keys()].map(i => String(i + 1)).concat(['X']);
+const missingChrs = chromosomes.filter(chr => !existsSync(join(genomesDir, `chr${chr}.bed`)));
+
+if (missingChrs.length > 0) {
+  console.log(`=== Converting VCF to PLINK2 binary format ===`);
+  console.log(`Missing chromosomes: ${missingChrs.join(', ')}`);
   console.log('This is a one-time preprocessing step...\n');
   
   const vcfToPlink = spawn('node', [join(__dirname, 'vcf-to-plink.js'), vcfDir, genomesDir], {
@@ -91,7 +94,7 @@ if (!existsSync(bedPath)) {
     });
   });
 } else {
-  console.log(`PLINK binary files already exist: ${genomesDir}/chr*.bed`);
+  console.log(`All PLINK binary files exist: ${genomesDir}/chr*.bed`);
 }
 
 console.log('\n=== Setup Complete ===');
