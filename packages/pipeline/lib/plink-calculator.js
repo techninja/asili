@@ -32,12 +32,15 @@ export async function calculatePGSWithPlink(plinkDir, traitParquet, sampleMetada
     
     try {
       execSync(
-        `plink2 --bfile ${plinkPrefix} --score ${scoreFile} 1 2 3 --out ${outPrefix} --allow-no-variants`,
+        `plink2 --bfile ${plinkPrefix} --score ${scoreFile} 1 2 3 --out ${outPrefix}`,
         { stdio: 'pipe' }
       );
       
       // Read and accumulate scores
-      const results = readFileSync(`${outPrefix}.sscore`, 'utf-8').split('\n');
+      const sscore = `${outPrefix}.sscore`;
+      if (!existsSync(sscore)) continue;
+      
+      const results = readFileSync(sscore, 'utf-8').split('\n');
       
       for (let i = 1; i < results.length; i++) {
         const line = results[i].trim();
@@ -54,7 +57,8 @@ export async function calculatePGSWithPlink(plinkDir, traitParquet, sampleMetada
       
       execSync(`rm -f ${outPrefix}.*`);
     } catch (err) {
-      console.log(`  Warning: chr${chr} failed: ${err.message}`);
+      // Skip chromosomes with no matching variants
+      continue;
     }
   }
   

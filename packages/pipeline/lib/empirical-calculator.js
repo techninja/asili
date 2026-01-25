@@ -212,7 +212,7 @@ export class EmpiricalCalculator {
 
       // Calculate statistics for each population
       results[trait.trait_id] = {
-        pgs_ids: trait.pgs_ids.map(p => p.id),
+        pgs_ids: Array.isArray(trait.pgs_ids) ? trait.pgs_ids.map(p => p.id) : [],
         populations: {}
       };
 
