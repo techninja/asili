@@ -74,24 +74,24 @@ console.log(`Data location: ${genomesDir}`);
 console.log(`Total size: ${totalSize}`);
 console.log(`Downloaded chromosomes: ${chrCount}\n`);
 
-// Convert to DuckDB
-const dbPath = join(genomesDir, 'genotypes.duckdb');
-if (!existsSync(dbPath)) {
-  console.log('=== Converting VCF to DuckDB ===');
+// Convert to PLINK2 binary format
+const bedPath = join(genomesDir, 'chr1.bed');
+if (!existsSync(bedPath)) {
+  console.log('=== Converting VCF to PLINK2 binary format ===');
   console.log('This is a one-time preprocessing step...\n');
   
-  const vcfToDuckdb = spawn('node', [join(__dirname, 'vcf-to-duckdb.js'), vcfDir, genomesDir], {
+  const vcfToPlink = spawn('node', [join(__dirname, 'vcf-to-plink.js'), vcfDir, genomesDir], {
     stdio: 'inherit'
   });
   
   await new Promise((resolve, reject) => {
-    vcfToDuckdb.on('close', (code) => {
+    vcfToPlink.on('close', (code) => {
       if (code === 0) resolve();
       else reject(new Error(`VCF conversion failed with code ${code}`));
     });
   });
 } else {
-  console.log(`Genotypes database already exists: ${dbPath}`);
+  console.log(`PLINK binary files already exist: ${genomesDir}/chr*.bed`);
 }
 
 console.log('\n=== Setup Complete ===');
