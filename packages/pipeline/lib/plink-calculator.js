@@ -12,7 +12,13 @@ export async function calculatePGSWithPlink(plinkDir, traitParquet, sampleMetada
   console.log('  Converting trait weights to Plink score format...');
   
   const scoreFile = `/tmp/score_${Date.now()}.txt`;
-  execSync(`duckdb -c "COPY (SELECT variant_id, effect_allele, effect_weight FROM '${traitParquet}') TO '${scoreFile}' (FORMAT CSV, DELIMITER ' ', HEADER false)"`);
+  
+  try {
+    execSync(`duckdb -c "COPY (SELECT variant_id, effect_allele, effect_weight FROM '${traitParquet}') TO '${scoreFile}' (FORMAT CSV, DELIMITER ' ', HEADER false)"`);
+  } catch (err) {
+    console.log('  Error: Corrupted or invalid parquet file, skipping...');
+    return { ALL: [] };
+  }
   
   console.log('  Running Plink --score across all chromosomes...');
   
@@ -32,7 +38,7 @@ export async function calculatePGSWithPlink(plinkDir, traitParquet, sampleMetada
     
     try {
       execSync(
-        `plink2 --bfile ${plinkPrefix} --score ${scoreFile} 1 2 3 --out ${outPrefix}`,
+        `plink2 --bfile ${plinkPrefix} --score ${scoreFile} 1 2 3 --out ${outPrefix} --threads ${process.env.PLINK_THREADS || 'max'}`,
         { stdio: 'pipe' }
       );
       
@@ -65,6 +71,11 @@ export async function calculatePGSWithPlink(plinkDir, traitParquet, sampleMetada
   execSync(`rm -f ${scoreFile}`);
   
   console.log(`  ✓ Calculated scores for ${sampleScores.size} samples`);
+  
+  if (sampleScores.size === 0) {
+    console.log('  Warning: No matching variants found in 1000 Genomes data');
+    return { ALL: [] };
+  }
   
   // Group by population
   const scoresByPop = { ALL: [] };

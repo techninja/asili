@@ -211,6 +211,11 @@ export class EmpiricalCalculator {
       const scoresByPop = await calculatePGSWithPlink(this.genomes1000Dir, traitFile, samples);
 
       // Calculate statistics for each population
+      if (Object.keys(scoresByPop).length === 0 || scoresByPop.ALL.length === 0) {
+        console.log(`  Skipping - no valid scores calculated`);
+        continue;
+      }
+      
       results[trait.trait_id] = {
         pgs_ids: Array.isArray(trait.pgs_ids) ? trait.pgs_ids.map(p => p.id) : [],
         populations: {}
