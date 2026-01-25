@@ -35,7 +35,7 @@ for (let chrIdx = 0; chrIdx < chromosomes.length; chrIdx++) {
   
   try {
     execSync(
-      `plink2 --vcf ${vcfPath} --make-bed --out ${outPrefix} --max-alleles 2 --snps-only`,
+      `plink2 --vcf ${vcfPath} --make-bed --out ${outPrefix} --max-alleles 2 --snps-only --set-missing-var-ids '@:#:\$r:\$a'`,
       { stdio: 'inherit' }
     );
     console.log(`  ✓ Created ${outPrefix}.bed/.bim/.fam`);
