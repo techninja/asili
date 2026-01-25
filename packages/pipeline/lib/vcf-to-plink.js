@@ -33,9 +33,12 @@ for (let chrIdx = 0; chrIdx < chromosomes.length; chrIdx++) {
   
   const outPrefix = join(outputDir, `chr${chr}`);
   
+  // ChrX needs special handling for sex chromosomes
+  const extraFlags = chr === 'X' ? '--allow-extra-chr 0' : '';
+  
   try {
     execSync(
-      `plink2 --vcf ${vcfPath} --make-bed --out ${outPrefix} --max-alleles 2 --snps-only --set-missing-var-ids '@:#:\$r:\$a'`,
+      `plink2 --vcf ${vcfPath} --make-bed --out ${outPrefix} --max-alleles 2 --snps-only --set-missing-var-ids '@:#:\$r:\$a' ${extraFlags}`,
       { stdio: 'inherit' }
     );
     console.log(`  ✓ Created ${outPrefix}.bed/.bim/.fam`);
