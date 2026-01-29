@@ -269,6 +269,7 @@ export class UnifiedProcessor {
       // Format and cache result
       const riskData = {
         riskScore: result.riskScore,
+        zScore: result.zScore,
         pgsBreakdown: result.pgsBreakdown,
         pgsDetails: result.pgsDetails,
         matchedVariants: result.totalMatches || 0,
@@ -423,33 +424,16 @@ export class UnifiedProcessor {
   }
 
   async getCachedResult(individualId, traitId) {
-    console.log(`💾 UnifiedProcessor.getCachedResult called: ${individualId}, ${traitId}`);
-    
     if (this.cacheManager) {
       try {
-        console.log(`💾 Trying cache manager first`);
         const result = await this.cacheManager.getCachedResult(individualId, traitId);
-        if (result) {
-          console.log(`💾 Cache manager returned result`);
-          return result;
-        }
+        if (result) return result;
       } catch (error) {
         Debug.log(2, 'UnifiedProcessor', 'DuckDB cache failed, falling back to storage:', error.message);
-        console.log(`⚠️ Cache manager error:`, error.message);
       }
     }
     
-    // Fallback to storage manager
-    console.log(`💾 Falling back to storage manager`);
-    try {
-      const result = await this.storage.getCachedRiskScore(individualId, traitId);
-      console.log(`💾 Storage manager result:`, result ? 'Found' : 'Not found');
-      return result;
-    } catch (error) {
-      console.log(`⚠️ Storage manager error:`, error.message);
-      console.log(`⚠️ Storage manager error stack:`, error.stack);
-      throw error;
-    }
+    return await this.storage.getCachedRiskScore(individualId, traitId);
   }
 
   // Utility methods

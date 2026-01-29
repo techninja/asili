@@ -1,5 +1,6 @@
 import { useTraitStore } from '../lib/trait-store.js';
 import { useAppStore } from '../lib/store.js';
+import './chromosome-coverage.js';
 
 export class PGSBreakdown extends HTMLElement {
   constructor() {
@@ -119,8 +120,35 @@ export class PGSBreakdown extends HTMLElement {
       <div class="calculation-summary">
         <div>• ${pgsBreakdown.positive} variants increase risk (+${pgsBreakdown.positiveSum.toFixed(4)})</div>
         <div>• ${pgsBreakdown.negative} variants decrease risk (${pgsBreakdown.negativeSum.toFixed(4)})</div>
-        <div>• Each variant contributes: weight × effect allele count</div>
-        <div><strong>Net contribution: ${score >= 0 ? '+' : ''}${score.toFixed(4)}</strong></div>
+        <div><strong>Raw Score: ${score >= 0 ? '+' : ''}${score.toFixed(4)}</strong></div>
+        ${pgsData.zScore !== null && pgsData.zScore !== undefined ? (() => {
+          const hasValidMetadata = pgsData.metadata?.mean !== 0 || pgsData.metadata?.std !== 1;
+          let actualMean, actualStd;
+          
+          if (hasValidMetadata && Math.abs(((score - pgsData.metadata.mean) / pgsData.metadata.std) - pgsData.zScore) < 0.01) {
+            actualMean = pgsData.metadata.mean;
+            actualStd = pgsData.metadata.std;
+          } else {
+            actualMean = score - (pgsData.zScore * (pgsData.metadata?.std || 1));
+            actualStd = pgsData.metadata?.std || 1;
+          }
+          
+          const isIncompatible = Math.abs(actualMean / actualStd) > 15;
+          
+          return `
+          <div style="margin-top: 10px; padding-top: 10px; border-top: 1px solid #eee;">
+            <div><strong>PGS Metadata:</strong></div>
+            <div>• Method: ${pgsData.metadata?.method || 'N/A'}</div>
+            <div>• Weight type: ${pgsData.metadata?.weight_type || 'N/A'}</div>
+            <div style="margin-top: 8px;"><strong>Z-Score Calculation:</strong></div>
+            <div>• Population mean: ${actualMean.toFixed(4)}${!hasValidMetadata ? ' (derived)' : ''}</div>
+            <div>• Population std dev: ${actualStd.toFixed(4)}${actualStd === 1 ? ' (standardized)' : ''}</div>
+            <div>• Formula: (raw score - mean) / std dev</div>
+            <div>• (${score.toFixed(4)} - ${actualMean.toFixed(4)}) / ${actualStd.toFixed(4)} = ${pgsData.zScore.toFixed(3)}</div>
+            <div><strong>Z-Score: ${pgsData.zScore >= 0 ? '+' : ''}${pgsData.zScore.toFixed(3)}σ</strong></div>
+          </div>
+          `;
+        })() : ''}
       </div>
       
       <div class="score-distribution">
@@ -138,48 +166,91 @@ export class PGSBreakdown extends HTMLElement {
             <span>Weight</span>
             <span>Count</span>
           </div>
-          ${(pgsData.topVariants || []).slice(0, 10).map(variant => {
-            const variantId = variant.rsid || 'Unknown';
-            let displayId, linkUrl, linkTitle;
-            if (variantId.startsWith('rs')) {
-              displayId = variantId;
-              linkUrl = `https://www.ncbi.nlm.nih.gov/snp/${variantId}`;
-              linkTitle = `See more about ${variantId} on NCBI dbSNP`;
-            } else if (variantId.includes(':')) {
-              const parts = variantId.split(':');
-              displayId = parts.length >= 3 ? `chr${parts[0]}:${parts[1]}` : variantId;
-              const pos = parseInt(parts[1]);
-              const start = Math.max(1, pos - 5000);
-              const end = pos + 5000;
-              linkUrl = `https://genome.ucsc.edu/cgi-bin/hgTracks?db=hg19&position=chr${parts[0]}:${start}-${end}`;
-              linkTitle = `See more about ${displayId} on UCSC Genome Browser`;
-            } else {
-              displayId = variantId;
-              linkUrl = null;
-              linkTitle = null;
-            }
-            return `
-            <div class="table-row">
-              <span class="variant-id">${linkUrl ? `<a href="${linkUrl}" target="_blank" title="${linkTitle}">${displayId}</a>` : displayId}</span>
-              <span class="genotype">${variant.userGenotype || 'N/A'}</span>
-              <span class="effect-allele">${variant.effect_allele}</span>
-              <span class="weight ${variant.effect_weight >= 0 ? 'positive' : 'negative'}">${variant.effect_weight >= 0 ? '+' : ''}${variant.effect_weight.toFixed(6)}</span>
-              <span class="contribution" title="${(() => {
-                const genotype = variant.userGenotype || 'N/A';
-                const effectAlleleCount = genotype === 'N/A' ? 0 : genotype.split('').filter(allele => allele === variant.effect_allele).length;
-                return effectAlleleCount === 2 ? 'Homozygous (e.g. TT, CC) = 2× weight' : effectAlleleCount === 1 ? 'Heterozygous (e.g. AT, CG) = 1× weight' : 'No effect alleles = 0× weight';
-              })()}">×${(() => {
-                const genotype = variant.userGenotype || 'N/A';
-                return genotype === 'N/A' ? 0 : genotype.split('').filter(allele => allele === variant.effect_allele).length;
-              })()}</span>
-            </div>
-          `}).join('')}
+          ${(() => {
+            const topVariants = (pgsData.topVariants || []).slice(0, 20);
+            let cumulative = 0;
+            const waterfall = topVariants.map(v => {
+              const genotype = v.userGenotype || 'N/A';
+              const effectAlleleCount = genotype === 'N/A' ? 0 : genotype.split('').filter(allele => allele === v.effect_allele).length;
+              const contribution = v.effect_weight * effectAlleleCount;
+              const start = cumulative;
+              cumulative += contribution;
+              return { ...v, start, end: cumulative, contribution, genotype, effectAlleleCount };
+            });
+            
+            const maxAbs = Math.max(...waterfall.map(v => Math.abs(v.end)), 0.01);
+            const centerPercent = 50;
+            
+            return waterfall.map(variant => {
+              const variantId = variant.rsid || 'Unknown';
+              let displayId, linkUrl, linkTitle;
+              if (variantId.startsWith('rs')) {
+                displayId = variantId;
+                linkUrl = `https://www.ncbi.nlm.nih.gov/snp/${variantId}`;
+                linkTitle = `See more about ${variantId} on NCBI dbSNP`;
+              } else if (variantId.includes(':')) {
+                const parts = variantId.split(':');
+                displayId = parts.length >= 3 ? `chr${parts[0]}:${parts[1]}` : variantId;
+                const pos = parseInt(parts[1]);
+                const start = Math.max(1, pos - 5000);
+                const end = pos + 5000;
+                linkUrl = `https://genome.ucsc.edu/cgi-bin/hgTracks?db=hg19&position=chr${parts[0]}:${start}-${end}`;
+                linkTitle = `See more about ${displayId} on UCSC Genome Browser`;
+              } else {
+                displayId = variantId;
+                linkUrl = null;
+                linkTitle = null;
+              }
+              
+              const barStartPercent = centerPercent + (Math.min(variant.start, variant.end) / maxAbs) * 40;
+              const barWidthPercent = (Math.abs(variant.contribution) / maxAbs) * 40;
+              const barColor = variant.contribution >= 0 ? 'rgba(220, 53, 69, 0.3)' : 'rgba(21, 87, 36, 0.3)';
+              
+              return `
+              <div class="table-row">
+                <div class="waterfall-bar" style="left: ${barStartPercent}%; width: ${barWidthPercent}%; background: ${barColor};"></div>
+                <span class="variant-id">${linkUrl ? `<a href="${linkUrl}" target="_blank" title="${linkTitle}">${displayId}</a>` : displayId}</span>
+                <span class="genotype">${variant.genotype}</span>
+                <span class="effect-allele">${variant.effect_allele}</span>
+                <span class="weight ${variant.effect_weight >= 0 ? 'positive' : 'negative'}">${variant.effect_weight >= 0 ? '+' : ''}${variant.effect_weight.toFixed(6)}</span>
+                <span class="contribution" title="${variant.effectAlleleCount === 2 ? 'Homozygous (e.g. TT, CC) = 2× weight' : variant.effectAlleleCount === 1 ? 'Heterozygous (e.g. AT, CG) = 1× weight' : 'No effect alleles = 0× weight'}">×${variant.effectAlleleCount}</span>
+              </div>
+            `}).join('');
+          })()}
         </div>
+      </div>
+      
+      <div class="chromosome-section">
+        <h5>Chromosome Coverage</h5>
+        <chromosome-coverage></chromosome-coverage>
       </div>
     `;
     
-    // Render chart after DOM update
-    setTimeout(() => this.createChart(pgsData), 100);
+    // Set component data after DOM update
+    setTimeout(() => {
+      this.createChart(pgsData);
+      const coverage = this.shadowRoot.querySelector('chromosome-coverage');
+      if (coverage) coverage.coverage = this.calculateCoverage(pgsData.topVariants || []);
+    }, 0);
+  }
+
+  calculateCoverage(variants) {
+    const coverage = {};
+    for (const v of variants) {
+      const chr = v.chromosome || this.extractChr(v.rsid);
+      if (!chr) continue;
+      if (!coverage[chr]) coverage[chr] = { matched: 0, total: 0 };
+      coverage[chr].matched++;
+      coverage[chr].total++;
+    }
+    return coverage;
+  }
+
+  extractChr(rsid) {
+    if (rsid?.includes(':')) {
+      return rsid.split(':')[0].replace('chr', '');
+    }
+    return null;
   }
 
   goBack() {
@@ -283,14 +354,16 @@ export class PGSBreakdown extends HTMLElement {
         .score-distribution { margin: 15px 0; }
         .score-distribution h5 { margin: 0 0 10px 0; font-size: 12px; }
         .score-distribution canvas { max-width: 100%; height: auto; }
-        .variant-list { max-height: 300px; overflow-y: auto; }
+        .variant-list { margin: 15px 0; }
         .variant-list h5 { margin: 0 0 10px 0; font-size: 14px; }
         .variant-table { border: 1px solid #ddd; border-radius: 4px; overflow: hidden; }
-        .table-header { display: grid; grid-template-columns: 1.2fr 0.6fr 0.8fr 1fr 0.8fr; background: #f5f5f5; padding: 8px; font-weight: bold; font-size: 11px; }
+        .table-header { display: grid; grid-template-columns: 1.5fr 0.7fr 0.7fr 1.2fr 0.7fr; background: #f5f5f5; padding: 8px; font-weight: bold; font-size: 11px; }
         .table-header span:nth-child(2), .table-header span:nth-child(3) { text-align: center; }
         .table-header span:nth-child(2) { font-size: 14px; }
         .table-header span:nth-child(4), .table-header span:nth-child(5) { text-align: right; }
-        .table-row { display: grid; grid-template-columns: 1.2fr 0.6fr 0.8fr 1fr 0.8fr; padding: 6px 8px; border-bottom: 1px solid #eee; font-size: 10px; }
+        .table-row { position: relative; display: grid; grid-template-columns: 1.5fr 0.7fr 0.7fr 1.2fr 0.7fr; padding: 6px 8px; border-bottom: 1px solid #eee; font-size: 10px; }
+        .waterfall-bar { position: absolute; top: 0; height: 100%; z-index: 0; border-radius: 2px; }
+        .table-row > span { position: relative; z-index: 1; }
         .variant-id { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
         .variant-id a { color: #007acc; text-decoration: none; font-family: monospace; }
         .variant-id a:hover { text-decoration: underline; }
@@ -299,6 +372,8 @@ export class PGSBreakdown extends HTMLElement {
         .weight, .contribution { font-family: monospace; text-align: right; }
         .weight.positive { color: #721c24; }
         .weight.negative { color: #155724; }
+        .chromosome-section { margin: 15px 0; }
+        .chromosome-section h5 { margin: 0 0 10px 0; font-size: 14px; }
       </style>
       <div class="content"></div>
     `;

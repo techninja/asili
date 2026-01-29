@@ -410,6 +410,7 @@ export class ServerStorageManager extends StorageManager {
       Debug.log(3, 'ServerStorageManager', `Found cached result for ${individualId}:${traitId}`);
       return {
         riskScore: row.risk_score,
+        zScore: row.z_score,
         pgsBreakdown: JSON.parse(row.pgs_breakdown || '{}'),
         pgsDetails: JSON.parse(row.pgs_details || '{}'),
         matchedVariants: Number(row.matched_variants),
@@ -434,6 +435,7 @@ export class ServerStorageManager extends StorageManager {
     return rows.map(row => ({
       traitId: row.trait_id,
       riskScore: row.risk_score,
+      zScore: row.z_score,
       pgsBreakdown: JSON.parse(row.pgs_breakdown || '{}'),
       pgsDetails: JSON.parse(row.pgs_details || '{}'),
       matchedVariants: Number(row.matched_variants),
@@ -463,6 +465,7 @@ export class ServerStorageManager extends StorageManager {
       individual_id: row.individual_id,
       trait_id: row.trait_id,
       risk_score: row.risk_score,
+      z_score: row.z_score,
       pgs_breakdown: row.pgs_breakdown,
       pgs_details: row.pgs_details,
       matched_variants: Number(row.matched_variants),
@@ -513,6 +516,7 @@ export class ServerStorageManager extends StorageManager {
         individual_id VARCHAR,
         trait_id VARCHAR,
         risk_score DOUBLE,
+        z_score DOUBLE,
         pgs_breakdown VARCHAR,
         pgs_details VARCHAR,
         matched_variants INTEGER,
@@ -539,6 +543,7 @@ export class ServerStorageManager extends StorageManager {
         '${individualId}',
         '${traitId}',
         ${riskData.riskScore},
+        ${riskData.zScore !== null && riskData.zScore !== undefined ? riskData.zScore : 'NULL'},
         '${JSON.stringify(riskData.pgsBreakdown || {})}',
         '${JSON.stringify(riskData.pgsDetails || {})}',
         ${Number(riskData.matchedVariants || 0)},

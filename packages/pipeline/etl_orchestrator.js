@@ -33,17 +33,30 @@ async function main() {
     // Get already completed traits (have metadata and will be validated during processing)
     const completedTraits = await getCompletedTraits();
     console.log(`✓ ${Object.keys(completedTraits).length} traits have complete metadata`);
+    console.log(`🔍 DEBUG: completedTraits sample:`, Object.entries(completedTraits).slice(0, 3));
     
     // Load all existing metadata once
     console.log('📚 Loading all trait metadata...');
     const allMetadata = await getAllTraitMetadata();
     console.log(`✓ Loaded metadata for ${Object.keys(allMetadata).length} traits`);
+    console.log(`🔍 DEBUG: allMetadata keys: ${Object.keys(allMetadata).slice(0, 5).join(', ')}...`);
+    
+    // Show sample of what's in the metadata
+    const firstKey = Object.keys(allMetadata)[0];
+    if (firstKey) {
+      console.log(`🔍 DEBUG: Sample metadata for ${firstKey}: ${Object.keys(allMetadata[firstKey]).length} PGS entries`);
+    }
     
     // Filter to traits missing metadata
     const incompleteTraits = Object.entries(traitConfigs).filter(([traitName, config]) => {
+      const traitId = config.trait_id || traitName;
       const expectedCount = config.pgs_ids?.length || 0;
-      const completedCount = completedTraits[traitName] || 0;
-      return !(completedCount > 0 && completedCount === expectedCount);
+      const completedCount = completedTraits[traitId] || 0;
+      const isComplete = completedCount > 0 && completedCount === expectedCount;
+      if (isComplete) {
+        console.log(`🔍 DEBUG: Skipping ${traitId} - ${completedCount}/${expectedCount} PGS complete`);
+      }
+      return !isComplete;
     });
     
     console.log(`📊 Processing ${incompleteTraits.length} traits (${Object.keys(traitConfigs).length - incompleteTraits.length} complete)`);
@@ -55,7 +68,7 @@ async function main() {
     );
 
     for (const [traitName, config] of sortedTraits) {
-      const displayName = `${config.name || config.title || traitName} (${config.mondo_id || traitName})`;
+      const displayName = `${config.name || config.title || traitName} (${config.trait_id || traitName})`;
       const traitStartTime = Date.now();
 
       try {
@@ -82,7 +95,7 @@ async function main() {
           `   ❌ Error processing ${displayName}: ${error.message} (${traitDuration}s)`
         );
         errors.push({
-          mondo_id: config.mondo_id || traitName,
+          trait_id: config.trait_id || traitName,
           title: config.title || config.name || traitName,
           error: error.message,
           duration: traitDuration
@@ -115,7 +128,7 @@ async function main() {
       console.log('==================');
       for (const err of errors) {
         console.log(
-          `   ${err.mondo_id} (${err.title}): ${err.error} (${err.duration}s)`
+          `   ${err.trait_id} (${err.title}): ${err.error} (${err.duration}s)`
         );
       }
     }

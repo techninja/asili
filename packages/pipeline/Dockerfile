@@ -1,7 +1,7 @@
 FROM node:22-slim
 
-# Install DuckDB CLI, Python3, pandas, bcftools, plink2, pv, and wget for VCF processing
-RUN apt-get update && apt-get install -y wget unzip python3 python3-pip bcftools pv plink2 \
+# Install DuckDB CLI, Python3, pandas, and wget
+RUN apt-get update && apt-get install -y wget unzip python3 python3-pip pv \
     && pip3 install --break-system-packages pandas pyarrow \
     && ARCH=$(dpkg --print-architecture) \
     && if [ "$ARCH" = "amd64" ]; then DUCKDB_ARCH="linux-amd64"; MIGRATE_ARCH="linux-amd64"; \

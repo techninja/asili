@@ -59,18 +59,25 @@ export function shouldExcludePGS(pgsId, scoreData) {
   return false;
 }
 
-export async function collectPgsMetadata(pgsIds, existingMetadata = {}) {
+export async function collectPgsMetadata(pgsIds, existingMetadata = {}, traitId = null) {
   const metadata = {};
   const uncachedIds = [];
   const excludedIds = [];
 
+  console.log(`    🔍 DEBUG: Checking metadata for ${pgsIds.length} PGS IDs`);
+  console.log(`    🔍 DEBUG: existingMetadata has ${Object.keys(existingMetadata).length} entries`);
+  console.log(`    🔍 DEBUG: globalMetadataCache has ${globalMetadataCache.size} entries`);
+
   // Check existing manifest metadata first, then global cache
   for (const pgsId of pgsIds) {
     if (existingMetadata[pgsId]) {
+      console.log(`    🔍 DEBUG: ${pgsId} found in existingMetadata`);
       metadata[pgsId] = existingMetadata[pgsId];
     } else if (globalMetadataCache.has(pgsId)) {
+      console.log(`    🔍 DEBUG: ${pgsId} found in globalMetadataCache`);
       metadata[pgsId] = globalMetadataCache.get(pgsId);
     } else {
+      console.log(`    🔍 DEBUG: ${pgsId} NOT FOUND in cache, will fetch`);
       uncachedIds.push(pgsId);
     }
   }
@@ -85,6 +92,8 @@ export async function collectPgsMetadata(pgsIds, existingMetadata = {}) {
   console.log(
     `    Collecting metadata for ${uncachedIds.length} new PGS scores...`
   );
+
+  const { updateTraitMetadata } = await import('./manifest-db.js');
 
   // Process sequentially to avoid rate limits
   for (let i = 0; i < uncachedIds.length; i++) {
@@ -115,10 +124,10 @@ export async function collectPgsMetadata(pgsIds, existingMetadata = {}) {
         `      ✓ ${pgsId}: ${scoreData.trait_reported || 'Unknown trait'}`
       );
 
-      // Save metadata to manifest after each successful fetch
-      await updateOutputManifest({
-        metadata_update: { pgs_metadata: metadata }
-      });
+      // Save metadata to DB immediately if traitId provided
+      if (traitId) {
+        await updateTraitMetadata(traitId, metadata);
+      }
     } catch (error) {
       console.log(`      ⚠ ${pgsId}: ${error.message}`);
       const fallbackMetadata = {
@@ -129,10 +138,10 @@ export async function collectPgsMetadata(pgsIds, existingMetadata = {}) {
       metadata[pgsId] = fallbackMetadata;
       globalMetadataCache.set(pgsId, fallbackMetadata);
 
-      // Save metadata to manifest even for failed fetches
-      await updateOutputManifest({
-        metadata_update: { pgs_metadata: metadata }
-      });
+      // Save metadata to DB even for failed fetches
+      if (traitId) {
+        await updateTraitMetadata(traitId, metadata);
+      }
     }
 
     // Add delay between requests

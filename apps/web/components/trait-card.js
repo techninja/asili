@@ -1,4 +1,6 @@
 import { useTraitStore } from '../lib/trait-store.js';
+import './risk-distribution.js';
+import './pgs-breakdown.js';
 
 export class TraitCard extends HTMLElement {
   constructor() {
@@ -37,9 +39,10 @@ export class TraitCard extends HTMLElement {
     this.unsubscribe?.();
   }
 
-  setData(trait, individualId) {
+  setData(trait, individualId, individualEmoji) {
     this.trait = trait;
     this.individualId = individualId;
+    this.individualEmoji = individualEmoji || '👤';
     this.dataset.traitId = trait.id;
 
     if (this.shadowRoot?.querySelector('.content')) {
@@ -154,15 +157,19 @@ export class TraitCard extends HTMLElement {
   }
 
   renderResults(cached) {
-    const score = cached.riskScore;
-    const percentile = this.scoreToPercentile(score);
+    // Use z-score from backend calculation
+    const overallZScore = cached.zScore ?? this.calculateOverallZScore(cached.pgsDetails);
+    const percentile = this.zScoreToPercentile(overallZScore);
     const level = percentile >= 70 ? 'high' : percentile <= 30 ? 'low' : 'medium';
 
     return `
       <div class="results">
-        <div class="score">${this.formatScore(score)}</div>
+        <div class="score">${this.formatZScore(overallZScore)}</div>
         <div class="percentile">${this.formatPercentile(percentile)}</div>
         <div class="level ${level}">${level} risk</div>
+        
+        <risk-distribution score="${overallZScore}" emoji="${this.individualEmoji}" other-individuals='${JSON.stringify(cached.otherIndividuals || [])}'></risk-distribution>
+        
         <div class="stats">
           ${this.formatNumber(cached.matchedVariants)} of ${this.formatNumber(cached.totalVariants)} variants matched (${((cached.matchedVariants / cached.totalVariants) * 100).toFixed(1)}%)<br>
           <div style="text-align: left; margin-top: 5px;">Calculated ${new Date(cached.calculatedAt).toLocaleDateString()}</div>
@@ -242,7 +249,7 @@ export class TraitCard extends HTMLElement {
     useTraitStore.getState().setSelectedPgs(this.trait.id, pgsId, navigation);
   }
 
-  addToQueue() {
+addToQueue() {
     const state = useTraitStore.getState().getTraitState(this.trait.id);
     if (state.loading) return; // Don't add to queue while checking cache
 
@@ -255,16 +262,50 @@ export class TraitCard extends HTMLElement {
 
 
 
-  scoreToPercentile(score) {
-    const z = Math.abs(score);
-    let percentile = z < 1 ? 50 + z * 34.13 : z < 2 ? 84.13 + (z - 1) * 13.59 : z < 3 ? 97.72 + (z - 2) * 2.14 : 99.87;
-    return Math.round(Math.max(1, Math.min(99, score < 0 ? 100 - percentile : percentile)));
+  calculateOverallZScore(pgsDetails) {
+    if (!pgsDetails) return 0;
+    
+    // Calculate mean of individual PGS z-scores (simple average)
+    const zScores = Object.values(pgsDetails)
+      .map(details => details.zScore)
+      .filter(z => z !== null && z !== undefined && !isNaN(z));
+    
+    if (zScores.length === 0) return 0;
+    
+    const mean = zScores.reduce((sum, z) => sum + z, 0) / zScores.length;
+    return mean;
+  }
+
+  zScoreToPercentile(zScore) {
+    // Use error function approximation for normal CDF
+    const erf = (x) => {
+      const sign = x >= 0 ? 1 : -1;
+      x = Math.abs(x);
+      const a1 = 0.254829592;
+      const a2 = -0.284496736;
+      const a3 = 1.421413741;
+      const a4 = -1.453152027;
+      const a5 = 1.061405429;
+      const p = 0.3275911;
+      const t = 1.0 / (1.0 + p * x);
+      const y = 1.0 - (((((a5 * t + a4) * t) + a3) * t + a2) * t + a1) * t * Math.exp(-x * x);
+      return sign * y;
+    };
+    
+    const percentile = 0.5 * (1 + erf(zScore / Math.sqrt(2))) * 100;
+    return Math.round(Math.max(1, Math.min(99, percentile)));
+  }
+
+  formatZScore(zScore) {
+    const abs = Math.abs(zScore);
+    const sign = zScore >= 0 ? '+' : '';
+    return `${sign}${zScore.toFixed(2)}σ`;
   }
 
   formatScore(score) {
     const abs = Math.abs(score);
     const sign = score >= 0 ? '+' : '';
-    return abs >= 10 ? `${sign}${score.toFixed(2)}σ` : `${sign}${score.toFixed(3)}σ`;
+    return abs >= 10 ? `${sign}${score.toFixed(2)}` : `${sign}${score.toFixed(3)}`;
   }
 
   formatPercentile(percentile) {
@@ -273,6 +314,7 @@ export class TraitCard extends HTMLElement {
   }
 
   formatNumber(num) {
+    if (num === 0) return '0';
     if (!num) return 'unknown';
     if (num >= 1000000) return `${(num / 1000000).toFixed(1)}m`;
     if (num >= 1000) return `${(num / 1000).toFixed(0)}k`;

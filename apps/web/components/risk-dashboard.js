@@ -258,15 +258,17 @@ export class RiskDashboard extends HTMLElement {
         case 'risk-score': {
           const aState = useTraitStore.getState().getTraitState(a.id);
           const bState = useTraitStore.getState().getTraitState(b.id);
-          const aScore = aState.cached?.riskScore;
-          const bScore = bState.cached?.riskScore;
           
-          // Calculated traits first (highest to lowest), then uncalculated
-          if (aScore !== undefined && bScore !== undefined) {
-            return Math.abs(bScore) - Math.abs(aScore);
+          // Calculate z-scores from pgsDetails
+          const aZScore = this.calculateZScore(aState.cached?.pgsDetails);
+          const bZScore = this.calculateZScore(bState.cached?.pgsDetails);
+          
+          // Calculated traits first (highest absolute z-score to lowest), then uncalculated
+          if (aZScore !== null && bZScore !== null) {
+            return Math.abs(bZScore) - Math.abs(aZScore);
           }
-          if (aScore !== undefined) return -1;
-          if (bScore !== undefined) return 1;
+          if (aZScore !== null) return -1;
+          if (bZScore !== null) return 1;
           return a.name.localeCompare(b.name);
         }
         case 'name-desc': return b.name.localeCompare(a.name);
@@ -286,10 +288,30 @@ export class RiskDashboard extends HTMLElement {
     await this.renderTraits(filteredTraits, state.selectedIndividual);
   }
 
+  calculateZScore(pgsDetails) {
+    if (!pgsDetails) return null;
+    
+    const zScores = Object.values(pgsDetails)
+      .map(details => details.zScore)
+      .filter(z => z !== null && z !== undefined && !isNaN(z));
+    
+    if (zScores.length === 0) return null;
+    
+    // Use median for robustness against outliers
+    const sorted = zScores.slice().sort((a, b) => a - b);
+    const mid = Math.floor(sorted.length / 2);
+    return sorted.length % 2 === 0 ? (sorted[mid - 1] + sorted[mid]) / 2 : sorted[mid];
+  }
+
   async renderTraits(traits, individualId) {
     const grid = this.shadowRoot.getElementById('traitsGrid');
     const sortSelect = this.shadowRoot.getElementById('sortSelect');
     const sortBy = sortSelect?.value;
+    
+    // Get individual emoji
+    const state = useAppStore.getState();
+    const individual = state.individuals.find(ind => ind.id === individualId);
+    const individualEmoji = individual?.emoji || '👤';
     
     if (traits.length === 0) {
       Debug.log(1, 'RiskDashboard', 'No traits to render');
@@ -311,7 +333,7 @@ export class RiskDashboard extends HTMLElement {
       for (let i = 0; i < windowEnd; i++) {
         const trait = traits[i];
         const card = document.createElement('trait-card');
-        card.setData(trait, individualId);
+        card.setData(trait, individualId, individualEmoji);
         flatGrid.appendChild(card);
       }
       
@@ -319,7 +341,7 @@ export class RiskDashboard extends HTMLElement {
         const loadMore = document.createElement('button');
         loadMore.className = 'load-more-btn';
         loadMore.textContent = `Load ${Math.min(this.windowSize, traits.length - windowEnd)} more traits...`;
-        loadMore.onclick = () => this.loadMoreTraitsFlat(flatGrid, traits, windowEnd, individualId);
+        loadMore.onclick = () => this.loadMoreTraitsFlat(flatGrid, traits, windowEnd, individualId, individualEmoji);
         flatGrid.appendChild(loadMore);
       }
       
@@ -368,7 +390,7 @@ export class RiskDashboard extends HTMLElement {
       for (let i = 0; i < windowEnd; i++) {
         const trait = categoryTraits[i];
         const card = document.createElement('trait-card');
-        card.setData(trait, individualId);
+        card.setData(trait, individualId, individualEmoji);
         categoryGrid.appendChild(card);
       }
 
@@ -377,7 +399,7 @@ export class RiskDashboard extends HTMLElement {
         const loadMore = document.createElement('button');
         loadMore.className = 'load-more-btn';
         loadMore.textContent = `Load ${Math.min(this.windowSize, categoryTraits.length - windowEnd)} more traits...`;
-        loadMore.onclick = () => this.loadMoreTraits(categoryGrid, categoryTraits, windowEnd, individualId);
+        loadMore.onclick = () => this.loadMoreTraits(categoryGrid, categoryTraits, windowEnd, individualId, individualEmoji);
         categoryGrid.appendChild(loadMore);
       }
 
@@ -510,14 +532,14 @@ export class RiskDashboard extends HTMLElement {
     });
   }
 
-  loadMoreTraitsFlat(flatGrid, allTraits, currentIndex, individualId) {
+  loadMoreTraitsFlat(flatGrid, allTraits, currentIndex, individualId, individualEmoji) {
     const loadMoreBtn = flatGrid.querySelector('.load-more-btn');
     const nextWindow = Math.min(currentIndex + this.windowSize, allTraits.length);
     
     for (let i = currentIndex; i < nextWindow; i++) {
       const trait = allTraits[i];
       const card = document.createElement('trait-card');
-      card.setData(trait, individualId);
+      card.setData(trait, individualId, individualEmoji);
       flatGrid.insertBefore(card, loadMoreBtn);
     }
     
@@ -525,18 +547,18 @@ export class RiskDashboard extends HTMLElement {
       loadMoreBtn.remove();
     } else {
       loadMoreBtn.textContent = `Load ${Math.min(this.windowSize, allTraits.length - nextWindow)} more traits...`;
-      loadMoreBtn.onclick = () => this.loadMoreTraitsFlat(flatGrid, allTraits, nextWindow, individualId);
+      loadMoreBtn.onclick = () => this.loadMoreTraitsFlat(flatGrid, allTraits, nextWindow, individualId, individualEmoji);
     }
   }
 
-  loadMoreTraits(categoryGrid, categoryTraits, currentIndex, individualId) {
+  loadMoreTraits(categoryGrid, categoryTraits, currentIndex, individualId, individualEmoji) {
     const loadMoreBtn = categoryGrid.querySelector('.load-more-btn');
     const nextWindow = Math.min(currentIndex + this.windowSize, categoryTraits.length);
     
     for (let i = currentIndex; i < nextWindow; i++) {
       const trait = categoryTraits[i];
       const card = document.createElement('trait-card');
-      card.setData(trait, individualId);
+      card.setData(trait, individualId, individualEmoji);
       categoryGrid.insertBefore(card, loadMoreBtn);
     }
     
@@ -544,7 +566,7 @@ export class RiskDashboard extends HTMLElement {
       loadMoreBtn.remove();
     } else {
       loadMoreBtn.textContent = `Load ${Math.min(this.windowSize, categoryTraits.length - nextWindow)} more traits...`;
-      loadMoreBtn.onclick = () => this.loadMoreTraits(categoryGrid, categoryTraits, nextWindow, individualId);
+      loadMoreBtn.onclick = () => this.loadMoreTraits(categoryGrid, categoryTraits, nextWindow, individualId, individualEmoji);
     }
   }
 

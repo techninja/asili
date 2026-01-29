@@ -138,7 +138,25 @@ class AsiliCalcServer {
       const result = await this.processor.processor.getCachedResult(individualId, traitId);
 
       if (result) {
-        this.sendJSON(res, result);
+        // Get z-scores for other individuals on the same trait
+        const allIndividuals = await this.processor.storage.getIndividuals();
+        const otherScores = [];
+
+        for (const ind of allIndividuals) {
+          if (ind.id !== individualId) {
+            const otherResult = await this.processor.processor.getCachedResult(ind.id, traitId);
+            if (otherResult?.zScore !== null && otherResult?.zScore !== undefined) {
+              otherScores.push({
+                individualId: ind.id,
+                emoji: ind.emoji,
+                name: ind.name,
+                zScore: otherResult.zScore
+              });
+            }
+          }
+        }
+
+        this.sendJSON(res, { ...result, otherIndividuals: otherScores });
       } else {
         res.writeHead(404, { 'Content-Type': 'application/json' });
         res.end(JSON.stringify({ error: 'Result not found' }));

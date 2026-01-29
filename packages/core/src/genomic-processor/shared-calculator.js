@@ -58,7 +58,13 @@ export class SharedRiskCalculator {
       this.pgsDetails.set(pgsId, {
         score: 0,
         matchedVariants: 0,
-        metadata,
+        metadata: {
+          ...metadata,
+          mean: metadata.norm_mean ?? metadata.mean,
+          std: metadata.norm_sd ?? metadata.std,
+          weight_type: metadata.weight_type,
+          method: metadata.method
+        },
         topVariants: []
       });
     }
@@ -158,17 +164,48 @@ export class SharedRiskCalculator {
   }
 
   /**
-   * Finalize results and return formatted output
-   * Note: Returns raw PGS score sums, not z-scores
-   * Normalization params in catalog are weight statistics, not score statistics
+   * Finalize results and return formatted output with proper normalization
    */
   finalize() {
     let totalScore = 0;
+    let totalWeightedZScore = 0;
+    let totalWeight = 0;
+    
+    // Initialize any PGS from normalizationParams that weren't matched
+    for (const pgsId in this.normalizationParams) {
+      this.initializePGS(pgsId, this.normalizationParams[pgsId]);
+    }
     
     for (const [pgsId, details] of this.pgsDetails.entries()) {
       totalScore += details.score;
-      details.normalizedScore = details.score;
+      
+      // Apply theoretical distribution normalization if available
+      // Check both metadata and normalizationParams for backwards compatibility
+      const metadata = details.metadata || {};
+      const normParams = this.normalizationParams[pgsId] || {};
+      
+      const mean = metadata.mean ?? metadata.norm_mean ?? normParams.norm_mean;
+      const sd = metadata.std ?? metadata.norm_sd ?? normParams.norm_sd;
+      
+      if (mean !== undefined && sd !== undefined && sd !== null && sd !== 0) {
+        details.zScore = SharedRiskCalculator.calculateZScore(
+          details.score,
+          { mean, sd }
+        );
+        details.percentile = SharedRiskCalculator.calculatePercentile(details.zScore);
+        
+        // Weight by number of matched variants for overall z-score
+        const weight = details.matchedVariants || 1;
+        totalWeightedZScore += details.zScore * weight;
+        totalWeight += weight;
+      } else {
+        details.zScore = null;
+        details.percentile = null;
+      }
     }
+    
+    // Calculate overall z-score as weighted average of PGS z-scores
+    const overallZScore = totalWeight > 0 ? totalWeightedZScore / totalWeight : null;
     
     // Sort top variants for each PGS by effect weight magnitude
     for (const details of this.pgsDetails.values()) {
@@ -181,6 +218,7 @@ export class SharedRiskCalculator {
     
     return {
       riskScore: totalScore,
+      zScore: overallZScore,
       totalMatches: this.totalMatches,
       pgsBreakdown: Object.fromEntries(this.pgsBreakdown),
       pgsDetails: Object.fromEntries(this.pgsDetails),
