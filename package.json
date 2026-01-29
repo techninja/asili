@@ -12,6 +12,8 @@
   "scripts": {
     "traits": "node packages/pipeline/manage-traits.js",
     "checkpgs": "node scripts/check-pgs.js",
+    "scores": "node scripts/scores.js",
+    "analyze-pgs": "node scripts/analyze-problematic-pgs.js",
     "etl": "docker compose run --rm pipeline pnpm run etl",
     "pipeline": "node scripts/pipeline-controller.js",
     "start": "docker compose up -d",

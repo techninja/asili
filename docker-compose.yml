@@ -22,6 +22,8 @@ services:
           memory: 12G
         reservations:
           memory: 8G
+    environment:
+      - CACHE_DIR=/cache
     volumes:
       - ./packages/pipeline:/app/packages/pipeline
       - ./packages/core:/app/packages/core
