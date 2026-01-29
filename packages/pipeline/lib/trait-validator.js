@@ -5,7 +5,7 @@
 
 // Ontology URI mappings
 const ONTOLOGY_URIS = {
-  MONDO: 'https://monarchinitiative.org/disease/',
+  TRAIT: 'https://monarchinitiative.org/disease/',
   EFO: 'https://www.ebi.ac.uk/efo/',
   HP: 'https://hpo.jax.org/app/browse/term/',
   OBA: 'http://purl.obolibrary.org/obo/',
@@ -34,7 +34,7 @@ const INTEGRATIVE_METHOD_KEYWORDS = [
  */
 function validateTraitId(traitId) {
   const patterns = {
-    MONDO: /^MONDO:[0-9]{7}$/,
+    TRAIT: /^TRAIT:[0-9]{7}$/,
     EFO: /^EFO_[0-9]{7}$/,
     HP: /^HP_[0-9]{7}$/,
     OBA_VT: /^OBA_VT[0-9]{7}$/,
@@ -62,8 +62,8 @@ function validateTraitId(traitId) {
  * @returns {string|null} Canonical URI or null if unsupported
  */
 function generateCanonicalURI(traitId) {
-  if (traitId.startsWith('MONDO:')) {
-    return ONTOLOGY_URIS.MONDO + traitId;
+  if (traitId.startsWith('TRAIT:')) {
+    return ONTOLOGY_URIS.TRAIT + traitId;
   } else if (traitId.startsWith('EFO_')) {
     return ONTOLOGY_URIS.EFO + traitId;
   } else if (traitId.startsWith('HP_')) {
@@ -122,7 +122,7 @@ function validatePGSScore(pgsId, scoreData) {
  * @returns {Object} Validation result
  */
 function validateTraitData(traitData) {
-  const required = ['title', 'mondo_id', 'pgs_ids', 'expected_variants', 'last_updated'];
+  const required = ['title', 'trait_id', 'pgs_ids', 'expected_variants', 'last_updated'];
   const missing = required.filter(field => !(field in traitData));
   
   if (missing.length > 0) {
@@ -132,9 +132,9 @@ function validateTraitData(traitData) {
   const errors = [];
   
   // Validate trait ID
-  const idValidation = validateTraitId(traitData.mondo_id);
+  const idValidation = validateTraitId(traitData.trait_id);
   if (!idValidation.valid) {
-    errors.push(`Invalid mondo_id: ${idValidation.reason}`);
+    errors.push(`Invalid trait_id: ${idValidation.reason}`);
   }
   
   // Validate PGS IDs
@@ -186,7 +186,7 @@ function generateCatalogStats(catalog) {
     }
     
     // Count ontology types
-    const ontologyType = trait.mondo_id.split(/[_:]/)[0];
+    const ontologyType = trait.trait_id.split(/[_:]/)[0];
     stats.ontology_breakdown[ontologyType] = (stats.ontology_breakdown[ontologyType] || 0) + 1;
   });
   

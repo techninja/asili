@@ -13,9 +13,9 @@ const CATEGORY_MAPPING = {
   'Digestive system disorder': 'Digestive System Disorders'
 };
 
-async function getTraitCategories(mondoId) {
+async function getTraitCategories(traitId) {
   try {
-    const traitInfo = await pgsApiClient.getTraitInfo(mondoId);
+    const traitInfo = await pgsApiClient.getTraitInfo(traitId);
     if (traitInfo?.trait_categories?.length > 0) {
       return traitInfo.trait_categories.map(
         cat => CATEGORY_MAPPING[cat] || cat
@@ -32,18 +32,26 @@ export async function updateOutputManifest(updatedData) {
   const catalog = await loadTraitCatalog();
   const updates = [];
 
-  for (const [mondoId, data] of Object.entries(updatedData)) {
-    const traitInfo = catalog.traits[mondoId];
+  for (const [traitId, data] of Object.entries(updatedData)) {
+    // Handle metadata-only updates
+    if (traitId === 'metadata_update') {
+      continue; // Skip, handled separately below
+    }
+    
+    const traitInfo = catalog.traits[traitId];
     if (!traitInfo) continue;
 
+    // Only fetch categories if not metadata-only update
+    const categories = data.metadata_only ? ['Other Conditions'] : await getTraitCategories(traitId);
+
     updates.push({
-      mondoId,
+      traitId,
       data: {
         name: traitInfo.title,
         description: traitInfo.description || null,
-        categories: await getTraitCategories(mondoId),
+        categories,
         variant_count: data.variant_count,
-        file_path: data.fileName || `${mondoId.replace(':', '_')}_hg38.parquet`,
+        file_path: data.fileName || `${traitId.replace(':', '_')}_hg38.parquet`,
         pgs_metadata: data.pgs_metadata || {},
         source_hashes: data.source_hashes || {},
         last_updated: data.timestamp,
@@ -53,7 +61,7 @@ export async function updateOutputManifest(updatedData) {
         expected_variants: data.expected_variants || data.variant_count || 0,
         weight: data.weight || 1.0,
         pgs_ids: data.pgsIds || traitInfo.pgs_ids || [],
-        mondo_id: mondoId,
+        trait_id: traitId,
         last_validated: data.timestamp,
         canonical_uri: traitInfo.canonical_uri || null,
         excluded_pgs: traitInfo.excluded_pgs || []
@@ -63,7 +71,7 @@ export async function updateOutputManifest(updatedData) {
 
   // Batch upsert all traits at once
   if (updates.length > 0) {
-    await Promise.all(updates.map(({ mondoId, data }) => upsertTrait(mondoId, data)));
+    await Promise.all(updates.map(({ traitId, data }) => upsertTrait(traitId, data)));
   }
 }
 

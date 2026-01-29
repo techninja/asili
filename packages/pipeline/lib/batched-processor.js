@@ -438,8 +438,14 @@ export async function generateTraitPackBatched(traitName, config, allMetadataCac
   console.log(`   Target: ${config.pgs_ids.length} PGS files`);
 
   // Use cached metadata if provided, otherwise fetch for this trait only
-  const mondoId = config.mondo_id || traitName;
-  const existingMetadata = allMetadataCache?.[mondoId] || {};
+  const traitId = config.trait_id || traitName;
+  const existingMetadata = allMetadataCache?.[traitId] || {};
+  
+  console.log(`  🔍 DEBUG: generateTraitPackBatched for ${traitName}`);
+  console.log(`  🔍 DEBUG: allMetadataCache provided: ${allMetadataCache ? 'YES' : 'NO'}`);
+  console.log(`  🔍 DEBUG: traitId: ${traitId}`);
+  console.log(`  🔍 DEBUG: existingMetadata for ${traitId}: ${Object.keys(existingMetadata).length} entries`);
+  
   console.log(`    Loaded ${Object.keys(existingMetadata).length} existing PGS metadata entries`);
 
   console.log(
@@ -457,23 +463,14 @@ export async function generateTraitPackBatched(traitName, config, allMetadataCac
     );
     const newMetadata = await collectPgsMetadata(
       missingMetadataIds,
-      existingMetadata
+      existingMetadata,
+      traitId
     );
     pgsMetadata = { ...existingMetadata, ...newMetadata };
     hasNewMetadata = true;
 
-    // Save metadata immediately to avoid re-collection if merge fails
-    await updateOutputManifest({
-      trait_update: {
-        [traitName]: {
-          ...config,
-          pgs_metadata: pgsMetadata,
-          metadata_collected: new Date().toISOString()
-        }
-      }
-    });
     console.log(
-      `    ✓ Saved metadata for ${Object.keys(newMetadata).length} PGS scores`
+      `    ✓ Saved metadata for ${Object.keys(newMetadata).length} PGS scores to DB`
     );
   } else {
     console.log('    All PGS metadata already exists');
@@ -486,7 +483,21 @@ export async function generateTraitPackBatched(traitName, config, allMetadataCac
   const needsFileUpdate = await needsUpdate(traitName, config);
 
   if (!needsFileUpdate) {
-    console.log('  - Files up to date, metadata check complete');
+    console.log('  - Files up to date, updating metadata in manifest...');
+    
+    // Update manifest with metadata even though files are unchanged
+    await updateOutputManifest({
+      [traitName]: {
+        timestamp: new Date().toISOString(),
+        variant_count: config.expected_variants || 0,
+        fileName: `${safeFileName}_hg38.parquet`,
+        pgs_metadata: hasNewMetadata ? pgsMetadata : {},
+        pgsIds: config.pgs_ids,
+        source_hashes: {},
+        metadata_only: true
+      }
+    });
+    
     return {
       timestamp: new Date().toISOString(),
       variant_count: config.expected_variants || 0,

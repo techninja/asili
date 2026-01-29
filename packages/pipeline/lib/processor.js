@@ -384,11 +384,18 @@ export async function generateTraitPack(traitName, config, allMetadataCache = nu
 
 async function generateTraitPackOriginal(traitName, config, allMetadataCache = null) {
   // Use cached metadata if provided, otherwise load from manifest
-  const mondoId = config.mondo_id || traitName;
-  const existingMetadata = allMetadataCache?.[mondoId] || {};
+  const traitId = config.trait_id || traitName;
+  const existingMetadata = allMetadataCache?.[traitId] || {};
+  
+  console.log(`  🔍 DEBUG: generateTraitPackOriginal for ${traitName}`);
+  console.log(`  🔍 DEBUG: allMetadataCache provided: ${allMetadataCache ? 'YES' : 'NO'}`);
+  console.log(`  🔍 DEBUG: existingMetadata for ${traitId}: ${Object.keys(existingMetadata).length} entries`);
+  
   if (!allMetadataCache) {
+    console.log(`  🔍 DEBUG: Loading from manifest file...`);
     const existingManifest = await loadExistingManifest();
     Object.assign(existingMetadata, existingManifest.traits?.[traitName]?.pgs_metadata || {});
+    console.log(`  🔍 DEBUG: After manifest load: ${Object.keys(existingMetadata).length} entries`);
   }
 
   // Only collect metadata that doesn't exist in manifest
@@ -397,14 +404,29 @@ async function generateTraitPackOriginal(traitName, config, allMetadataCache = n
   );
   const pgsMetadata = await collectPgsMetadata(
     config.pgs_ids,
-    existingMetadata
+    existingMetadata,
+    traitId
   );
 
   const needsFileUpdate = await needsUpdate(traitName, config);
 
   if (!needsFileUpdate) {
-    console.log('  - Files up to date, metadata check complete');
+    console.log('  - Files up to date, updating metadata in manifest...');
     const safeFileName = traitName.replace(':', '_');
+    
+    // Update manifest with metadata even though files are unchanged
+    await updateOutputManifest({
+      [traitName]: {
+        timestamp: new Date().toISOString(),
+        variant_count: config.expected_variants || 0,
+        fileName: `${safeFileName}_hg38.parquet`,
+        pgs_metadata: pgsMetadata,
+        pgsIds: config.pgs_ids,
+        source_hashes: {},
+        metadata_only: true
+      }
+    });
+    
     return {
       timestamp: new Date().toISOString(),
       variant_count: config.expected_variants || 0,

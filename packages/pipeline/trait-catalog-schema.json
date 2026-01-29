@@ -1,6 +1,6 @@
 {
   "$schema": "http://json-schema.org/draft-07/schema#",
-  "title": "Asili MONDO-Centered Trait Catalog Schema",
+  "title": "Asili Trait Catalog Schema",
   "type": "object",
   "required": ["traits"],
   "properties": {
@@ -19,7 +19,7 @@
       "type": "object",
       "required": [
         "title",
-        "mondo_id",
+        "trait_id",
         "pgs_ids",
         "expected_variants",
         "last_updated"
@@ -33,7 +33,7 @@
           "type": "string",
           "minLength": 1
         },
-        "mondo_id": {
+        "trait_id": {
           "type": "string",
           "pattern": "^(MONDO:[0-9]{7}|EFO_[0-9]{7}|HP_[0-9]{7}|OBA_VT[0-9]{7}|OBA_[0-9]{7}|PATO_[0-9]{7})$"
         },
@@ -53,6 +53,20 @@
               "norm_sd": {
                 "type": "number",
                 "exclusiveMinimum": 0
+              },
+              "weight_type": {
+                "type": "string"
+              },
+              "method": {
+                "type": "string"
+              },
+              "performance_weight": {
+                "type": "number",
+                "minimum": 0,
+                "maximum": 1
+              },
+              "performance_metrics": {
+                "type": "object"
               }
             },
             "additionalProperties": false

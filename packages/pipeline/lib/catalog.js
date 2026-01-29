@@ -13,7 +13,7 @@ export async function loadTraitCatalog() {
 export function getTraitConfigs(catalog) {
   const configs = {};
 
-  for (const [mondoId, trait] of Object.entries(catalog.traits)) {
+  for (const [traitId, trait] of Object.entries(catalog.traits)) {
     // Extract PGS IDs (handle both string and object formats)
     const pgsIds = trait.pgs_ids.map(pgs => 
       typeof pgs === 'string' ? pgs : pgs.id
@@ -25,16 +25,18 @@ export function getTraitConfigs(catalog) {
       if (typeof pgs === 'object' && pgs.id) {
         normalizationParams[pgs.id] = {
           norm_mean: pgs.norm_mean || 0,
-          norm_sd: pgs.norm_sd || null
+          norm_sd: pgs.norm_sd || null,
+          weight_type: pgs.weight_type,
+          method: pgs.method
         };
       }
     });
     
-    configs[mondoId] = {
+    configs[traitId] = {
       pgs_ids: pgsIds,
       normalization_params: normalizationParams,
       name: trait.title,
-      mondo_id: mondoId,
+      trait_id: traitId,
       expected_variants: trait.expected_variants,
       description: trait.description || '',
       weight: 1.0

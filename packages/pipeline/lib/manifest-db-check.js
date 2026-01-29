@@ -9,7 +9,7 @@ export async function getCompletedTraits() {
   try {
     const sql = `
       SELECT 
-        mondo_id,
+        trait_id,
         json_array_length(pgs_ids) as pgs_count,
         length(pgs_metadata) as meta_len
       FROM traits 
@@ -29,7 +29,7 @@ export async function getCompletedTraits() {
     for (const row of rows) {
       // Only count as complete if metadata is substantial (not just '{}')
       if (row.meta_len > 10) {
-        completed[row.mondo_id] = row.pgs_count;
+        completed[row.trait_id] = parseInt(row.pgs_count);
       }
     }
     return completed;
@@ -42,7 +42,7 @@ export async function getAllTraitMetadata() {
   try {
     const sql = `
       COPY (
-        SELECT mondo_id, pgs_metadata
+        SELECT trait_id, pgs_metadata
         FROM traits 
         WHERE length(pgs_metadata) > 10
       ) TO '${OUTPUT_DIR}/all_metadata.json' (FORMAT JSON, ARRAY true);
@@ -63,21 +63,22 @@ export async function getAllTraitMetadata() {
       if (row.pgs_metadata) {
         const parsed = JSON.parse(row.pgs_metadata);
         if (Object.keys(parsed).length > 0) {
-          metadata[row.mondo_id] = parsed;
+          metadata[row.trait_id] = parsed;
         }
       }
     }
     await fs.unlink(path.join(OUTPUT_DIR, 'all_metadata.json'));
     return metadata;
-  } catch {
+  } catch (err) {
+    console.log(`⚠️  Failed to load metadata from database: ${err.message}`);
     return {};
   }
 }
 
-export async function getTraitMetadata(mondoId) {
+export async function getTraitMetadata(traitId) {
   try {
-    const sql = `SELECT pgs_metadata FROM traits WHERE mondo_id = '${mondoId}';`;
-    const sqlFile = path.join(OUTPUT_DIR, `get_meta_${mondoId.replace(':', '_')}.sql`);
+    const sql = `SELECT pgs_metadata FROM traits WHERE trait_id = '${traitId}';`;
+    const sqlFile = path.join(OUTPUT_DIR, `get_meta_${traitId.replace(':', '_')}.sql`);
     await fs.writeFile(sqlFile, sql);
     
     const result = execSync(`duckdb ${MANIFEST_DB} -json < ${sqlFile}`, {
@@ -88,7 +89,7 @@ export async function getTraitMetadata(mondoId) {
     
     const rows = JSON.parse(result);
     if (!rows || rows.length === 0) {
-      console.log(`    No DB entry found for ${mondoId}`);
+      console.log(`    No DB entry found for ${traitId}`);
       return {};
     }
     if (rows[0]?.pgs_metadata) {
@@ -97,7 +98,7 @@ export async function getTraitMetadata(mondoId) {
     }
     return {};
   } catch (err) {
-    console.log(`    Warning: Could not load metadata for ${mondoId}: ${err.message}`);
+    console.log(`    Warning: Could not load metadata for ${traitId}: ${err.message}`);
     return {};
   }
 }

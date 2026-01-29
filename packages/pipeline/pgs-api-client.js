@@ -4,7 +4,7 @@ import { fileURLToPath } from 'url';
 import crypto from 'crypto';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
-const CACHE_DIR = path.resolve(__dirname, '../../cache');
+const CACHE_DIR = process.env.CACHE_DIR || path.resolve(__dirname, '../../cache');
 const PGS_FILES_DIR = path.join(CACHE_DIR, 'pgs_files');
 const RATE_LIMIT = 30; // requests per minute
 const RATE_WINDOW = 60 * 1000; // 1 minute in ms
@@ -23,7 +23,7 @@ class PGSApiClient {
     const urlObj = new URL(url);
     const domain = urlObj.hostname;
     const pathParts = urlObj.pathname.split('/').filter(p => p);
-    const endpoint = pathParts.join('_');
+    const endpoint = pathParts.join('_').replace(/:/g, '_');
 
     // Create hash from query parameters for unique filenames
     const queryHash = urlObj.search
@@ -46,12 +46,18 @@ class PGSApiClient {
       const data = await fs.readFile(filePath, 'utf8');
       const cached = JSON.parse(data);
 
-      // Check if cache is less than 30 days old
+      // Check if cache is less than 6 months old
       const age = Date.now() - cached.timestamp;
-      if (age < 30 * 24 * 60 * 60 * 1000) {
+      const ageInDays = Math.floor(age / (24 * 60 * 60 * 1000));
+      if (age < 180 * 24 * 60 * 60 * 1000) {
+        console.log(`        ✓ Cache HIT: ${url.split('/').pop()} (${ageInDays} days old)`);
         return cached.data;
+      } else {
+        console.log(`        ⚠ Cache EXPIRED: ${url.split('/').pop()} (${ageInDays} days old) - ${filePath}`);
       }
-    } catch {}
+    } catch (err) {
+      console.log(`        ✗ Cache MISS: ${url.split('/').pop()} (${err.code || err.message}) - ${filePath}`);
+    }
     return null;
   }
 
@@ -157,15 +163,15 @@ class PGSApiClient {
     return this.fetchWithCache(url);
   }
 
-  async searchTraitsByMondo(mondoId) {
-    const url = `https://www.pgscatalog.org/rest/trait/search?term=${encodeURIComponent(mondoId)}&exact=1`;
+  async searchTraitsByTrait(traitId) {
+    const url = `https://www.pgscatalog.org/rest/trait/search?term=${encodeURIComponent(traitId)}&exact=1`;
     return this.fetchWithCache(url);
   }
 
   async getTraitInfo(traitId) {
-    // Handle both MONDO and EFO formats
+    // Handle both TRAIT and EFO formats
     let url;
-    if (traitId.startsWith('MONDO:')) {
+    if (traitId.startsWith('TRAIT:')) {
       url = `https://www.pgscatalog.org/rest/trait/${traitId}`;
     } else if (traitId.startsWith('EFO_')) {
       url = `https://www.pgscatalog.org/rest/trait/${traitId}`;
@@ -176,8 +182,8 @@ class PGSApiClient {
     return this.fetchWithCache(url);
   }
 
-  async getScoresByTrait(mondoId) {
-    const url = `https://www.pgscatalog.org/rest/score/search?trait_id=${encodeURIComponent(mondoId)}`;
+  async getScoresByTrait(traitId) {
+    const url = `https://www.pgscatalog.org/rest/score/search?trait_id=${encodeURIComponent(traitId)}`;
     return this.fetchWithCache(url);
   }
 
@@ -238,6 +244,18 @@ class PGSApiClient {
     const compressed = await fs.readFile(filePath);
     const decompressed = gunzipSync(compressed);
     return decompressed.toString('utf-8');
+  }
+
+  async getPerformanceMetrics(ppmIds) {
+    if (!ppmIds || ppmIds.length === 0) return { results: [] };
+    const ids = Array.isArray(ppmIds) ? ppmIds.join(',') : ppmIds;
+    const url = `https://www.pgscatalog.org/rest/performance/all?filter_ids=${ids}`;
+    return this.fetchWithCache(url);
+  }
+
+  async searchPerformanceMetrics(pgsId) {
+    const url = `https://www.pgscatalog.org/rest/performance/search?pgs_id=${pgsId}`;
+    return this.fetchWithCache(url);
   }
 }
 

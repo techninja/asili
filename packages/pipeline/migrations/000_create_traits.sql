@@ -2,7 +2,7 @@
 -- Stores trait information, PGS associations, and empirical statistics
 
 CREATE TABLE IF NOT EXISTS traits (
-  mondo_id VARCHAR PRIMARY KEY,
+  trait_id VARCHAR PRIMARY KEY,
   name VARCHAR NOT NULL,
   description VARCHAR,
   categories VARCHAR NOT NULL,
