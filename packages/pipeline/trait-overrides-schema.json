@@ -1,0 +1,75 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Trait Overrides Schema",
+  "description": "Schema for trait_overrides.json containing editorial metadata and phenotype references for traits",
+  "type": "object",
+  "patternProperties": {
+    "^[A-Z_]+[0-9:_]+$": {
+      "type": "object",
+      "properties": {
+        "emoji": {
+          "type": "string",
+          "description": "Emoji icon representing the trait"
+        },
+        "trait_type": {
+          "type": "string",
+          "enum": ["disease_risk", "quantitative"],
+          "description": "Type of trait: disease_risk or quantitative"
+        },
+        "editorial_name": {
+          "type": "string",
+          "description": "Human-readable name for the trait"
+        },
+        "editorial_description": {
+          "type": "string",
+          "description": "User-friendly description of the trait"
+        },
+        "unit": {
+          "type": "string",
+          "description": "Unit of measurement for quantitative traits (e.g., kg, mmHg, mg/dL)"
+        },
+        "norm_mean": {
+          "type": "number",
+          "description": "Mean of genetic score distribution from gnomAD v4.1"
+        },
+        "norm_sd": {
+          "type": "number",
+          "description": "Standard deviation of genetic score distribution from gnomAD v4.1"
+        },
+        "norm_coverage": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1,
+          "description": "Proportion of PGS variants found in gnomAD v4.1"
+        },
+        "norm_matched_variants": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Number of PGS variants matched in gnomAD v4.1"
+        },
+        "norm_source": {
+          "type": "string",
+          "description": "Source of normalization data (e.g., gnomad_v4.1)"
+        },
+        "phenotype_mean": {
+          "type": "number",
+          "description": "Mean phenotype value in reference population (for quantitative traits)"
+        },
+        "phenotype_sd": {
+          "type": "number",
+          "description": "Standard deviation of phenotype in reference population (for quantitative traits)"
+        },
+        "reference_population": {
+          "type": "string",
+          "description": "Reference population for phenotype statistics (e.g., UK Biobank, NHANES)"
+        },
+        "phenotype_reference_source": {
+          "type": ["string", "null"],
+          "description": "Citation for phenotype reference (DOI, PMID, or URI)"
+        }
+      },
+      "additionalProperties": false
+    }
+  },
+  "additionalProperties": false
+}

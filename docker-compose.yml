@@ -1,29 +1,50 @@
 services:
-  # Static webapp (browser-only processing)
-  webapp:
-    image: nginx:alpine
-    container_name: asili-webapp
-    ports:
-      - '4242:80'
-    volumes:
-      - ./apps/web:/usr/share/nginx/html/apps/web:ro
-      - ./packages:/usr/share/nginx/html/packages:ro
-      - ./data_out:/usr/share/nginx/html/data:ro
-    restart: unless-stopped
-
-  # The Data Pipeline (ETL)
-  pipeline:
+  # Hybrid server: Web UI + Server-side processing
+  hybrid:
     build:
-      context: ./packages/pipeline
-      dockerfile: Dockerfile
+      context: .
+      dockerfile: Dockerfile.hybrid
+    container_name: asili-hybrid
+    ports:
+      - "4242:80"
+    volumes:
+      - ./data_out:/app/data_out
+      - ./server-data:/app/server-data
+      - ./apps/web:/app/apps/web
+      - ./apps/calc:/app/apps/calc
+      - ./packages:/app/packages
+    environment:
+      - NODE_ENV=production
+      - NODE_OPTIONS=--max-old-space-size=8192 --max-semi-space-size=128
+      - UV_THREADPOOL_SIZE=16
     deploy:
       resources:
         limits:
           memory: 12G
         reservations:
           memory: 8G
+    restart: unless-stopped
+
+  # Pipeline (run via: docker compose run --rm pipeline)
+  pipeline:
+    build:
+      context: .
+      dockerfile: ./packages/pipeline/Dockerfile
+    profiles: ["pipeline"]
+    deploy:
+      resources:
+        limits:
+          memory: 12G
+        reservations:
+          memory: 8G
+    environment:
+      - CACHE_DIR=/cache
+      - OUTPUT_DIR=/output
+      - NODE_ENV=production
     volumes:
-      - ./packages/pipeline:/app
-      - /app/node_modules
+      - ./packages/pipeline:/app/packages/pipeline
+      - ./packages/core:/app/packages/core
+      - /app/packages/pipeline/node_modules
+      - /app/packages/core/node_modules
       - ./data_out:/output
       - ./cache:/cache

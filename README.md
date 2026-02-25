@@ -36,28 +36,22 @@ Asili is a privacy-first genomic risk analysis platform that processes DNA data 
 
 ## Deployment Options
 
-### 1. Browser-Only (Static Hosting)
+### Single Command Deployment
 
 ```bash
-# Build and deploy to CDN
-pnpm run build
-aws s3 sync dist/ s3://your-bucket --delete
-```
-
-### 2. Hybrid Server (Recommended)
-
-```bash
-# Server-assisted processing with WebSocket updates
-docker compose -f docker-compose.hybrid.yml up -d
+# Start webapp (hybrid mode with server-side processing)
+docker compose up -d
 # Access at http://localhost:4242
 ```
 
-### 3. Local Development
+### Pipeline Processing
 
 ```bash
-# Full stack with pipeline
-docker compose up
-# Access at http://localhost:4242
+# Run ETL pipeline
+docker compose run --rm pipeline pnpm run etl
+
+# Or use the helper script
+pnpm run etl
 ```
 
 

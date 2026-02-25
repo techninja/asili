@@ -26,13 +26,15 @@ Files should be organized as follows:
 
 ## Setup Instructions
 
-`docker compose up`
+```bash
+# Start the webapp
+docker compose up -d
 
-Pipeline: The pipeline container will start, generate mock Parquet files ("Trait Packs") in data_out/, and then exit.
+# Run the pipeline
+docker compose run --rm pipeline pnpm run etl
+```
 
-CDN: The cdn container will start serving these files at http://localhost:4343/data/.
-
-Webapp: The webapp will start at http://localhost:4242.
+Webapp: http://localhost:4242
 
 Connecting DuckDB (In your Web Components App)
 

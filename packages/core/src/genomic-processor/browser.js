@@ -131,7 +131,7 @@ export class BrowserGenomicProcessor extends GenomicProcessor {
     };
   }
 
-  async calculateRisk(traitUrl, userDNA, progressCallback, pgsMetadata = {}, normalizationParams = {}) {
+  async calculateRisk(traitUrl, userDNA, progressCallback, pgsMetadata = {}, normalizationParams = {}, traitType = 'disease_risk', unit = null, phenotypeMean = null, phenotypeSd = null) {
     Debug.log(
       1,
       'BrowserGenomicProcessor',
@@ -150,7 +150,10 @@ export class BrowserGenomicProcessor extends GenomicProcessor {
       traitUrl,
       userDNA,
       progressCallback,
-      pgsMetadata
+      pgsMetadata,
+      normalizationParams,
+      traitType,
+      unit
     );
   }
 
@@ -158,7 +161,10 @@ export class BrowserGenomicProcessor extends GenomicProcessor {
     traitUrl,
     userDNA,
     progressCallback,
-    pgsMetadata = {}
+    pgsMetadata = {},
+    normalizationParams = {},
+    traitType = 'disease_risk',
+    unit = null
   ) {
     progressCallback?.('Initializing streaming...', 5);
 
@@ -228,7 +234,7 @@ export class BrowserGenomicProcessor extends GenomicProcessor {
     progressCallback?.('Finalizing results...', 95);
 
     // Finalize and cleanup
-    const results = aggregator.finalize();
+    const results = aggregator.finalize(traitType, unit, phenotypeMean, phenotypeSd);
     aggregator.cleanup();
     rsidMap.clear();
     posMap.clear();

@@ -1,103 +1,105 @@
-import { execSync } from 'child_process';
-import fs from 'fs/promises';
-import path from 'path';
+import { getConnection } from './shared-db.js';
 
-const OUTPUT_DIR = '/output';
-const MANIFEST_DB = path.join(OUTPUT_DIR, 'manifest.duckdb');
+/**
+ * Check which traits have complete PGS associations in the database
+ * Uses normalized schema from trait_manifest.db
+ */
 
 export async function getCompletedTraits() {
   try {
-    const sql = `
-      SELECT 
-        mondo_id,
-        json_array_length(pgs_ids) as pgs_count,
-        length(pgs_metadata) as meta_len
-      FROM traits 
-      WHERE json_array_length(pgs_ids) > 0;
-    `;
-    const sqlFile = path.join(OUTPUT_DIR, 'check_completed.sql');
-    await fs.writeFile(sqlFile, sql);
-    
-    const result = execSync(`duckdb ${MANIFEST_DB} -json < ${sqlFile}`, {
-      cwd: OUTPUT_DIR,
-      encoding: 'utf8'
+    const conn = await getConnection();
+    const result = await new Promise((resolve, reject) => {
+      conn.all(`
+        SELECT 
+          t.trait_id,
+          COUNT(DISTINCT tp.pgs_id) as pgs_count
+        FROM traits t
+        LEFT JOIN trait_pgs tp ON t.trait_id = tp.trait_id
+        GROUP BY t.trait_id
+        HAVING pgs_count > 0;
+      `, (err, rows) => err ? reject(err) : resolve(rows));
     });
-    await fs.unlink(sqlFile);
     
-    const rows = JSON.parse(result);
     const completed = {};
-    for (const row of rows) {
-      // Only count as complete if metadata is substantial (not just '{}')
-      if (row.meta_len > 10) {
-        completed[row.mondo_id] = row.pgs_count;
-      }
+    for (const row of result) {
+      completed[row.trait_id] = Number(row.pgs_count);
     }
     return completed;
-  } catch {
+  } catch (err) {
+    console.log(`⚠️  Failed to get completed traits: ${err.message}`);
     return {};
   }
 }
 
 export async function getAllTraitMetadata() {
   try {
-    const sql = `
-      COPY (
-        SELECT mondo_id, pgs_metadata
-        FROM traits 
-        WHERE length(pgs_metadata) > 10
-      ) TO '${OUTPUT_DIR}/all_metadata.json' (FORMAT JSON, ARRAY true);
-    `;
-    const sqlFile = path.join(OUTPUT_DIR, 'get_all_metadata.sql');
-    await fs.writeFile(sqlFile, sql);
-    
-    execSync(`duckdb ${MANIFEST_DB} < ${sqlFile}`, {
-      cwd: OUTPUT_DIR,
-      stdio: 'pipe'
+    const conn = await getConnection();
+    const result = await new Promise((resolve, reject) => {
+      conn.all(`
+        SELECT 
+          tp.trait_id,
+          tp.pgs_id,
+          ps.weight_type,
+          ps.method_name,
+          ps.norm_mean,
+          ps.norm_sd,
+          ps.variants_count
+        FROM trait_pgs tp
+        JOIN pgs_scores ps ON tp.pgs_id = ps.pgs_id;
+      `, (err, rows) => err ? reject(err) : resolve(rows));
     });
-    await fs.unlink(sqlFile);
     
-    const rawJson = await fs.readFile(path.join(OUTPUT_DIR, 'all_metadata.json'), 'utf8');
-    const rows = JSON.parse(rawJson);
     const metadata = {};
-    for (const row of rows) {
-      if (row.pgs_metadata) {
-        const parsed = JSON.parse(row.pgs_metadata);
-        if (Object.keys(parsed).length > 0) {
-          metadata[row.mondo_id] = parsed;
-        }
+    for (const row of result) {
+      if (!metadata[row.trait_id]) {
+        metadata[row.trait_id] = {};
       }
+      metadata[row.trait_id][row.pgs_id] = {
+        weight_type: row.weight_type,
+        method_name: row.method_name,
+        norm_mean: row.norm_mean,
+        norm_sd: row.norm_sd,
+        variants_count: row.variants_count ? Number(row.variants_count) : null
+      };
     }
-    await fs.unlink(path.join(OUTPUT_DIR, 'all_metadata.json'));
     return metadata;
-  } catch {
+  } catch (err) {
+    console.log(`⚠️  Failed to load metadata from database: ${err.message}`);
     return {};
   }
 }
 
-export async function getTraitMetadata(mondoId) {
+export async function getTraitMetadata(traitId) {
   try {
-    const sql = `SELECT pgs_metadata FROM traits WHERE mondo_id = '${mondoId}';`;
-    const sqlFile = path.join(OUTPUT_DIR, `get_meta_${mondoId.replace(':', '_')}.sql`);
-    await fs.writeFile(sqlFile, sql);
-    
-    const result = execSync(`duckdb ${MANIFEST_DB} -json < ${sqlFile}`, {
-      cwd: OUTPUT_DIR,
-      encoding: 'utf8'
+    const conn = await getConnection();
+    const result = await new Promise((resolve, reject) => {
+      conn.all(`
+        SELECT 
+          tp.pgs_id,
+          ps.weight_type,
+          ps.method_name,
+          ps.norm_mean,
+          ps.norm_sd,
+          ps.variants_count
+        FROM trait_pgs tp
+        JOIN pgs_scores ps ON tp.pgs_id = ps.pgs_id
+        WHERE tp.trait_id = ?;
+      `, [traitId], (err, rows) => err ? reject(err) : resolve(rows));
     });
-    await fs.unlink(sqlFile);
     
-    const rows = JSON.parse(result);
-    if (!rows || rows.length === 0) {
-      console.log(`    No DB entry found for ${mondoId}`);
-      return {};
+    const metadata = {};
+    for (const row of result) {
+      metadata[row.pgs_id] = {
+        weight_type: row.weight_type,
+        method_name: row.method_name,
+        norm_mean: row.norm_mean,
+        norm_sd: row.norm_sd,
+        variants_count: row.variants_count ? Number(row.variants_count) : null
+      };
     }
-    if (rows[0]?.pgs_metadata) {
-      const parsed = JSON.parse(rows[0].pgs_metadata);
-      return Object.keys(parsed).length > 0 ? parsed : {};
-    }
-    return {};
+    return metadata;
   } catch (err) {
-    console.log(`    Warning: Could not load metadata for ${mondoId}: ${err.message}`);
+    console.log(`    Warning: Could not load metadata for ${traitId}: ${err.message}`);
     return {};
   }
 }

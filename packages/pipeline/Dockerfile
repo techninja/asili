@@ -1,7 +1,7 @@
 FROM node:22-slim
 
-# Install DuckDB CLI, Python3, and pandas for efficient data operations
-RUN apt-get update && apt-get install -y wget unzip python3 python3-pip \
+# Install DuckDB CLI, Python3, pandas, and wget
+RUN apt-get update && apt-get install -y wget unzip python3 python3-pip pv \
     && pip3 install --break-system-packages pandas pyarrow \
     && ARCH=$(dpkg --print-architecture) \
     && if [ "$ARCH" = "amd64" ]; then DUCKDB_ARCH="linux-amd64"; MIGRATE_ARCH="linux-amd64"; \
@@ -17,21 +17,25 @@ RUN apt-get update && apt-get install -y wget unzip python3 python3-pip \
     && mv migrate /usr/local/bin/ \
     && chmod +x /usr/local/bin/migrate \
     && rm migrate.${MIGRATE_ARCH}.tar.gz \
-    && apt-get remove -y wget unzip \
+    && apt-get remove -y unzip \
     && apt-get autoremove -y \
     && rm -rf /var/lib/apt/lists/*
 
 # Install pnpm
 RUN npm install -g pnpm
 
-WORKDIR /app
+WORKDIR /app/packages/pipeline
 
-# Copy package files
-COPY package*.json ./
-RUN pnpm install --prod
+# Copy root package.json for workspace info
+COPY package.json /app/
+COPY pnpm-workspace.yaml /app/
 
-# Copy pipeline scripts (excluding node_modules via .dockerignore)
-COPY . .
+# Copy package.json files for dependency installation
+COPY packages/core/package.json /app/packages/core/
+COPY packages/pipeline/package*.json ./
+
+# Install dependencies
+RUN cd /app && pnpm install --prod
 
 # Create output directory
 RUN mkdir -p /output

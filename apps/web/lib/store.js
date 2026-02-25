@@ -9,7 +9,7 @@ export const useAppStore = createStore((set, get) => ({
   uploadProgress: '',
   importingIndividual: null, // { name, emoji } for the individual being imported
   cancelImport: false,
-  duckdbReady: false,
+  manifestReady: false,
   traitsLoaded: false,
   totalAvailableTraits: 0,
   completedTraitsCount: 0,
@@ -27,7 +27,7 @@ export const useAppStore = createStore((set, get) => ({
 
   setCancelImport: () => set({ cancelImport: true }),
 
-  setDuckDBReady: ready => set({ duckdbReady: ready }),
+  setManifestReady: ready => set({ manifestReady: ready }),
 
   setTraitsLoaded: loaded => set({ traitsLoaded: loaded }),
 
@@ -50,7 +50,7 @@ export const useAppStore = createStore((set, get) => ({
   canCalculateRisk: () => {
     const state = get();
     return (
-      state.duckdbReady &&
+      state.manifestReady &&
       state.selectedIndividual &&
       state.uploadState === 'idle'
     );

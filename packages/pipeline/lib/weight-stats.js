@@ -1,5 +1,5 @@
-// Calculate weight statistics for PGS normalization
-// Stores mean and SD for converting raw scores to z-scores
+// Calculate theoretical PGS distribution from allele frequencies
+// Gold standard approach for consumer DNA normalization
 
 import { gunzipSync } from 'zlib';
 import { readFileSync } from 'fs';
@@ -8,9 +8,9 @@ export async function calculateWeightStats(pgsId, pgsApiClient) {
   try {
     const fileContent = await pgsApiClient.getPGSFile(pgsId);
     
-    // Find header and weight column
-    let headerLine = null;
+    // Find header and column indices
     let weightColIdx = -1;
+    let afColIdx = -1;
     let pos = 0;
     
     while (pos < fileContent.length) {
@@ -22,20 +22,18 @@ export async function calculateWeightStats(pgsId, pgsApiClient) {
       
       if (line.startsWith('#')) continue;
       
-      // Found header
       const cols = line.split('\t');
       weightColIdx = cols.findIndex(c => c === 'effect_weight' || c === 'weight');
+      afColIdx = cols.findIndex(c => c === 'allelefrequency_effect' || c === 'effect_allele_frequency');
+      
       if (weightColIdx === -1) return null;
       break;
     }
     
-    // Process data lines
-    const maxSample = 50000;
-    let dataLines = 0;
-    let sum = 0;
-    let min = Infinity;
-    let max = -Infinity;
-    const weights = [];
+    // Calculate theoretical distribution: E[PGS] = Σ(w_i * 2 * af_i), Var[PGS] = Σ(w_i² * 2 * af_i * (1-af_i))
+    let meanSum = 0;
+    let varianceSum = 0;
+    let count = 0;
     
     while (pos < fileContent.length) {
       const nextNewline = fileContent.indexOf('\n', pos);
@@ -46,86 +44,26 @@ export async function calculateWeightStats(pgsId, pgsApiClient) {
       
       if (!line) continue;
       
-      dataLines++;
+      const cols = line.split('\t');
+      const weight = parseFloat(cols[weightColIdx]);
+      const af = afColIdx >= 0 ? parseFloat(cols[afColIdx]) : 0.5; // Default to 0.5 if missing
       
-      // Sample to avoid memory issues (but always include small files)
-      const sampleRate = Math.max(1, Math.floor(dataLines / maxSample));
-      if (dataLines > maxSample && dataLines % sampleRate !== 0) continue;
-      
-      const weight = parseFloat(line.split('\t')[weightColIdx]);
-      if (!isNaN(weight)) {
-        sum += weight;
-        weights.push(weight);
-        if (weight < min) min = weight;
-        if (weight > max) max = weight;
-      }
-    }
-    
-    if (weights.length === 0) return null;
-    
-    const mean = sum / weights.length;
-    
-    // Calculate variance
-    let sumSq = 0;
-    for (const weight of weights) {
-      sumSq += (weight - mean) ** 2;
-    }
-    
-    const sd = Math.sqrt(sumSq / weights.length);
-    
-    return { mean, sd, min, max, count: dataLines };
-  } catch (error) {
-    console.error(`Error calculating weight stats for ${pgsId}:`, error.message);
-    return null;
-  }
-}
-
-// Load from local cache for testing
-export function calculateWeightStatsFromCache(pgsId) {
-  try {
-    const filePath = `./cache/pgs_files/${pgsId}.txt.gz`;
-    const compressed = readFileSync(filePath);
-    const decompressed = gunzipSync(compressed);
-    const fileContent = decompressed.toString('utf-8');
-    
-    const lines = fileContent.split('\n').filter(l => l && !l.startsWith('#'));
-    if (lines.length < 2) return null;
-    
-    // Sample for large files
-    const maxSample = 50000;
-    const step = Math.max(1, Math.floor((lines.length - 1) / maxSample));
-    
-    let sum = 0;
-    let count = 0;
-    let min = Infinity;
-    let max = -Infinity;
-    
-    for (let i = 1; i < lines.length; i += step) {
-      const weight = parseFloat(lines[i].split('\t')[5]);
-      if (!isNaN(weight)) {
-        sum += weight;
+      if (!isNaN(weight) && !isNaN(af) && af >= 0 && af <= 1) {
+        meanSum += weight * 2 * af;
+        varianceSum += weight * weight * 2 * af * (1 - af);
         count++;
-        if (weight < min) min = weight;
-        if (weight > max) max = weight;
       }
     }
     
     if (count === 0) return null;
     
-    const mean = sum / count;
+    const mean = meanSum;
+    const sd = Math.sqrt(varianceSum);
     
-    let sumSq = 0;
-    for (let i = 1; i < lines.length; i += step) {
-      const weight = parseFloat(lines[i].split('\t')[5]);
-      if (!isNaN(weight)) {
-        sumSq += (weight - mean) ** 2;
-      }
-    }
-    
-    const sd = Math.sqrt(sumSq / count);
-    
-    return { mean, sd, min, max, count: lines.length - 1 };
+    return { mean, sd, count };
   } catch (error) {
+    console.error(`Error calculating theoretical distribution for ${pgsId}:`, error.message);
     return null;
   }
 }
+

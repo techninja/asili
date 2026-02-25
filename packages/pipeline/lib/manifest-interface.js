@@ -96,9 +96,9 @@ export function getTraitCategories(manifest) {
 export function getTraitsByCategory(manifest, category) {
   const traits = {};
 
-  for (const [mondoId, trait] of Object.entries(manifest.traits)) {
+  for (const [traitId, trait] of Object.entries(manifest.traits)) {
     if (trait.categories?.includes(category)) {
-      traits[mondoId] = trait;
+      traits[traitId] = trait;
     }
   }
 

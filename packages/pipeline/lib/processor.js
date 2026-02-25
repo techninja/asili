@@ -21,10 +21,9 @@ import {
   createStandardSchema,
   createStandardizedExportQuery,
   validateParquetFile,
-  prepareFileForProcessing,
-  shouldExcludePGS
+  prepareFileForProcessing
 } from './processor-core.js';
-import { updateOutputManifest } from './manifest.js';
+import { shouldExcludePGS } from './pgs-filter.js';
 import { detectFormat, generateInsertSQL } from './harmonization.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -140,8 +139,9 @@ async function streamProcessWithDuckDB(traitName, config) {
       // Check if this PGS should be excluded
       try {
         const scoreData = await pgsApiClient.getScore(pgsId);
-        if (shouldExcludePGS(pgsId, scoreData)) {
-          console.log(`        Excluding ${pgsId}: Integrative PGS with incompatible weights`);
+        const filterResult = await shouldExcludePGS(pgsId, scoreData, pgsApiClient);
+        if (filterResult.exclude) {
+          console.log(`        Excluding ${pgsId}: ${filterResult.reason}`);
           continue;
         }
       } catch (error) {
@@ -362,7 +362,7 @@ async function streamProcessWithDuckDB(traitName, config) {
   }
 }
 
-export { shouldExcludePGS } from './processor-core.js';
+export { shouldExcludePGS } from './pgs-filter.js';
 
 import { generateTraitPackBatched } from './batched-processor.js';
 
@@ -383,52 +383,26 @@ export async function generateTraitPack(traitName, config, allMetadataCache = nu
 }
 
 async function generateTraitPackOriginal(traitName, config, allMetadataCache = null) {
-  // Use cached metadata if provided, otherwise load from manifest
-  const mondoId = config.mondo_id || traitName;
-  const existingMetadata = allMetadataCache?.[mondoId] || {};
-  if (!allMetadataCache) {
-    const existingManifest = await loadExistingManifest();
-    Object.assign(existingMetadata, existingManifest.traits?.[traitName]?.pgs_metadata || {});
-  }
-
-  // Only collect metadata that doesn't exist in manifest
-  console.log(
-    `  - Checking metadata for ${config.pgs_ids.length} PGS scores...`
-  );
-  const pgsMetadata = await collectPgsMetadata(
-    config.pgs_ids,
-    existingMetadata
-  );
-
   const needsFileUpdate = await needsUpdate(traitName, config);
 
   if (!needsFileUpdate) {
-    console.log('  - Files up to date, metadata check complete');
+    console.log('  - Files up to date, skipping...');
     const safeFileName = traitName.replace(':', '_');
     return {
       timestamp: new Date().toISOString(),
       variant_count: config.expected_variants || 0,
       fileName: `${safeFileName}_hg38.parquet`,
-      source_hashes: {},
-      pgs_metadata: pgsMetadata,
       metadata_only: true
     };
   }
 
   console.log(`  - Generating ${traitName}...`);
 
-  // Collect source file hashes for validation
-  const sourceHashes = await collectSourceHashes(config.pgs_ids);
-
-  // Use streaming DuckDB approach
   const result = await streamProcessWithDuckDB(traitName, config);
 
   return {
     timestamp: new Date().toISOString(),
     variant_count: result?.totalVariants || 0,
-    fileName: result?.fileName || null,
-    pgsIds: result?.pgsIds || [],
-    source_hashes: sourceHashes,
-    pgs_metadata: pgsMetadata
+    fileName: result?.fileName || null
   };
 }

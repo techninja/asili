@@ -1,0 +1,240 @@
+{
+  "metadata": {
+    "version": "1.0.0",
+    "description": "Reference population statistics for quantitative traits",
+    "sources": [
+      "UK Biobank (European ancestry, n=~400k)",
+      "NHANES (US population)",
+      "Published GWAS summary statistics"
+    ],
+    "notes": [
+      "Values are approximate and vary by ancestry, age, and sex",
+      "These are for display purposes only - genetic predisposition (z-score) is the primary metric",
+      "Users should compare against their own measured values when available"
+    ]
+  },
+  "references": {
+    "EFO_0004340": {
+      "trait": "body mass index",
+      "mean": 27.4,
+      "sd": 4.8,
+      "unit": "BMI",
+      "population": "UK Biobank European",
+      "source": "UK Biobank field 21001",
+      "notes": "Mean BMI in UK Biobank adults"
+    },
+    "EFO_0004338": {
+      "trait": "body weight",
+      "mean": 78.5,
+      "sd": 16.2,
+      "unit": "kg",
+      "population": "UK Biobank European",
+      "source": "UK Biobank field 21002"
+    },
+    "EFO_0004339": {
+      "trait": "body height",
+      "mean": 168.5,
+      "sd": 9.1,
+      "unit": "cm",
+      "population": "UK Biobank European",
+      "source": "UK Biobank field 50"
+    },
+    "EFO_0004530": {
+      "trait": "triglyceride level",
+      "mean": 150,
+      "sd": 90,
+      "unit": "mg/dL",
+      "population": "US adults",
+      "source": "NHANES",
+      "notes": "Fasting triglycerides"
+    },
+    "EFO_0004574": {
+      "trait": "total cholesterol",
+      "mean": 200,
+      "sd": 40,
+      "unit": "mg/dL",
+      "population": "US adults",
+      "source": "NHANES"
+    },
+    "EFO_0004611": {
+      "trait": "LDL cholesterol",
+      "mean": 115,
+      "sd": 35,
+      "unit": "mg/dL",
+      "population": "US adults",
+      "source": "NHANES"
+    },
+    "EFO_0004612": {
+      "trait": "HDL cholesterol",
+      "mean": 55,
+      "sd": 15,
+      "unit": "mg/dL",
+      "population": "US adults",
+      "source": "NHANES"
+    },
+    "EFO_0004541": {
+      "trait": "HbA1c",
+      "mean": 5.4,
+      "sd": 0.5,
+      "unit": "%",
+      "population": "Non-diabetic adults",
+      "source": "Clinical reference"
+    },
+    "EFO_0004703": {
+      "trait": "age at menarche",
+      "mean": 12.5,
+      "sd": 1.3,
+      "unit": "years",
+      "population": "European ancestry",
+      "source": "Published GWAS"
+    },
+    "EFO_0004704": {
+      "trait": "age at menopause",
+      "mean": 50.5,
+      "sd": 3.8,
+      "unit": "years",
+      "population": "European ancestry",
+      "source": "Published GWAS"
+    },
+    "EFO_0004458": {
+      "trait": "C-reactive protein level",
+      "mean": 2.0,
+      "sd": 3.0,
+      "unit": "mg/L",
+      "population": "Healthy adults",
+      "source": "Clinical reference",
+      "notes": "<1 mg/L = low risk, 1-3 = average, >3 = high risk"
+    },
+    "OBA_VT0000188": {
+      "trait": "blood glucose level",
+      "mean": 95,
+      "sd": 12,
+      "unit": "mg/dL",
+      "population": "Fasting, non-diabetic",
+      "source": "Clinical reference"
+    },
+    "EFO_0007777": {
+      "trait": "basal metabolic rate",
+      "mean": 1600,
+      "sd": 300,
+      "unit": "kcal/day",
+      "population": "Adults",
+      "source": "Clinical reference",
+      "notes": "Varies by sex, age, body composition"
+    },
+    "EFO_0004462": {
+      "trait": "PR interval",
+      "mean": 160,
+      "sd": 25,
+      "unit": "milliseconds",
+      "population": "UK Biobank",
+      "source": "ECG reference"
+    },
+    "EFO_0004682": {
+      "trait": "QT interval",
+      "mean": 410,
+      "sd": 30,
+      "unit": "milliseconds",
+      "population": "UK Biobank",
+      "source": "ECG reference"
+    },
+    "OBA_1001086": {
+      "trait": "QRS duration",
+      "mean": 95,
+      "sd": 15,
+      "unit": "milliseconds",
+      "population": "UK Biobank",
+      "source": "ECG reference"
+    },
+    "EFO_0004831": {
+      "trait": "RR interval",
+      "mean": 860,
+      "sd": 140,
+      "unit": "milliseconds",
+      "population": "UK Biobank",
+      "source": "ECG reference",
+      "notes": "Corresponds to ~70 bpm heart rate"
+    },
+    "EFO_0004713": {
+      "trait": "FEV/FVC ratio",
+      "mean": 0.79,
+      "sd": 0.07,
+      "unit": "ratio",
+      "population": "Healthy adults",
+      "source": "Spirometry reference",
+      "notes": "<0.70 indicates airflow obstruction"
+    },
+    "EFO_0005106": {
+      "trait": "body composition measurement",
+      "mean": 25,
+      "sd": 8,
+      "unit": "%",
+      "population": "Adults (mixed sex)",
+      "source": "Clinical reference",
+      "notes": "Body fat percentage, varies significantly by sex"
+    },
+    "EFO_0009188": {
+      "trait": "red cell distribution width",
+      "mean": 13.5,
+      "sd": 1.5,
+      "unit": "%",
+      "population": "Healthy adults",
+      "source": "Clinical reference",
+      "notes": "Normal range 11.5-14.5%"
+    },
+    "OBA_1000840": {
+      "trait": "alcohol consumption",
+      "mean": 2,
+      "sd": 3,
+      "unit": "drinks/week",
+      "population": "UK Biobank",
+      "source": "UK Biobank",
+      "notes": "Highly variable, includes non-drinkers"
+    },
+    "OBA_1000983": {
+      "trait": "thyroid stimulating hormone level",
+      "mean": 2.0,
+      "sd": 1.5,
+      "unit": "mIU/L",
+      "population": "Healthy adults",
+      "source": "Clinical reference",
+      "notes": "Normal range 0.4-4.0 mIU/L"
+    },
+    "EFO_0005094": {
+      "trait": "P wave duration",
+      "mean": 110,
+      "sd": 20,
+      "unit": "milliseconds",
+      "population": "Healthy adults",
+      "source": "ECG reference",
+      "notes": "Normal <120 ms"
+    },
+    "EFO_0600085": {
+      "trait": "PP interval",
+      "mean": 860,
+      "sd": 140,
+      "unit": "milliseconds",
+      "population": "Healthy adults",
+      "source": "ECG reference",
+      "notes": "Same as RR interval"
+    },
+    "EFO_0007788": {
+      "trait": "BMI-adjusted waist-hip ratio",
+      "mean": 0.0,
+      "sd": 0.1,
+      "unit": "ratio",
+      "population": "UK Biobank",
+      "source": "UK Biobank",
+      "notes": "Residual after BMI adjustment, centered at 0"
+    },
+    "EFO_0020865": {
+      "trait": "aortic dimensions",
+      "mean": 30,
+      "sd": 4,
+      "unit": "mm",
+      "population": "Healthy adults",
+      "source": "Echocardiography reference",
+      "notes": "Ascending aorta diameter"
+    }
+  }
+}

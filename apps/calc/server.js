@@ -52,6 +52,9 @@ class AsiliCalcServer {
     console.log(`   Cache directory: ${this.cacheDir}`);
     console.log(`   Storage directory: ${this.storageDir}`);
 
+    // Load all individuals' DNA into memory
+    await this.loadAllDNA();
+
     // Log startup statistics
     await this.logStartupStats();
 
@@ -135,10 +138,163 @@ class AsiliCalcServer {
     const [, , individualId, traitId] = pathParts;
 
     try {
-      const result = await this.processor.processor.getCachedResult(individualId, traitId);
+      const result = await this.processor.storage.getCachedRiskScore(individualId, traitId);
 
       if (result) {
-        this.sendJSON(res, result);
+        // Get trait metadata from database (includes overrides)
+        const { getConnection } = await import('../../packages/pipeline/lib/shared-db.js');
+
+        let traitType = 'disease_risk';
+        let unit = null;
+        let traitName = traitId;
+        let emoji = null;
+
+        try {
+          const conn = await getConnection();
+          const rows = await new Promise((resolve, reject) => {
+            conn.all('SELECT name, trait_type, unit, emoji, editorial_name FROM traits WHERE trait_id = ?', [traitId], (err, rows) => {
+              err ? reject(err) : resolve(rows);
+            });
+          });
+
+          const trait = rows?.[0];
+          if (trait) {
+            traitName = trait.editorial_name || trait.name;
+            traitType = trait.trait_type || 'disease_risk';
+            unit = trait.unit;
+            emoji = trait.emoji;
+          }
+        } catch (dbError) {
+          console.error('Failed to get trait metadata:', dbError.message);
+        }
+
+        result.traitType = traitType;
+        result.traitName = traitName;
+        if (unit) result.unit = unit;
+        if (emoji) result.emoji = emoji;
+
+        // Add phenotype reference data for quantitative traits
+        if (traitType === 'quantitative') {
+          try {
+            const { getConnection } = await import('../../packages/pipeline/lib/shared-db.js');
+            const phenoConn = await getConnection();
+            const traitRows = await new Promise((resolve, reject) => {
+              phenoConn.all('SELECT phenotype_mean, phenotype_sd, reference_population FROM traits WHERE trait_id = ?', [traitId], (err, rows) => {
+                err ? reject(err) : resolve(rows);
+              });
+            });
+
+            if (traitRows?.[0]) {
+              result.phenotype_mean = traitRows[0].phenotype_mean;
+              result.phenotype_sd = traitRows[0].phenotype_sd;
+              result.reference_population = traitRows[0].reference_population;
+            }
+          } catch (err) {
+            console.error('Failed to get phenotype data:', err.message);
+          }
+        }
+
+        // Enrich pgsDetails with metadata from database
+        if (result.pgsDetails) {
+          const { getTraitPGS } = await import('../../packages/pipeline/lib/trait-db.js');
+          const { getPGS } = await import('../../packages/pipeline/lib/pgs-db.js');
+
+          try {
+            const pgsScores = await getTraitPGS(traitId);
+            let totalVariants = 0;
+
+            for (const { pgs_id } of pgsScores) {
+              if (result.pgsDetails[pgs_id]) {
+                const pgs = await getPGS(pgs_id);
+                if (pgs) {
+                  // Enrich metadata
+                  if (!result.pgsDetails[pgs_id].metadata) {
+                    result.pgsDetails[pgs_id].metadata = {};
+                  }
+                  result.pgsDetails[pgs_id].metadata.name = pgs.method_name || pgs_id;
+                  result.pgsDetails[pgs_id].metadata.variants_number = pgs.variants_count ? Number(pgs.variants_count) : null;
+
+                  // Add normalization parameters from database
+                  if (pgs.norm_mean !== undefined && pgs.norm_mean !== null) {
+                    result.pgsDetails[pgs_id].normMean = pgs.norm_mean;
+                  }
+                  if (pgs.norm_sd !== undefined && pgs.norm_sd !== null) {
+                    result.pgsDetails[pgs_id].normSd = pgs.norm_sd;
+                  }
+
+                  if (pgs.variants_count) totalVariants += Number(pgs.variants_count);
+                }
+              }
+            }
+
+            result.totalVariants = totalVariants;
+          } catch (dbError) {
+            console.error('Failed to enrich with DB data:', dbError.message);
+          }
+        }
+
+        // Get z-scores for other individuals on the same trait
+        const allIndividuals = await this.processor.storage.getIndividuals();
+        const otherScores = [];
+
+        for (const ind of allIndividuals) {
+          if (ind.id !== individualId) {
+            const otherResult = await this.processor.storage.getCachedRiskScore(ind.id, traitId);
+            if (otherResult?.zScore !== null && otherResult?.zScore !== undefined) {
+              const otherEntry = {
+                individualId: ind.id,
+                emoji: ind.emoji,
+                name: ind.name,
+                zScore: otherResult.zScore,
+                riskScore: otherResult.riskScore
+              };
+
+              // Add value for quantitative traits
+              if (traitType === 'quantitative' && unit && otherResult.value !== undefined) {
+                otherEntry.value = otherResult.value;
+              }
+
+              otherScores.push(otherEntry);
+            }
+          }
+        }
+
+        // Enrich top variants with other individuals' genotypes from DNA cache
+        if (result.pgsBreakdown) {
+          for (const pgsId in result.pgsBreakdown) {
+            const breakdown = result.pgsBreakdown[pgsId];
+            if (breakdown.topVariants && breakdown.topVariants.length > 0) {
+              // Use cached DNA for other individuals
+              for (const ind of allIndividuals) {
+                if (ind.id !== individualId) {
+                  const dnaMap = this.dnaCache.get(ind.id);
+                  if (dnaMap) {
+                    // Match variants and add genotype
+                    for (const v of breakdown.topVariants) {
+                      let match = dnaMap.get(v.rsid);
+                      if (!match && v.rsid.includes(':')) {
+                        const parts = v.rsid.split(':');
+                        if (parts.length >= 2) {
+                          match = dnaMap.get(`${parts[0]}:${parts[1]}`);
+                        }
+                      }
+                      if (match) {
+                        if (!v.otherGenotypes) v.otherGenotypes = {};
+                        v.otherGenotypes[ind.id] = {
+                          emoji: ind.emoji,
+                          name: ind.name,
+                          genotype: `${match.allele1}${match.allele2}`
+                        };
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+
+        this.sendJSON(res, { ...result, otherIndividuals: otherScores });
       } else {
         res.writeHead(404, { 'Content-Type': 'application/json' });
         res.end(JSON.stringify({ error: 'Result not found' }));
@@ -179,8 +335,13 @@ class AsiliCalcServer {
 
     } else if (req.method === 'PUT' && route.startsWith('/individuals/')) {
       const individualId = route.split('/')[2];
-      const body = await this.readBody(req);
-      const updates = JSON.parse(body);
+      let updates;
+      if (req.body && Object.keys(req.body).length > 0) {
+        updates = req.body;
+      } else {
+        const body = await this.readBody(req);
+        updates = JSON.parse(body);
+      }
 
       const updated = await this.processor.storage.updateIndividual(individualId, updates);
       this.sendJSON(res, updated);
@@ -446,7 +607,10 @@ class AsiliCalcServer {
 
   async calculateRiskAsync(jobId, individualId, traitId) {
     try {
-      console.log(`🔬 Starting risk calculation: ${traitId} for ${individualId}`);
+      const individual = await this.processor.storage.getIndividual(individualId);
+      const individualName = individual ? `${individual.emoji} ${individual.name}` : individualId;
+
+      console.log(`🔬 Starting risk calculation: ${traitId} for ${individualName}`);
       this.broadcastProgress(jobId, 'Starting risk calculation...', 0);
 
       const result = await this.processor.processor.calculateTraitRisk(
@@ -454,10 +618,22 @@ class AsiliCalcServer {
         individualId,
         (message, progress) => {
           this.broadcastProgress(jobId, message, progress);
-        }
+        },
+        this.dnaCache.get(individualId) // Pass cached DNA
       );
 
-      console.log(`✅ Calculation complete - Score: ${result.riskScore}, Matches: ${result.matchedVariants}`);
+      // Format completion message based on trait type
+      let completionMsg;
+      if (result.value !== undefined && result.value !== null) {
+        // Quantitative trait - show actual value
+        const trait = this.processor.processor.traitManifest?.traits?.[traitId];
+        const unit = trait?.unit || '';
+        completionMsg = `✅ Calculation complete for ${individualName} - Value: ${result.value.toFixed(2)}${unit ? ' ' + unit : ''}, Matches: ${result.matchedVariants}`;
+      } else {
+        // Disease risk - show z-score
+        completionMsg = `✅ Calculation complete for ${individualName} - Z-score: ${result.zScore?.toFixed(2) || 'N/A'}, Matches: ${result.matchedVariants}`;
+      }
+      console.log(completionMsg);
       this.broadcastProgress(jobId, 'Storing results...', 95);
 
       this.broadcastProgress(jobId, 'Calculation complete', 100);
@@ -591,7 +767,7 @@ class AsiliCalcServer {
     // Check if result already exists
     try {
       console.log(`🔍 Checking for existing result: ${traitId} for ${individualId}`);
-      const existingResult = await this.processor.processor.getCachedResult(individualId, traitId);
+      const existingResult = await this.processor.storage.getCachedRiskScore(individualId, traitId);
       console.log(`🔍 Existing result check complete:`, existingResult ? 'Found' : 'Not found');
       if (existingResult) {
         console.log(`⚡ Result already exists for ${traitId} and ${individualId}`);
@@ -660,6 +836,33 @@ class AsiliCalcServer {
       ws.send(JSON.stringify(data));
     } catch (error) {
       console.error('Failed to send WebSocket message:', error);
+    }
+  }
+
+  async loadAllDNA() {
+    try {
+      const individuals = await this.processor.storage.getIndividuals();
+      console.log(`🧬 Loading DNA for ${individuals.length} individuals into memory...`);
+
+      for (const ind of individuals) {
+        const dna = await this.processor.storage.getVariants(ind.id);
+        if (dna && dna.length > 0) {
+          // Create lookup maps for fast access
+          const dnaMap = new Map();
+          dna.forEach(v => {
+            if (v.rsid) dnaMap.set(v.rsid, v);
+            if (v.chromosome && v.position) {
+              dnaMap.set(`${v.chromosome}:${v.position}`, v);
+            }
+          });
+          this.dnaCache.set(ind.id, dnaMap);
+          console.log(`   ✅ ${ind.emoji} ${ind.name}: ${dna.length.toLocaleString()} variants loaded`);
+        }
+      }
+
+      console.log(`💾 DNA cache ready with ${this.dnaCache.size} individuals`);
+    } catch (error) {
+      console.error('⚠️  Failed to load DNA cache:', error.message);
     }
   }
 
@@ -769,7 +972,6 @@ class AsiliCalcServer {
   }
 
   async initializeEmptyCache() {
-    // Use the same path as the storage manager
     const cacheFile = PATHS.RISK_SCORES_DB;
 
     console.log('📁 Checking cache file at:', cacheFile);
@@ -780,15 +982,11 @@ class AsiliCalcServer {
 
     try {
       await fs.access(cacheFile);
-      console.log('📁 Cache file already exists, skipping creation');
-      return;
+      console.log('📁 Cache file exists');
     } catch {
-      console.log('📁 Cache file does not exist, creating...');
-      // Ensure the directory exists
-      await fs.mkdir(path.dirname(cacheFile), { recursive: true });
-      // Create empty parquet file directly
+      console.log('📁 Cache file does not exist, creating it...');
       await this.processor.storage.initializeEmptyParquet();
-      console.log('📁 Empty cache file created');
+      console.log('✅ Cache file created');
     }
   }
 

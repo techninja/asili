@@ -5,9 +5,8 @@ import path from 'path';
 import { fileURLToPath } from 'url';
 import { loadTraitCatalog, getTraitConfigs } from './lib/catalog.js';
 import { generateTraitPack } from './lib/processor.js';
-import { updateOutputManifest, finalizeManifest } from './lib/manifest.js';
-import { initManifestDB } from './lib/manifest-db.js';
-import { getCompletedTraits, getAllTraitMetadata } from './lib/manifest-db-check.js';
+import { closeManifestConnection } from './lib/trait-manifest.js';
+import { exportTraitManifestJSON } from './lib/export-manifest.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
@@ -21,62 +20,34 @@ async function main() {
   const errors = [];
 
   try {
-    // Initialize manifest database
-    console.log('🗄️  Initializing manifest database...');
-    await initManifestDB();
-    
     // Load trait catalog
     console.log('📋 Loading trait catalog...');
     const catalog = await loadTraitCatalog();
-    const traitConfigs = getTraitConfigs(catalog);
+    const traitConfigs = await getTraitConfigs(catalog);
 
-    // Get already completed traits (have metadata and will be validated during processing)
-    const completedTraits = await getCompletedTraits();
-    console.log(`✓ ${Object.keys(completedTraits).length} traits have complete metadata`);
-    
-    // Load all existing metadata once
-    console.log('📚 Loading all trait metadata...');
-    const allMetadata = await getAllTraitMetadata();
-    console.log(`✓ Loaded metadata for ${Object.keys(allMetadata).length} traits`);
-    
-    // Filter to traits missing metadata
-    const incompleteTraits = Object.entries(traitConfigs).filter(([traitName, config]) => {
-      const expectedCount = config.pgs_ids?.length || 0;
-      const completedCount = completedTraits[traitName] || 0;
-      return !(completedCount > 0 && completedCount === expectedCount);
-    });
-    
-    console.log(`📊 Processing ${incompleteTraits.length} traits (${Object.keys(traitConfigs).length - incompleteTraits.length} complete)`);
+    console.log(`📊 Processing ${Object.keys(traitConfigs).length} traits`);
     console.log('');
 
-    // Process incomplete traits - sort by variant count (largest first)
-    const sortedTraits = incompleteTraits.sort(
-      ([, a], [, b]) => (b.expected_variants || 0) - (a.expected_variants || 0)
+    // Process traits - sort by variant count (largest first)
+    const sortedTraits = Object.entries(traitConfigs).sort(
+      ([, a], [, b]) => Number(b.expected_variants || 0) - Number(a.expected_variants || 0)
     );
 
     for (const [traitName, config] of sortedTraits) {
-      const displayName = `${config.name || config.title || traitName} (${config.mondo_id || traitName})`;
+      const displayName = `${config.name || config.title || traitName} (${config.trait_id || traitName})`;
       const traitStartTime = Date.now();
 
       try {
         console.log(`🔄 Processing: ${displayName}`);
-        const result = await generateTraitPack(traitName, config, allMetadata);
+        const result = await generateTraitPack(traitName, config, {});
         
-        // Only update DB if we actually generated new files or collected new metadata
-        const hasNewData = !result.metadata_only || Object.keys(result.pgs_metadata || {}).length > 0;
-        if (hasNewData) {
-          await updateOutputManifest({ [traitName]: result });
-        }
-
-        const traitDuration = Math.round((Date.now() - traitStartTime) / 1000);
-
-        if (result.metadata_only) {
+        if (!result.metadata_only) {
           console.log(
-            `   ✅ Updated metadata for ${displayName} (${traitDuration}s)`
+            `   ✅ Generated ${displayName} (${result.variant_count} variants, ${Math.round((Date.now() - traitStartTime) / 1000)}s)`
           );
         } else {
           console.log(
-            `   ✅ Generated ${displayName} (${result.variant_count} variants, ${traitDuration}s)`
+            `   ✅ Skipped ${displayName} - up to date (${Math.round((Date.now() - traitStartTime) / 1000)}s)`
           );
         }
 
@@ -88,7 +59,7 @@ async function main() {
           `   ❌ Error processing ${displayName}: ${error.message} (${traitDuration}s)`
         );
         errors.push({
-          mondo_id: config.mondo_id || traitName,
+          trait_id: config.trait_id || traitName,
           title: config.title || config.name || traitName,
           error: error.message,
           duration: traitDuration
@@ -110,10 +81,10 @@ async function main() {
     console.log(`⚠️  Errors: ${errorCount} traits`);
     console.log(`⏱️  Total Duration: ${durationStr}`);
 
-    // Export final manifests
+    // Export JSON manifest for frontend
     console.log('');
-    console.log('📦 Exporting manifests...');
-    await finalizeManifest();
+    console.log('📦 Exporting JSON manifest...');
+    await exportTraitManifestJSON();
 
     if (errors.length > 0) {
       console.log('');
@@ -121,7 +92,7 @@ async function main() {
       console.log('==================');
       for (const err of errors) {
         console.log(
-          `   ${err.mondo_id} (${err.title}): ${err.error} (${err.duration}s)`
+          `   ${err.trait_id} (${err.title}): ${err.error} (${err.duration}s)`
         );
       }
     }
@@ -135,6 +106,9 @@ async function main() {
     console.error('💥 Pipeline failed:', error.message);
     console.error(error.stack);
     process.exit(1);
+  } finally {
+    // Close database connection
+    await closeManifestConnection();
   }
 }
 
