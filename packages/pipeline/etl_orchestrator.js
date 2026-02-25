@@ -5,9 +5,8 @@ import path from 'path';
 import { fileURLToPath } from 'url';
 import { loadTraitCatalog, getTraitConfigs } from './lib/catalog.js';
 import { generateTraitPack } from './lib/processor.js';
-import { updateOutputManifest, finalizeManifest } from './lib/manifest.js';
-import { initManifestDB } from './lib/manifest-db.js';
-import { getCompletedTraits, getAllTraitMetadata } from './lib/manifest-db-check.js';
+import { closeManifestConnection } from './lib/trait-manifest.js';
+import { exportTraitManifestJSON } from './lib/export-manifest.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
@@ -21,50 +20,17 @@ async function main() {
   const errors = [];
 
   try {
-    // Initialize manifest database
-    console.log('🗄️  Initializing manifest database...');
-    await initManifestDB();
-    
     // Load trait catalog
     console.log('📋 Loading trait catalog...');
     const catalog = await loadTraitCatalog();
-    const traitConfigs = getTraitConfigs(catalog);
+    const traitConfigs = await getTraitConfigs(catalog);
 
-    // Get already completed traits (have metadata and will be validated during processing)
-    const completedTraits = await getCompletedTraits();
-    console.log(`✓ ${Object.keys(completedTraits).length} traits have complete metadata`);
-    console.log(`🔍 DEBUG: completedTraits sample:`, Object.entries(completedTraits).slice(0, 3));
-    
-    // Load all existing metadata once
-    console.log('📚 Loading all trait metadata...');
-    const allMetadata = await getAllTraitMetadata();
-    console.log(`✓ Loaded metadata for ${Object.keys(allMetadata).length} traits`);
-    console.log(`🔍 DEBUG: allMetadata keys: ${Object.keys(allMetadata).slice(0, 5).join(', ')}...`);
-    
-    // Show sample of what's in the metadata
-    const firstKey = Object.keys(allMetadata)[0];
-    if (firstKey) {
-      console.log(`🔍 DEBUG: Sample metadata for ${firstKey}: ${Object.keys(allMetadata[firstKey]).length} PGS entries`);
-    }
-    
-    // Filter to traits missing metadata
-    const incompleteTraits = Object.entries(traitConfigs).filter(([traitName, config]) => {
-      const traitId = config.trait_id || traitName;
-      const expectedCount = config.pgs_ids?.length || 0;
-      const completedCount = completedTraits[traitId] || 0;
-      const isComplete = completedCount > 0 && completedCount === expectedCount;
-      if (isComplete) {
-        console.log(`🔍 DEBUG: Skipping ${traitId} - ${completedCount}/${expectedCount} PGS complete`);
-      }
-      return !isComplete;
-    });
-    
-    console.log(`📊 Processing ${incompleteTraits.length} traits (${Object.keys(traitConfigs).length - incompleteTraits.length} complete)`);
+    console.log(`📊 Processing ${Object.keys(traitConfigs).length} traits`);
     console.log('');
 
-    // Process incomplete traits - sort by variant count (largest first)
-    const sortedTraits = incompleteTraits.sort(
-      ([, a], [, b]) => (b.expected_variants || 0) - (a.expected_variants || 0)
+    // Process traits - sort by variant count (largest first)
+    const sortedTraits = Object.entries(traitConfigs).sort(
+      ([, a], [, b]) => Number(b.expected_variants || 0) - Number(a.expected_variants || 0)
     );
 
     for (const [traitName, config] of sortedTraits) {
@@ -73,11 +39,9 @@ async function main() {
 
       try {
         console.log(`🔄 Processing: ${displayName}`);
-        const result = await generateTraitPack(traitName, config, allMetadata);
+        const result = await generateTraitPack(traitName, config, {});
         
-        // Only update DB if we actually generated new files (not just metadata check)
         if (!result.metadata_only) {
-          await updateOutputManifest({ [traitName]: result });
           console.log(
             `   ✅ Generated ${displayName} (${result.variant_count} variants, ${Math.round((Date.now() - traitStartTime) / 1000)}s)`
           );
@@ -117,10 +81,10 @@ async function main() {
     console.log(`⚠️  Errors: ${errorCount} traits`);
     console.log(`⏱️  Total Duration: ${durationStr}`);
 
-    // Export final manifests
+    // Export JSON manifest for frontend
     console.log('');
-    console.log('📦 Exporting manifests...');
-    await finalizeManifest();
+    console.log('📦 Exporting JSON manifest...');
+    await exportTraitManifestJSON();
 
     if (errors.length > 0) {
       console.log('');
@@ -142,6 +106,9 @@ async function main() {
     console.error('💥 Pipeline failed:', error.message);
     console.error(error.stack);
     process.exit(1);
+  } finally {
+    // Close database connection
+    await closeManifestConnection();
   }
 }
 

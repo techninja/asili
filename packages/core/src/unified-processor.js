@@ -47,28 +47,100 @@ export class UnifiedProcessor {
       let manifestData;
       
       if (typeof window !== 'undefined') {
-        // Browser environment
+        // Browser environment - load from JSON
         const response = await fetch('/data/trait_manifest.json');
         manifestData = await response.json();
+        
+        // Cache bust based on generated_at timestamp
+        const cachedTimestamp = localStorage.getItem('trait_manifest_timestamp');
+        if (cachedTimestamp !== manifestData.generated_at) {
+          Debug.log(2, 'UnifiedProcessor', `Manifest updated (${cachedTimestamp} -> ${manifestData.generated_at})`);
+          localStorage.setItem('trait_manifest_timestamp', manifestData.generated_at);
+        }
       } else {
-        // Server environment
-        const fs = await import('fs/promises');
-        const path = await import('path');
-        
-        const manifestPath = PATHS.TRAIT_MANIFEST;
-        
-        Debug.log(2, 'UnifiedProcessor', `Loading trait manifest from: ${manifestPath}`);
-        const content = await fs.readFile(manifestPath, 'utf8');
-        manifestData = JSON.parse(content);
+        // Server environment - load directly from database
+        Debug.log(2, 'UnifiedProcessor', 'Loading trait manifest from database');
+        manifestData = await this._loadManifestFromDB();
       }
       
       this.traitManifest = manifestData;
       Debug.log(2, 'UnifiedProcessor', `Loaded ${Object.keys(manifestData.traits).length} traits`);
       
+      // Debug first trait in manifest
+      const firstTraitId = Object.keys(manifestData.traits)[0];
+      if (firstTraitId) {
+        Debug.log(2, 'UnifiedProcessor', `Sample manifest trait (${firstTraitId}):`, manifestData.traits[firstTraitId]);
+      }
+      
     } catch (error) {
       Debug.log(1, 'UnifiedProcessor', 'Failed to load trait manifest:', error);
       this.traitManifest = { traits: {} };
     }
+  }
+
+  async _loadManifestFromDB() {
+    const duckdb = await import('duckdb');
+    
+    const DB_PATH = PATHS.TRAIT_MANIFEST_DB;
+    Debug.log(2, 'UnifiedProcessor', `Loading from database: ${DB_PATH}`);
+    
+    const db = new duckdb.default.Database(DB_PATH, { access_mode: 'READ_ONLY' });
+    const conn = db.connect();
+    
+    const traits = await new Promise((resolve, reject) => {
+      conn.all(`
+        SELECT 
+          t.trait_id, t.name, t.description, t.categories,
+          t.expected_variants, t.estimated_unique_variants,
+          t.emoji, t.editorial_name, t.editorial_description,
+          t.trait_type, t.unit, t.phenotype_mean, t.phenotype_sd,
+          t.reference_population
+        FROM traits t
+      `, (err, rows) => err ? reject(err) : resolve(rows));
+    });
+    
+    const manifest = {
+      version: '1.0',
+      generated_at: new Date().toISOString(),
+      traits: {}
+    };
+    
+    for (const trait of traits) {
+      const pgsCount = await new Promise((resolve, reject) => {
+        conn.all('SELECT COUNT(*) as count FROM trait_pgs WHERE trait_id = ?', 
+          [trait.trait_id], (err, rows) => err ? reject(err) : resolve(rows[0].count));
+      });
+      
+      let categories = [];
+      try {
+        categories = trait.categories ? JSON.parse(trait.categories) : [];
+      } catch (e) {
+        categories = trait.categories ? trait.categories.split(',').map(c => c.trim()).filter(Boolean) : [];
+      }
+      
+      manifest.traits[trait.trait_id] = {
+        trait_id: trait.trait_id,
+        name: trait.editorial_name || trait.name,
+        description: trait.editorial_description || trait.description,
+        emoji: trait.emoji || '',
+        trait_type: trait.trait_type || 'disease_risk',
+        unit: trait.unit || null,
+        phenotype_mean: trait.phenotype_mean || null,
+        phenotype_sd: trait.phenotype_sd || null,
+        reference_population: trait.reference_population || null,
+        categories: categories,
+        expected_variants: trait.expected_variants ? Number(trait.expected_variants) : 0,
+        estimated_unique_variants: trait.estimated_unique_variants ? Number(trait.estimated_unique_variants) : 0,
+        pgs_count: Number(pgsCount),
+        file_path: `packs/${trait.trait_id.replace(/:/g, '_')}_hg38.parquet`
+      };
+    }
+    
+    conn.close();
+    db.close();
+    
+    Debug.log(2, 'UnifiedProcessor', `Loaded ${Object.keys(manifest.traits).length} traits from database`);
+    return manifest;
   }
 
   subscribe(callback) {
@@ -193,7 +265,7 @@ export class UnifiedProcessor {
   }
 
   // Risk calculation
-  async calculateTraitRisk(traitId, individualId, progressCallback) {
+  async calculateTraitRisk(traitId, individualId, progressCallback, preloadedDNA = null) {
     Debug.log(1, 'UnifiedProcessor', `Calculating risk for trait: ${traitId}, individual: ${individualId}`);
 
     if (!this.traitManifest) {
@@ -213,16 +285,28 @@ export class UnifiedProcessor {
         throw new Error(`No data file available for trait ${trait.name}`);
       }
 
-      // Get user DNA data (with caching)
+      // Get user DNA data (use preloaded if available)
       progressCallback?.('Loading user DNA...', 0);
-      let userDNA = this.dnaCache.get(individualId);
-      if (!userDNA) {
-        userDNA = await this.storage.getVariants(individualId);
-        if (!userDNA || userDNA.length === 0) {
-          throw new Error('No DNA data found for individual');
+      let userDNA;
+      
+      if (preloadedDNA) {
+        // Convert Map to array if needed
+        if (preloadedDNA instanceof Map) {
+          userDNA = Array.from(preloadedDNA.values());
+        } else {
+          userDNA = preloadedDNA;
         }
-        this.dnaCache.set(individualId, userDNA);
-        console.log(`🧬 Loaded ${userDNA.length} DNA variants for processing`);
+        Debug.log(2, 'UnifiedProcessor', `Using preloaded DNA: ${userDNA.length} variants`);
+      } else {
+        userDNA = this.dnaCache.get(individualId);
+        if (!userDNA) {
+          userDNA = await this.storage.getVariants(individualId);
+          if (!userDNA || userDNA.length === 0) {
+            throw new Error('No DNA data found for individual');
+          }
+          this.dnaCache.set(individualId, userDNA);
+          console.log(`🧬 Loaded ${userDNA.length} DNA variants for processing`);
+        }
       }
 
       // Build trait URL/path
@@ -239,17 +323,46 @@ export class UnifiedProcessor {
 
       Debug.log(2, 'UnifiedProcessor', `Using trait data source: ${traitSource}`);
 
-      // Extract normalization parameters from pgs_ids
+      // Fetch normalization parameters and performance weights from database
       const normalizationParams = {};
-      if (trait.pgs_ids) {
-        trait.pgs_ids.forEach(pgs => {
-          if (typeof pgs === 'object' && pgs.id) {
-            normalizationParams[pgs.id] = {
-              norm_mean: pgs.norm_mean || 0,
-              norm_sd: pgs.norm_sd || null
-            };
+      const pgsMetadata = {};
+      const pgsPerformanceMetrics = {};
+      
+      if (typeof window === 'undefined') {
+        // Server: fetch from database
+        try {
+          const { getTraitPGS } = await import('../../pipeline/lib/trait-db.js');
+          const { getPGS, getPGSPerformance } = await import('../../pipeline/lib/pgs-db.js');
+          
+          const pgsScores = await getTraitPGS(traitId);
+          for (const { pgs_id, performance_weight } of pgsScores) {
+            const pgs = await getPGS(pgs_id);
+            if (pgs) {
+              normalizationParams[pgs_id] = {
+                norm_mean: pgs.norm_mean,
+                norm_sd: pgs.norm_sd,
+                performance_weight: performance_weight || 0.5
+              };
+              pgsMetadata[pgs_id] = {
+                weight_type: pgs.weight_type,
+                method: pgs.method_name,
+                variants_number: pgs.variants_count ? Number(pgs.variants_count) : null
+              };
+              
+              // Fetch R² for quantitative traits
+              if (trait.trait_type === 'quantitative') {
+                const perfMetrics = await getPGSPerformance(pgs_id);
+                const r2Metrics = perfMetrics.filter(m => m.metric_type.includes('R2') || m.metric_type.includes('R²'));
+                const maxR2 = r2Metrics.length > 0 ? Math.max(...r2Metrics.map(m => m.metric_value)) : 0.05;
+                pgsPerformanceMetrics[pgs_id] = {
+                  r2: maxR2
+                };
+              }
+            }
           }
-        });
+        } catch (dbError) {
+          Debug.log(1, 'UnifiedProcessor', 'Failed to fetch normalization params from DB:', dbError.message);
+        }
       }
 
       // Calculate risk using genomic processor
@@ -260,23 +373,42 @@ export class UnifiedProcessor {
           Debug.log(3, 'UnifiedProcessor', `Risk calculation progress: ${message} (${percent}%)`);
           progressCallback?.(message, percent);
         },
-        trait.pgs_metadata,
-        normalizationParams
+        pgsMetadata,
+        normalizationParams,
+        trait.trait_type || 'disease_risk',
+        trait.unit || null,
+        trait.phenotype_mean || null,
+        trait.phenotype_sd || null,
+        pgsPerformanceMetrics
       );
 
       Debug.log(1, 'UnifiedProcessor', `Risk calculation complete. Score: ${result.riskScore}`);
 
       // Format and cache result
       const riskData = {
-        riskScore: result.riskScore,
         zScore: result.zScore,
+        percentile: result.percentile,
+        confidence: result.confidence,
+        bestPGS: result.bestPGS,
+        bestPGSPerformance: result.bestPGSPerformance,
         pgsBreakdown: result.pgsBreakdown,
         pgsDetails: result.pgsDetails,
         matchedVariants: result.totalMatches || 0,
         totalVariants: trait.variant_count,
         traitLastUpdated: trait.last_updated,
-        calculatedAt: new Date().toISOString()
+        calculatedAt: new Date().toISOString(),
+        // Include trait metadata for display
+        phenotype_mean: trait.phenotype_mean,
+        phenotype_sd: trait.phenotype_sd,
+        reference_population: trait.reference_population,
+        trait_type: trait.trait_type,
+        unit: trait.unit
       };
+      
+      // Add value for quantitative traits
+      if (trait.trait_type === 'quantitative' && trait.unit && result.value !== undefined) {
+        riskData.value = result.value;
+      }
 
       // Cache the result using traditional storage
       await this.storage.storeRiskScore(individualId, traitId, riskData);
@@ -440,16 +572,27 @@ export class UnifiedProcessor {
   getAllTraits() {
     if (!this.traitManifest) return [];
     
-    return Object.entries(this.traitManifest.traits).map(([id, trait]) => ({
+    const traits = Object.entries(this.traitManifest.traits).map(([id, trait]) => ({
       id,
       name: trait.name,
       description: trait.description || `Polygenic risk score for ${trait.name}`,
       categories: trait.categories || ['Other Conditions'],
+      emoji: trait.emoji || '',
+      trait_type: trait.trait_type || 'disease_risk',
+      unit: trait.unit || null,
       file_path: trait.file_path,
       pgs_metadata: trait.pgs_metadata || {},
-      variant_count: trait.variant_count || 0,
+      variant_count: trait.expected_variants || 0,
+      pgs_count: trait.pgs_count || 0,
       last_updated: trait.last_updated
     }));
+    
+    // Debug first trait
+    if (traits.length > 0) {
+      Debug.log(2, 'UnifiedProcessor', 'Sample getAllTraits output:', traits[0]);
+    }
+    
+    return traits;
   }
 
   getTraitCategories() {

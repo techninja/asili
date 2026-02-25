@@ -74,24 +74,8 @@ export class ServerStorageManager extends StorageManager {
         created_at BIGINT
       )`,
       
-      // Risk scores cache
-      `CREATE TABLE IF NOT EXISTS risk_scores (
-        trait_id TEXT,
-        individual_id TEXT,
-        risk_score REAL,
-        pgs_breakdown TEXT,
-        pgs_details TEXT,
-        matched_variants INTEGER,
-        total_variants INTEGER,
-        trait_last_updated TEXT,
-        calculated_at BIGINT,
-        PRIMARY KEY (trait_id, individual_id)
-      )`,
-      
       // Indexes for performance
-      `CREATE INDEX IF NOT EXISTS idx_individuals_status ON individuals(status)`,
-      `CREATE INDEX IF NOT EXISTS idx_risk_scores_individual ON risk_scores(individual_id)`,
-      `CREATE INDEX IF NOT EXISTS idx_risk_scores_calculated ON risk_scores(calculated_at)`
+      `CREATE INDEX IF NOT EXISTS idx_individuals_status ON individuals(status)`
     ];
 
     for (const query of queries) {
@@ -364,17 +348,126 @@ export class ServerStorageManager extends StorageManager {
   async storeRiskScore(individualId, traitId, riskData) {
     await this.initialize();
     
-    Debug.log(1, 'ServerStorageManager', `💾 Storing risk score for ${individualId}:${traitId} - Score: ${riskData.riskScore}`);
+    Debug.log(1, 'ServerStorageManager', `💾 Storing risk score for ${individualId}:${traitId}`);
     
     try {
-      // Store directly to parquet file - no database storage
-      await this.appendToParquetFile(individualId, traitId, riskData);
+      const cacheFile = PATHS.RISK_SCORES_DB;
+      
+      // Ensure DB exists with schema
+      try {
+        await fs.access(cacheFile);
+      } catch {
+        await this.initializeEmptyParquet();
+      }
+      
+      // Calculate totals from pgsDetails
+      let totalMatched = 0;
+      let totalExpected = 0;
+      for (const details of Object.values(riskData.pgsDetails || {})) {
+        totalMatched += details.matchedVariants || 0;
+        totalExpected += details.metadata?.variants_count || 0;
+      }
+      
+      // Sort PGS by canonical ordering (best first)
+      const sortedPgs = Object.entries(riskData.pgsBreakdown || [])
+        .map(([pgsId, breakdown]) => ({
+          pgsId,
+          breakdown,
+          details: riskData.pgsDetails?.[pgsId]
+        }))
+        .sort((a, b) => {
+          const insuffA = a.details?.insufficientData || false;
+          const insuffB = b.details?.insufficientData || false;
+          if (insuffA !== insuffB) return insuffA ? 1 : -1;
+          
+          const perfA = a.details?.performanceMetric || 0;
+          const perfB = b.details?.performanceMetric || 0;
+          if (perfA !== perfB) return perfB - perfA;
+          
+          return Math.abs(b.breakdown.positiveSum + b.breakdown.negativeSum) - 
+                 Math.abs(a.breakdown.positiveSum + a.breakdown.negativeSum);
+        });
+      
+      const duckdb = await import('duckdb');
+      const writeDb = new duckdb.default.Database(cacheFile);
+      const writeConn = writeDb.connect();
+      
+      await new Promise((resolve, reject) => {
+        // Store trait-level result
+        writeConn.exec(`
+          INSERT OR REPLACE INTO trait_results VALUES (
+            '${individualId}', '${traitId}', 
+            ${riskData.bestPGS ? `'${riskData.bestPGS}'` : 'NULL'},
+            ${riskData.bestPGSPerformance || 'NULL'},
+            ${riskData.zScore !== null && riskData.zScore !== undefined ? riskData.zScore : 'NULL'},
+            ${riskData.percentile || 'NULL'},
+            ${riskData.confidence ? `'${riskData.confidence}'` : 'NULL'},
+            ${totalMatched},
+            ${totalExpected},
+            ${riskData.traitLastUpdated ? `'${riskData.traitLastUpdated}'` : 'NULL'},
+            ${Date.now()},
+            ${riskData.value !== null && riskData.value !== undefined ? riskData.value : 'NULL'}
+          )
+        `, (err) => {
+          if (err) return reject(err);
+          
+          // Store PGS-level results with sort order
+          const pgsInserts = [];
+          sortedPgs.forEach((item, index) => {
+            const { pgsId, breakdown, details } = item;
+            if (!details) return;
+            
+            const weightBucketsJson = breakdown.weightBuckets ? JSON.stringify(breakdown.weightBuckets).replace(/'/g, "''") : '[]';
+            const chromosomeCoverageJson = breakdown.chromosomeCoverage ? JSON.stringify(breakdown.chromosomeCoverage).replace(/'/g, "''") : '{}';
+            const topVariantsJson = details.topVariants ? JSON.stringify(details.topVariants).replace(/'/g, "''") : '[]';
+            
+            pgsInserts.push(`
+              ('${individualId}', '${traitId}', '${pgsId}',
+               ${details.score || 0}, 
+               ${details.zScore !== null && details.zScore !== undefined ? details.zScore : 'NULL'},
+               ${details.percentile || 'NULL'},
+               ${details.matchedVariants || 0},
+               ${details.metadata?.variants_count || 0},
+               ${details.confidence ? `'${details.confidence}'` : 'NULL'},
+               ${details.insufficientData ? 'TRUE' : 'FALSE'},
+               ${details.performanceMetric || 'NULL'},
+               ${breakdown.positive || 0}, ${breakdown.positiveSum || 0},
+               ${breakdown.negative || 0}, ${breakdown.negativeSum || 0},
+               ${index},
+               ${details.value !== null && details.value !== undefined ? details.value : 'NULL'},
+               '${weightBucketsJson}',
+               '${chromosomeCoverageJson}',
+               '${topVariantsJson}')
+            `);
+          });
+          
+          if (pgsInserts.length > 0) {
+            writeConn.exec(`
+              INSERT OR REPLACE INTO pgs_results VALUES ${pgsInserts.join(',')}
+            `, (err2) => {
+              writeConn.close();
+              writeDb.close();
+              if (err2) reject(err2);
+              else resolve();
+            });
+          } else {
+            writeConn.close();
+            writeDb.close();
+            resolve();
+          }
+        });
+      });
       
       Debug.log(1, 'ServerStorageManager', `✅ Successfully stored risk score for ${individualId}:${traitId}`);
     } catch (error) {
-      Debug.log(1, 'ServerStorageManager', `❌ Failed to store risk score for ${individualId}:${traitId}:`, error.message);
+      Debug.log(1, 'ServerStorageManager', `❌ Failed to store risk score:`, error.message);
       throw error;
     }
+  }
+
+  _getTotalExpectedVariants(pgsDetails) {
+    if (!pgsDetails) return 0;
+    return Object.values(pgsDetails).reduce((sum, d) => sum + (d.metadata?.variants_count || 0), 0);
   }
 
   async getCachedRiskScore(individualId, traitId) {
@@ -384,62 +477,122 @@ export class ServerStorageManager extends StorageManager {
     try {
       await fs.access(cacheFile);
       
-      // Use a separate read-only connection for queries to avoid locking
       const duckdb = await import('duckdb');
       const readDb = new duckdb.default.Database(cacheFile, duckdb.default.OPEN_READONLY);
       const readConn = readDb.connect();
       
-      const row = await new Promise((resolve, reject) => {
-        readConn.all(
-          `SELECT * FROM risk_scores WHERE individual_id = ? AND trait_id = ?`,
-          individualId, traitId,
-          (err, result) => {
+      const result = await new Promise((resolve, reject) => {
+        const sql = `SELECT 
+             tr.*,
+             (SELECT json_group_array(json_object(
+               'pgs_id', pgs_id, 'raw_score', raw_score, 'z_score', z_score,
+               'percentile', percentile, 'matched_variants', matched_variants,
+               'confidence', confidence, 'insufficient_data', insufficient_data,
+               'performance_metric', performance_metric,
+               'positive_variants', positive_variants, 'positive_sum', positive_sum,
+               'negative_variants', negative_variants, 'negative_sum', negative_sum,
+               'expected_variants', expected_variants, 'sort_order', sort_order,
+               'weight_buckets', weight_buckets, 'chromosome_coverage', chromosome_coverage,
+               'top_variants', top_variants
+             )) FROM (SELECT * FROM pgs_results WHERE individual_id = tr.individual_id AND trait_id = tr.trait_id ORDER BY sort_order ASC)) as pgs_list
+           FROM trait_results tr
+           WHERE tr.individual_id = '${individualId.replace(/'/g, "''")}' AND tr.trait_id = '${traitId.replace(/'/g, "''")}'`;
+        readConn.all(sql, (err, rows) => {
             readConn.close();
             readDb.close();
             if (err) reject(err);
-            else resolve(result?.[0] || null);
+            else resolve(rows?.[0] || null);
           }
         );
       });
       
-      if (!row) {
-        Debug.log(3, 'ServerStorageManager', `No cached result found for ${individualId}:${traitId}`);
-        return null;
-      }
+      if (!result) return null;
       
-      Debug.log(3, 'ServerStorageManager', `Found cached result for ${individualId}:${traitId}`);
+      const pgsList = JSON.parse(result.pgs_list || '[]');
+      const pgsBreakdown = {};
+      const pgsDetails = {};
+      
+      pgsList.forEach(pgs => {
+        const weightBuckets = typeof pgs.weight_buckets === 'string' ? JSON.parse(pgs.weight_buckets) : (pgs.weight_buckets || []);
+        const chromosomeCoverage = typeof pgs.chromosome_coverage === 'string' ? JSON.parse(pgs.chromosome_coverage) : (pgs.chromosome_coverage || {});
+        const topVariants = typeof pgs.top_variants === 'string' ? JSON.parse(pgs.top_variants) : (pgs.top_variants || []);
+        pgsBreakdown[pgs.pgs_id] = {
+          positive: pgs.positive_variants,
+          positiveSum: pgs.positive_sum,
+          negative: pgs.negative_variants,
+          negativeSum: pgs.negative_sum,
+          total: pgs.positive_variants + pgs.negative_variants,
+          weightBuckets,
+          chromosomeCoverage,
+          topVariants
+        };
+        pgsDetails[pgs.pgs_id] = {
+          score: pgs.raw_score,
+          zScore: pgs.z_score,
+          percentile: pgs.percentile,
+          matchedVariants: pgs.matched_variants,
+          confidence: pgs.confidence,
+          insufficientData: pgs.insufficient_data,
+          performanceMetric: pgs.performance_metric,
+          sortOrder: pgs.sort_order,
+          metadata: { variants_count: pgs.expected_variants }
+        };
+      });
+      
       return {
-        riskScore: row.risk_score,
-        zScore: row.z_score,
-        pgsBreakdown: JSON.parse(row.pgs_breakdown || '{}'),
-        pgsDetails: JSON.parse(row.pgs_details || '{}'),
-        matchedVariants: Number(row.matched_variants),
-        totalVariants: Number(row.total_variants),
-        traitLastUpdated: row.trait_last_updated,
-        calculatedAt: new Date(Number(row.calculated_at)).toISOString()
+        zScore: result.overall_z_score,
+        percentile: result.overall_percentile,
+        confidence: result.overall_confidence,
+        bestPGS: result.best_pgs_id,
+        bestPGSPerformance: result.best_pgs_performance,
+        matchedVariants: Number(result.total_matched_variants),
+        totalVariants: Number(result.total_expected_variants),
+        pgsBreakdown,
+        pgsDetails,
+        traitLastUpdated: result.trait_last_updated,
+        calculatedAt: new Date(Number(result.calculated_at)).toISOString(),
+        value: result.value
       };
     } catch (error) {
-      Debug.log(1, 'ServerStorageManager', `Error querying cached result for ${individualId}:${traitId}:`, error.message);
-      return null;
+      Debug.log(1, 'ServerStorageManager', `Error in getCachedRiskScore: ${error.message}`);
+      throw error;
     }
   }
 
   async getCachedResults(individualId) {
     await this.initialize();
     
-    const rows = await this._allQuery(
-      'SELECT * FROM risk_scores WHERE individual_id = ? ORDER BY calculated_at DESC',
-      [individualId]
-    );
+    const cacheFile = PATHS.RISK_SCORES_DB;
+    
+    try {
+      await fs.access(cacheFile);
+    } catch {
+      return [];
+    }
+    
+    const duckdb = await import('duckdb');
+    const readDb = new duckdb.default.Database(cacheFile, duckdb.default.OPEN_READONLY);
+    const readConn = readDb.connect();
+    
+    const rows = await new Promise((resolve, reject) => {
+      const sql = `SELECT * FROM trait_results WHERE individual_id = '${individualId.replace(/'/g, "''")}' ORDER BY calculated_at DESC`;
+      readConn.all(sql, (err, result) => {
+          readConn.close();
+          readDb.close();
+          if (err) reject(err);
+          else resolve(result || []);
+        }
+      );
+    });
     
     return rows.map(row => ({
       traitId: row.trait_id,
-      riskScore: row.risk_score,
-      zScore: row.z_score,
-      pgsBreakdown: JSON.parse(row.pgs_breakdown || '{}'),
-      pgsDetails: JSON.parse(row.pgs_details || '{}'),
-      matchedVariants: Number(row.matched_variants),
-      totalVariants: Number(row.total_variants),
+      zScore: row.overall_z_score,
+      percentile: row.overall_percentile,
+      confidence: row.overall_confidence,
+      bestPGS: row.best_pgs_id,
+      matchedVariants: Number(row.total_matched_variants),
+      totalVariants: Number(row.total_expected_variants),
       traitLastUpdated: row.trait_last_updated,
       calculatedAt: new Date(Number(row.calculated_at)).toISOString()
     }));
@@ -456,21 +609,28 @@ export class ServerStorageManager extends StorageManager {
       return [];
     }
     
-    // ATTACH the external database and query it
-    await this._runQuery(`ATTACH '${cacheFile.replace(/\\/g, '/')}' AS risk_cache`);
-    const rows = await this._allQuery(`SELECT * FROM risk_cache.risk_scores ORDER BY individual_id, calculated_at DESC`);
-    await this._runQuery(`DETACH risk_cache`);
+    const duckdb = await import('duckdb');
+    const readDb = new duckdb.default.Database(cacheFile, duckdb.default.OPEN_READONLY);
+    const readConn = readDb.connect();
+    
+    const rows = await new Promise((resolve, reject) => {
+      readConn.all('SELECT * FROM trait_results ORDER BY individual_id, calculated_at DESC', (err, result) => {
+        readConn.close();
+        readDb.close();
+        if (err) reject(err);
+        else resolve(result || []);
+      });
+    });
     
     return rows.map(row => ({
       individual_id: row.individual_id,
       trait_id: row.trait_id,
-      risk_score: row.risk_score,
-      z_score: row.z_score,
-      pgs_breakdown: row.pgs_breakdown,
-      pgs_details: row.pgs_details,
-      matched_variants: Number(row.matched_variants),
-      total_variants: Number(row.total_variants),
-      trait_last_updated: row.trait_last_updated,
+      z_score: row.overall_z_score,
+      percentile: row.overall_percentile,
+      confidence: row.overall_confidence,
+      best_pgs_id: row.best_pgs_id,
+      matched_variants: Number(row.total_matched_variants),
+      total_variants: Number(row.total_expected_variants),
       calculated_at: Number(row.calculated_at)
     }));
   }
@@ -478,10 +638,33 @@ export class ServerStorageManager extends StorageManager {
   async deleteIndividual(individualId) {
     await this.initialize();
     
-    // Delete from all tables
+    // Delete from main DB tables
     await this._runQuery('DELETE FROM individuals WHERE id = ?', [individualId]);
     await this._runQuery('DELETE FROM variant_files WHERE individual_id = ?', [individualId]);
-    await this._runQuery('DELETE FROM risk_scores WHERE individual_id = ?', [individualId]);
+    
+    // Delete from risk results DB
+    const cacheFile = PATHS.RISK_SCORES_DB;
+    try {
+      await fs.access(cacheFile);
+      const duckdb = await import('duckdb');
+      const writeDb = new duckdb.default.Database(cacheFile);
+      const writeConn = writeDb.connect();
+      
+      await new Promise((resolve, reject) => {
+        writeConn.exec(`
+          DELETE FROM trait_results WHERE individual_id = '${individualId}';
+          DELETE FROM pgs_results WHERE individual_id = '${individualId}';
+          DELETE FROM pgs_top_variants WHERE individual_id = '${individualId}';
+        `, (err) => {
+          writeConn.close();
+          writeDb.close();
+          if (err) reject(err);
+          else resolve();
+        });
+      });
+    } catch (error) {
+      // Risk DB might not exist yet
+    }
     
     // Delete variant file
     const variantFile = path.join(this.dataDir, 'variants', `${individualId}.json`);
@@ -493,9 +676,29 @@ export class ServerStorageManager extends StorageManager {
   }
 
   async clearCache() {
-    await this.initialize();
+    const cacheFile = PATHS.RISK_SCORES_DB;
     
-    await this._runQuery('DELETE FROM risk_scores');
+    try {
+      await fs.access(cacheFile);
+      const duckdb = await import('duckdb');
+      const writeDb = new duckdb.default.Database(cacheFile);
+      const writeConn = writeDb.connect();
+      
+      await new Promise((resolve, reject) => {
+        writeConn.exec(`
+          DELETE FROM trait_results;
+          DELETE FROM pgs_results;
+          DELETE FROM pgs_top_variants;
+        `, (err) => {
+          writeConn.close();
+          writeDb.close();
+          if (err) reject(err);
+          else resolve();
+        });
+      });
+    } catch (error) {
+      // DB might not exist yet
+    }
   }
 
   async initializeEmptyParquet() {
@@ -509,51 +712,55 @@ export class ServerStorageManager extends StorageManager {
       Debug.log(1, 'ServerStorageManager', 'Creating empty risk scores DB...');
     }
     
-    // Create empty DuckDB file with risk scores table
     await this._runQuery(`
       ATTACH '${cacheFile.replace(/\\/g, '/')}' AS risk_cache;
-      CREATE TABLE risk_cache.risk_scores (
-        individual_id VARCHAR,
-        trait_id VARCHAR,
-        risk_score DOUBLE,
-        z_score DOUBLE,
-        pgs_breakdown VARCHAR,
-        pgs_details VARCHAR,
-        matched_variants INTEGER,
-        total_variants INTEGER,
+      
+      CREATE TABLE risk_cache.trait_results (
+        individual_id VARCHAR NOT NULL,
+        trait_id VARCHAR NOT NULL,
+        best_pgs_id VARCHAR,
+        best_pgs_performance DOUBLE,
+        overall_z_score DOUBLE,
+        overall_percentile DOUBLE,
+        overall_confidence VARCHAR,
+        total_matched_variants INTEGER,
+        total_expected_variants INTEGER,
         trait_last_updated VARCHAR,
         calculated_at BIGINT,
+        value DOUBLE,
         PRIMARY KEY (individual_id, trait_id)
       );
+      
+      CREATE TABLE risk_cache.pgs_results (
+        individual_id VARCHAR NOT NULL,
+        trait_id VARCHAR NOT NULL,
+        pgs_id VARCHAR NOT NULL,
+        raw_score DOUBLE,
+        z_score DOUBLE,
+        percentile DOUBLE,
+        matched_variants INTEGER,
+        expected_variants INTEGER,
+        confidence VARCHAR,
+        insufficient_data BOOLEAN DEFAULT FALSE,
+        performance_metric DOUBLE,
+        positive_variants INTEGER,
+        positive_sum DOUBLE,
+        negative_variants INTEGER,
+        negative_sum DOUBLE,
+        sort_order INTEGER,
+        value DOUBLE,
+        weight_buckets JSON,
+        chromosome_coverage JSON,
+        top_variants JSON,
+        PRIMARY KEY (individual_id, trait_id, pgs_id)
+      );
+      
       DETACH risk_cache;
     `);
     
     Debug.log(1, 'ServerStorageManager', 'Empty risk scores DB created successfully');
   }
 
-  async appendToParquetFile(individualId, traitId, riskData) {
-    await this.initialize();
-    
-    const cacheFile = PATHS.RISK_SCORES_DB;
-    
-    // Simple INSERT with ATTACH/DETACH
-    await this._runQuery(`
-      ATTACH '${cacheFile.replace(/\\/g, '/')}' AS risk_cache;
-      INSERT OR REPLACE INTO risk_cache.risk_scores VALUES (
-        '${individualId}',
-        '${traitId}',
-        ${riskData.riskScore},
-        ${riskData.zScore !== null && riskData.zScore !== undefined ? riskData.zScore : 'NULL'},
-        '${JSON.stringify(riskData.pgsBreakdown || {})}',
-        '${JSON.stringify(riskData.pgsDetails || {})}',
-        ${Number(riskData.matchedVariants || 0)},
-        ${Number(riskData.totalVariants || 0)},
-        ${riskData.traitLastUpdated ? `'${riskData.traitLastUpdated}'` : 'NULL'},
-        ${Number(Date.now())}
-      );
-      DETACH risk_cache;
-    `);
-  }
 
   async cleanup() {
     if (this.conn) {

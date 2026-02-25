@@ -103,14 +103,18 @@ export class IndividualManager extends HTMLElement {
   }
 
   updateUI(state) {
+    console.log('updateUI called, showingUpload:', this.showingUpload, 'selectedFile:', this.selectedFile?.name, 'individuals:', state.individuals.length, 'uploadState:', state.uploadState);
     const container = this.shadowRoot.getElementById('container');
     if (!container) return;
 
     if (state.individuals.length === 0) {
+      console.log('rendering no data state');
       this.renderNoDataState(state);
     } else if (state.individuals.length === 1) {
+      console.log('rendering single user state');
       this.renderSingleUserState(state);
     } else {
+      console.log('rendering multiple users state');
       this.renderMultipleUsersState(state);
     }
 
@@ -222,7 +226,6 @@ export class IndividualManager extends HTMLElement {
       container.innerHTML =
         '<import-progress id="deleteProgress" name="Deleting Data" emoji="🗑️"></import-progress>';
     } else if (this.showingUpload) {
-    } else if (this.showingUpload) {
       container.innerHTML = `
                 <div class="multiple-users-state">
                     <div class="selector-row">
@@ -243,8 +246,12 @@ export class IndividualManager extends HTMLElement {
             `;
 
       const select = this.shadowRoot.getElementById('individualSelect');
-      select.onchange = e =>
-        useAppStore.getState().setSelectedIndividual(e.target.value);
+      select.onchange = e => {
+        const selectedId = e.target.value;
+        const individual = state.individuals.find(i => i.id === selectedId);
+        const isReady = individual && (individual.status === 'ready' || individual.status === 'complete');
+        useAppStore.getState().setSelectedIndividual(selectedId, isReady);
+      };
 
       this.shadowRoot.getElementById('editBtn').onclick = () => {
         const selected = state.individuals.find(
@@ -264,9 +271,7 @@ export class IndividualManager extends HTMLElement {
                                   ind.status === 'complete' || ind.status === 'ready'
                                     ? ''
                                     : ' (Failed Import)';
-                                const disabled =
-                                  ind.status !== 'complete' && ind.status !== 'ready' ? 'disabled' : '';
-                                return `<option value="${ind.id}" ${ind.id === state.selectedIndividual ? 'selected' : ''} ${disabled}>
+                                return `<option value="${ind.id}" ${ind.id === state.selectedIndividual ? 'selected' : ''}>
                                     ${ind.emoji || '👤'} ${ind.name}${status}
                                 </option>`;
                               })
@@ -282,8 +287,12 @@ export class IndividualManager extends HTMLElement {
             `;
 
       const select = this.shadowRoot.getElementById('individualSelect');
-      select.onchange = e =>
-        useAppStore.getState().setSelectedIndividual(e.target.value);
+      select.onchange = e => {
+        const selectedId = e.target.value;
+        const individual = state.individuals.find(i => i.id === selectedId);
+        const isReady = individual && (individual.status === 'ready' || individual.status === 'complete');
+        useAppStore.getState().setSelectedIndividual(selectedId, isReady);
+      };
 
       this.shadowRoot.getElementById('editBtn').onclick = () => {
         const selected = state.individuals.find(
@@ -330,21 +339,26 @@ export class IndividualManager extends HTMLElement {
   }
 
   startImport() {
+    console.log('startImport called');
     this.showingUpload = true;
-    this.shadowRoot.getElementById('fileInput').click();
+    const fileInput = this.shadowRoot.getElementById('fileInput');
+    console.log('fileInput:', fileInput);
+    fileInput.click();
   }
 
   setupEventListeners() {
-    const fileInput = this.shadowRoot.getElementById('fileInput');
-
-    fileInput.onchange = e => {
-      const file = e.target.files[0];
-      if (file) {
-        this.selectedFile = file;
-        // Force re-render to show upload component
-        this.updateUI(useAppStore.getState());
+    // Use event delegation since file input persists across renders
+    this.shadowRoot.addEventListener('change', (e) => {
+      console.log('change event:', e.target.id, e.target.files);
+      if (e.target.id === 'fileInput') {
+        const file = e.target.files[0];
+        console.log('file selected:', file?.name);
+        if (file) {
+          this.selectedFile = file;
+          this.updateUI(useAppStore.getState());
+        }
       }
-    };
+    });
   }
 
   setupUploadListeners() {
@@ -404,7 +418,6 @@ export class IndividualManager extends HTMLElement {
     if (
       !confirm('Remove all data for this individual? This cannot be undone.')
     ) {
-      // User cancelled the confirm dialog, reset any flags
       const store = useAppStore.getState();
       store.cancelImport = false;
       this.importAborted = false;
@@ -415,36 +428,29 @@ export class IndividualManager extends HTMLElement {
     store.setUploadState('deleting', 'Starting deletion...');
 
     try {
-      // Mark individual as not ready during deletion
-      await this.processor.storage.updateIndividual(individualId, {
-        status: 'deleting'
-      });
+      console.log('removeIndividual - processor:', this.processor);
+      
+      if (!this.processor) {
+        throw new Error('Processor not initialized');
+      }
 
-      await this.processor.clearCachedResults(individualId);
-
-      // Get individual info for progress display
-      const individual = store.individuals.find(ind => ind.id === individualId);
-      const individualName = individual
-        ? `${individual.emoji || '👤'} ${individual.name}`
-        : 'Individual';
-
-      await this.processor.storage.deleteIndividual(
-        individualId,
-        (message, percent) => {
-          store.setUploadState('deleting', message, {
-            name: individualName,
-            emoji: ''
-          });
+      try {
+        await this.processor.storage.deleteIndividual(individualId);
+      } catch (error) {
+        // If 404, individual doesn't exist on server - just remove from local state
+        if (!error.message?.includes('404')) {
+          throw error;
         }
-      );
+        console.log('Individual not found on server, removing from local state only');
+      }
 
-      // Update state
       if (store.selectedIndividual === individualId) {
         store.setSelectedIndividual(null);
       }
       store.setUploadState('idle');
       await this.loadIndividuals();
     } catch (error) {
+      console.error('removeIndividual error:', error);
       Debug.error('IndividualManager', 'Failed to remove individual:', error);
       store.setUploadState('idle');
       alert('Failed to remove individual');
@@ -472,13 +478,14 @@ export class IndividualManager extends HTMLElement {
     const store = useAppStore.getState();
     const individualId = `${Date.now()}_${name.replace(/\s+/g, '_')}`;
 
-    // Set individual as selected but not ready
-    store.setSelectedIndividual(individualId, false);
-    store.setUploadState('importing', 'Starting import...', { name, emoji });
+    // Don't select individual yet - wait until import completes
+    console.log('Setting uploadState to importing');
+    useAppStore.getState().setUploadState('importing', 'Starting import...', { name, emoji });
+    console.log('uploadState after set:', useAppStore.getState().uploadState);
 
     // Hide upload form and show progress
     this.showingUpload = false;
-    this.updateUI(store);
+    this.updateUI(useAppStore.getState());
 
     try {
       this.importAborted = false;
@@ -508,10 +515,13 @@ export class IndividualManager extends HTMLElement {
       await this.processor.storage.updateIndividual(individualId, {
         status: 'complete'
       });
-      // Then update store
+      
+      // Set state to idle before loading individuals
+      store.setUploadState('idle');
+      
+      // Then update store and select individual
       await this.loadIndividuals();
       store.setSelectedIndividual(individualId, true);
-      store.setUploadState('idle');
 
       Debug.log('IndividualManager', 'Import completed successfully', result);
     } catch (error) {

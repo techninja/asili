@@ -101,7 +101,7 @@ function calculatePerformanceWeight(metrics) {
     case 'C-index':
     case 'AUROC':
     case 'AUC':
-      return Math.max(0, (value - 0.5) * 2);
+      return Math.max(0, Math.min(1, (value - 0.5) * 2));
     case 'R²':
       return Math.min(1, value);
     case 'OR':

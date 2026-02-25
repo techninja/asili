@@ -129,7 +129,7 @@ export class ServerGenomicProcessor extends GenomicProcessor {
     };
   }
 
-  async calculateRisk(traitUrl, userDNA, progressCallback, pgsMetadata = {}, normalizationParams = {}) {
+  async calculateRisk(traitUrl, userDNA, progressCallback, pgsMetadata = {}, normalizationParams = {}, traitType = 'disease_risk', unit = null, phenotypeMean = null, phenotypeSd = null, pgsPerformanceMetrics = {}) {
     Debug.log(1, 'ServerGenomicProcessor', `Starting risk calculation with ${userDNA.length} variants`);
     
     await this.initialize();
@@ -211,7 +211,7 @@ export class ServerGenomicProcessor extends GenomicProcessor {
       progressCallback?.('Merging results...', 90);
       
       // Merge results from all workers
-      const merged = this._mergeResults(results, normalizationParams);
+      const merged = this._mergeResults(results, normalizationParams, traitType, unit, phenotypeMean, phenotypeSd, pgsPerformanceMetrics);
       
       // Log final performance stats
       const stats = perfMonitor.getStats();
@@ -219,8 +219,7 @@ export class ServerGenomicProcessor extends GenomicProcessor {
       
       progressCallback?.('Complete', 100);
       
-      console.log(`✅ Risk calculation complete: score=${merged.riskScore}, matches=${merged.totalMatches}`);
-      
+
       return merged;
       
     } catch (error) {
@@ -249,7 +248,7 @@ export class ServerGenomicProcessor extends GenomicProcessor {
     });
   }
 
-  _mergeResults(results, normalizationParams = {}) {
+  _mergeResults(results, normalizationParams = {}, traitType = 'disease_risk', unit = null, phenotypeMean = null, phenotypeSd = null, pgsPerformanceMetrics = {}) {
     const calculator = new SharedRiskCalculator(normalizationParams);
     
     for (const result of results) {
@@ -264,6 +263,14 @@ export class ServerGenomicProcessor extends GenomicProcessor {
         merged.positiveSum += breakdown.positiveSum;
         merged.negativeSum += breakdown.negativeSum;
         merged.total += breakdown.total;
+        if (breakdown.weightDistribution) {
+          merged.weightDistribution.push(...breakdown.weightDistribution);
+        }
+        if (breakdown.chromosomeCoverage) {
+          for (const [chr, count] of Object.entries(breakdown.chromosomeCoverage)) {
+            merged.chromosomeCoverage[chr] = (merged.chromosomeCoverage[chr] || 0) + count;
+          }
+        }
       }
       
       // Merge PGS details
@@ -279,7 +286,7 @@ export class ServerGenomicProcessor extends GenomicProcessor {
       calculator.totalScore += result.totalScore;
     }
     
-    return calculator.finalize();
+    return calculator.finalize(traitType, unit, phenotypeMean, phenotypeSd, pgsPerformanceMetrics);
   }
 
   async cacheResults(results) {

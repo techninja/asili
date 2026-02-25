@@ -50,13 +50,13 @@ class PGSApiClient {
       const age = Date.now() - cached.timestamp;
       const ageInDays = Math.floor(age / (24 * 60 * 60 * 1000));
       if (age < 180 * 24 * 60 * 60 * 1000) {
-        console.log(`        ✓ Cache HIT: ${url.split('/').pop()} (${ageInDays} days old)`);
+        // console.log(`        ✓ Cache HIT: ${url.split('/').pop()} (${ageInDays} days old)`);
         return cached.data;
       } else {
         console.log(`        ⚠ Cache EXPIRED: ${url.split('/').pop()} (${ageInDays} days old) - ${filePath}`);
       }
     } catch (err) {
-      console.log(`        ✗ Cache MISS: ${url.split('/').pop()} (${err.code || err.message}) - ${filePath}`);
+      // console.log(`        ✗ Cache MISS: ${url.split('/').pop()} (${err.code || err.message}) - ${filePath}`);
     }
     return null;
   }

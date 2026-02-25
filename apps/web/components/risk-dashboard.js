@@ -47,67 +47,64 @@ export class RiskDashboard extends HTMLElement {
   }
 
   async loadAvailableTraitsWithStreaming() {
+    Debug.log(1, 'RiskDashboard', 'loadAvailableTraitsWithStreaming called');
     if (!this.processor) {
       Debug.log(1, 'RiskDashboard', 'No processor available');
       return;
     }
     
     try {
-      // Try loading from cache first
-      Debug.log(1, 'RiskDashboard', 'Attempting to load traits from cache');
-      const cachedTraits = await this.traitCache.getAllTraits();
-      if (cachedTraits.length > 0) {
-        Debug.log(1, 'RiskDashboard', `Loaded ${cachedTraits.length} traits from cache`);
-        this.availableTraits = cachedTraits;
-        this.populateCategoryFilter();
-        this.filterTraits();
-        
-        // Load risk results immediately after traits
-        const state = useAppStore.getState();
-        Debug.log(1, 'RiskDashboard', `Checking cache load: individual=${state.selectedIndividual}, cacheLoaded=${this.cacheLoaded}`);
-        if (state.selectedIndividual) {
-          this.loadCachedRiskDataFromIndexedDB(state.selectedIndividual);
-          this.cacheLoaded = true;
-        }
-        
-        return; // Skip streaming if cache exists
+      // Load traits directly from manifest
+      Debug.log(1, 'RiskDashboard', 'Loading traits from manifest');
+      
+      // Use generated_at timestamp for cache busting
+      const cachedTimestamp = localStorage.getItem('trait_manifest_timestamp');
+      const url = cachedTimestamp 
+        ? `/data/trait_manifest.json?t=${cachedTimestamp}`
+        : '/data/trait_manifest.json';
+      
+      const response = await fetch(url);
+      const manifest = await response.json();
+      
+      // Update cached timestamp if changed
+      if (manifest.generated_at && manifest.generated_at !== cachedTimestamp) {
+        localStorage.setItem('trait_manifest_timestamp', manifest.generated_at);
+        Debug.log(2, 'RiskDashboard', `Manifest updated: ${manifest.generated_at}`);
       }
       
-      Debug.log(1, 'RiskDashboard', 'No cached traits found, will stream from DB');
+      // Debug first trait from manifest
+      const firstTraitId = Object.keys(manifest.traits)[0];
+      const firstTrait = manifest.traits[firstTraitId];
+      Debug.log(2, 'RiskDashboard', `Sample manifest trait (${firstTraitId}):`, firstTrait);
+      Debug.log(2, 'RiskDashboard', `Categories in manifest:`, firstTrait.categories);
       
-      // Ensure local processor exists
-      if (!this.processor.localProcessor) {
-        Debug.log(1, 'RiskDashboard', 'Creating local processor');
-        await this.processor.getAllTraits();
-      }
+      this.availableTraits = Object.values(manifest.traits).map(trait => {
+        const mapped = {
+          id: trait.trait_id,
+          name: trait.name,
+          description: trait.description,
+          categories: trait.categories || [],
+          emoji: trait.emoji || '',
+          trait_type: trait.trait_type || 'disease_risk',
+          unit: trait.unit || null,
+          file_path: trait.file_path,
+          variant_count: trait.expected_variants || 0,
+          pgs_count: trait.pgs_count || 0
+        };
+        return mapped;
+      });
       
-      // Subscribe to streaming trait updates
-      if (this.processor.localProcessor) {
-        Debug.log(1, 'RiskDashboard', 'Setting up subscription to AsiliProcessor');
-        
-        let batchBuffer = [];
-        let cacheTimeout = null;
-        
-        this.processor.localProcessor.onProgress(({ event, data }) => {
-          if (event === 'traitsLoaded' && data?.traits) {
-            Debug.log(2, 'RiskDashboard', `Received ${data.traits.length} traits from stream`);
-            batchBuffer.push(...data.traits);
-            
-            if (cacheTimeout) clearTimeout(cacheTimeout);
-            cacheTimeout = setTimeout(async () => {
-              Debug.log(1, 'RiskDashboard', `Caching batch of ${batchBuffer.length} traits`);
-              await this.traitCache.cacheTraits(batchBuffer);
-              this.availableTraits = await this.traitCache.getAllTraits();
-              batchBuffer = [];
-              
-              this.populateCategoryFilter();
-              this.filterTraits();
-            }, 200);
-          }
-        });
-        
-        Debug.log(1, 'RiskDashboard', 'Initializing processor');
-        await this.processor.localProcessor.initialize();
+      Debug.log(1, 'RiskDashboard', `Loaded ${this.availableTraits.length} traits from manifest`);
+      Debug.log(2, 'RiskDashboard', `First mapped trait:`, this.availableTraits[0]);
+      Debug.log(2, 'RiskDashboard', `First mapped trait categories:`, this.availableTraits[0].categories);
+      this.populateCategoryFilter();
+      this.filterTraits();
+      
+      // Load risk results if individual is selected
+      const state = useAppStore.getState();
+      if (state.selectedIndividual) {
+        this.loadCachedRiskDataFromIndexedDB(state.selectedIndividual);
+        this.cacheLoaded = true;
       }
     } catch (error) {
       Debug.error('RiskDashboard', 'Failed to load traits:', error);
@@ -149,27 +146,6 @@ export class RiskDashboard extends HTMLElement {
       }
       this.updateDisplay(state);
     });
-  }
-
-  async loadAvailableTraits() {
-    if (!this.processor) return;
-    
-    try {
-      this.availableTraits = await this.processor.getAllTraits();
-      this.populateCategoryFilter();
-      this.filterTraits();
-    } catch (error) {
-      Debug.error('RiskDashboard', 'Failed to load traits:', error);
-    }
-  }
-
-  updateTraitsFromStream(traits) {
-    Debug.log(2, 'RiskDashboard', `Updating display with ${traits.length} traits`);
-    this.availableTraits = traits;
-    if (traits.length > 0) {
-      this.populateCategoryFilter();
-      this.filterTraits();
-    }
   }
 
   updateDisplay(state) {
@@ -239,6 +215,11 @@ export class RiskDashboard extends HTMLElement {
     const sortBy = sortSelect.value;
 
     Debug.log(2, 'RiskDashboard', `Filtering ${this.availableTraits.length} traits`);
+    
+    // Debug: Check first trait structure
+    if (this.availableTraits.length > 0) {
+      Debug.log(2, 'RiskDashboard', 'Sample trait:', this.availableTraits[0]);
+    }
 
     // Filter traits
     let filteredTraits = this.availableTraits.filter(trait => {

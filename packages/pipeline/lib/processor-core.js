@@ -4,7 +4,7 @@ import { spawn } from 'child_process';
 import { gunzip } from 'zlib';
 import { promisify } from 'util';
 import pgsApiClient from '../pgs-api-client.js';
-import { updateOutputManifest } from './manifest.js';
+import { shouldExcludePGS } from './pgs-filter.js';
 
 const OUTPUT_DIR = '/output';
 const PATHS = {
@@ -17,67 +17,18 @@ const gunzipAsync = promisify(gunzip);
 // Global metadata cache to avoid duplicate API calls
 const globalMetadataCache = new Map();
 
-// Filter for excluding problematic PGS scores
-const EXCLUDED_PGS_IDS = ['PGS002724']; // GIGASTROKE
-
-const LEGITIMATE_NR_METHODS = [
-  'sparssnp', 'snpnet', 'penalized regression', 'lasso', 'ridge regression',
-  'elastic net', 'ldpred', 'ldpred2', 'prsice', 'lassosum', 'bigstatsr', 'bigsnpr'
-];
-
-const INTEGRATIVE_METHOD_KEYWORDS = [
-  'integrative', 'meta-analysis', 'meta analysis', 'component', 'composite',
-  'combined', 'ensemble', 'multi-trait', 'multitrait', 'cross-trait', 'crosstrait'
-];
-
-export function shouldExcludePGS(pgsId, scoreData) {
-  if (EXCLUDED_PGS_IDS.includes(pgsId)) {
-    return true;
-  }
-  
-  const methodName = (scoreData.method_name || '').toLowerCase();
-  const weightType = scoreData.weight_type || '';
-  
-  for (const keyword of INTEGRATIVE_METHOD_KEYWORDS) {
-    if (methodName.includes(keyword)) {
-      return true;
-    }
-  }
-  
-  if (weightType === 'NR') {
-    for (const legitMethod of LEGITIMATE_NR_METHODS) {
-      if (methodName.includes(legitMethod)) {
-        return false;
-      }
-    }
-    if (!methodName || methodName.trim() === '') {
-      return true;
-    }
-    return false;
-  }
-  
-  return false;
-}
-
 export async function collectPgsMetadata(pgsIds, existingMetadata = {}, traitId = null) {
   const metadata = {};
   const uncachedIds = [];
   const excludedIds = [];
 
-  console.log(`    🔍 DEBUG: Checking metadata for ${pgsIds.length} PGS IDs`);
-  console.log(`    🔍 DEBUG: existingMetadata has ${Object.keys(existingMetadata).length} entries`);
-  console.log(`    🔍 DEBUG: globalMetadataCache has ${globalMetadataCache.size} entries`);
-
   // Check existing manifest metadata first, then global cache
   for (const pgsId of pgsIds) {
     if (existingMetadata[pgsId]) {
-      console.log(`    🔍 DEBUG: ${pgsId} found in existingMetadata`);
       metadata[pgsId] = existingMetadata[pgsId];
     } else if (globalMetadataCache.has(pgsId)) {
-      console.log(`    🔍 DEBUG: ${pgsId} found in globalMetadataCache`);
       metadata[pgsId] = globalMetadataCache.get(pgsId);
     } else {
-      console.log(`    🔍 DEBUG: ${pgsId} NOT FOUND in cache, will fetch`);
       uncachedIds.push(pgsId);
     }
   }
@@ -93,8 +44,6 @@ export async function collectPgsMetadata(pgsIds, existingMetadata = {}, traitId 
     `    Collecting metadata for ${uncachedIds.length} new PGS scores...`
   );
 
-  const { updateTraitMetadata } = await import('./manifest-db.js');
-
   // Process sequentially to avoid rate limits
   for (let i = 0; i < uncachedIds.length; i++) {
     const pgsId = uncachedIds[i];
@@ -104,14 +53,15 @@ export async function collectPgsMetadata(pgsIds, existingMetadata = {}, traitId 
 
     try {
       const scoreData = await pgsApiClient.getScore(pgsId);
-      
+
       // Check if PGS should be excluded
-      if (shouldExcludePGS(pgsId, scoreData)) {
-        console.log(`      ⚠ Excluding ${pgsId}: Integrative PGS with incompatible weights`);
+      const filterResult = await shouldExcludePGS(pgsId, scoreData, pgsApiClient);
+      if (filterResult.exclude) {
+        console.log(`      ⚠ Excluding ${pgsId}: ${filterResult.reason}`);
         excludedIds.push(pgsId);
         continue;
       }
-      
+
       const pgsMetadata = {
         name: scoreData.name || '',
         trait: scoreData.trait_reported || '',
@@ -123,11 +73,6 @@ export async function collectPgsMetadata(pgsIds, existingMetadata = {}, traitId 
       console.log(
         `      ✓ ${pgsId}: ${scoreData.trait_reported || 'Unknown trait'}`
       );
-
-      // Save metadata to DB immediately if traitId provided
-      if (traitId) {
-        await updateTraitMetadata(traitId, metadata);
-      }
     } catch (error) {
       console.log(`      ⚠ ${pgsId}: ${error.message}`);
       const fallbackMetadata = {
@@ -137,11 +82,6 @@ export async function collectPgsMetadata(pgsIds, existingMetadata = {}, traitId 
       };
       metadata[pgsId] = fallbackMetadata;
       globalMetadataCache.set(pgsId, fallbackMetadata);
-
-      // Save metadata to DB even for failed fetches
-      if (traitId) {
-        await updateTraitMetadata(traitId, metadata);
-      }
     }
 
     // Add delay between requests
@@ -149,7 +89,7 @@ export async function collectPgsMetadata(pgsIds, existingMetadata = {}, traitId 
       await new Promise(resolve => setTimeout(resolve, 200));
     }
   }
-  
+
   if (excludedIds.length > 0) {
     console.log(`    Excluded ${excludedIds.length} integrative PGS scores: ${excludedIds.join(', ')}`);
   }
@@ -232,7 +172,7 @@ export async function countVariantsInFile(filePath) {
       console.log(`    Corrupted file ${filePath}, removing from cache`);
       try {
         await fs.unlink(filePath);
-      } catch {}
+      } catch { }
       throw new Error(`Corrupted file removed: ${filePath}`);
     }
     console.log(

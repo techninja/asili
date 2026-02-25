@@ -30,38 +30,19 @@ export class UnifiedProcessor {
 
   async loadTraitManifest() {
     try {
-      const { TraitManifestLoader } = await import('./trait-manifest-loader.js');
-      const loader = new TraitManifestLoader(this.genomicProcessor.conn);
+      Debug.log(2, 'UnifiedProcessor', 'Loading trait manifest from JSON...');
+      const response = await fetch('/data/trait_manifest.json');
+      if (!response.ok) throw new Error(`HTTP ${response.status}`);
       
-      this.traitManifest = { traits: {} };
-      
-      Debug.log(3, 'UnifiedProcessor', 'Starting trait streaming...');
-      
-      for await (const batch of loader.streamTraits('/data/trait_manifest.db', 50)) {
-        this.traitManifest.traits = loader.getTraits();
-        // Emit immediately after each batch
-        Debug.log(3, 'UnifiedProcessor', `Emitting traitsLoaded event with ${batch.loaded} traits, ${this.listeners.size} listeners`);
-        this.emit('traitsLoaded', { 
-          loaded: batch.loaded,
-          traits: this.getAllTraits()
-        });
-      }
-      
-      Debug.log(2, 'UnifiedProcessor', `Loaded ${Object.keys(this.traitManifest.traits).length} traits from DB`);
+      this.traitManifest = await response.json();
+      this.emit('traitsLoaded', { 
+        loaded: Object.keys(this.traitManifest.traits).length,
+        traits: this.getAllTraits()
+      });
+      Debug.log(2, 'UnifiedProcessor', `Loaded ${Object.keys(this.traitManifest.traits).length} traits`);
     } catch (error) {
-      Debug.log(1, 'UnifiedProcessor', 'DB streaming failed, falling back to JSON:', error);
-      try {
-        const response = await fetch('/data/trait_manifest.json');
-        this.traitManifest = await response.json();
-        this.emit('traitsLoaded', { 
-          loaded: Object.keys(this.traitManifest.traits).length,
-          traits: this.getAllTraits()
-        });
-        Debug.log(2, 'UnifiedProcessor', `Loaded ${Object.keys(this.traitManifest.traits).length} traits from JSON`);
-      } catch (jsonError) {
-        Debug.log(1, 'UnifiedProcessor', 'Failed to load trait manifest:', jsonError);
-        this.traitManifest = { traits: {} };
-      }
+      Debug.error('UnifiedProcessor', 'Failed to load trait manifest:', error);
+      this.traitManifest = { traits: {} };
     }
   }
 
@@ -208,17 +189,23 @@ export class UnifiedProcessor {
 
       Debug.log(2, 'UnifiedProcessor', `Using trait data source: ${traitSource}`);
 
-      // Extract normalization parameters from pgs_ids
-      const normalizationParams = {};
-      if (trait.pgs_ids) {
-        trait.pgs_ids.forEach(pgs => {
-          if (typeof pgs === 'object' && pgs.id) {
-            normalizationParams[pgs.id] = {
+      // Fetch full trait details with PGS metadata from API if available
+      let normalizationParams = {};
+      try {
+        const response = await fetch(`/api/traits/${traitId}`);
+        if (response.ok) {
+          const traitDetails = await response.json();
+          traitDetails.pgs_scores?.forEach(pgs => {
+            normalizationParams[pgs.pgs_id] = {
               norm_mean: pgs.norm_mean || 0,
-              norm_sd: pgs.norm_sd || null
+              norm_sd: pgs.norm_sd || null,
+              variants_number: pgs.variants_count || null,
+              name: pgs.method_name || pgs.pgs_id
             };
-          }
-        });
+          });
+        }
+      } catch (error) {
+        Debug.log(2, 'UnifiedProcessor', `Failed to fetch trait details: ${error.message}`);
       }
 
       const result = await this.genomicProcessor.calculateRisk(
@@ -382,9 +369,11 @@ export class UnifiedProcessor {
       description: trait.description || `Polygenic risk score for ${trait.name}`,
       categories: trait.categories || ['Other Conditions'],
       file_path: trait.file_path,
-      pgs_metadata: trait.pgs_metadata || {},
-      variant_count: trait.variant_count || 0,
-      last_updated: trait.last_updated
+      pgs_count: trait.pgs_count || 0,
+      pgs_metadata: {}, // Empty object for count compatibility
+      variant_count: trait.expected_variants || 0,
+      expected_variants: trait.expected_variants || 0,
+      estimated_unique_variants: trait.estimated_unique_variants || 0
     }));
   }
 

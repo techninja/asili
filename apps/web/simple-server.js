@@ -4,6 +4,7 @@ import express from 'express';
 import { createServer } from 'http';
 import { WebSocketServer } from 'ws';
 import { AsiliCalcServer } from '/app/apps/calc/server.js';
+import { handleTraitAPI, handlePGSAPI } from './lib/trait-api.js';
 
 const app = express();
 const server = createServer(app);
@@ -48,11 +49,35 @@ app.post('/dna/upload', async (req, res) => {
 });
 app.post('/calculate/risk', (req, res) => calcServer.handleRequest(req, res));
 app.get('/individuals', (req, res) => calcServer.handleRequest(req, res));
+app.get('/individuals/:id', (req, res) => {
+  req.url = `/individuals/${req.params.id}`;
+  calcServer.handleRequest(req, res);
+});
 app.put('/individuals/:id', (req, res) => {
   req.url = `/individuals/${req.params.id}`;
   calcServer.handleRequest(req, res);
 });
-app.get('/api/risk-score/:individualId/:traitId', (req, res) => calcServer.handleRequest(req, res));
+app.delete('/individuals/:id', (req, res) => {
+  req.url = `/individuals/${req.params.id}`;
+  calcServer.handleRequest(req, res);
+});
+
+// Trait metadata API
+app.get('/api/traits/:traitId', handleTraitAPI);
+app.get('/api/pgs/:pgsId', handlePGSAPI);
+
+app.get('/api/risk-score/:individualId/:traitId', async (req, res) => {
+  req.url = `/api/risk-score/${req.params.individualId}/${req.params.traitId}`;
+  await calcServer.handleRiskScoreAPI(req, res, req.url);
+});
+app.get('/api/risk-score/:individualId', async (req, res) => {
+  try {
+    const results = await calcServer.processor.storage.getCachedResults(req.params.individualId);
+    res.json(results);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
 app.get('/queue/status', (req, res) => calcServer.handleRequest(req, res));
 app.get('/status', (req, res) => calcServer.handleRequest(req, res));
 app.get('/health', (req, res) => calcServer.handleRequest(req, res));
@@ -68,7 +93,6 @@ app.use(express.static('/app/apps/web', { index: false }));
 
 // SPA fallback LAST - return 404 for now
 app.get('*', (req, res) => {
-  // console.log('404 for:', req.path);
   res.status(404).send('Not Found');
 });
 

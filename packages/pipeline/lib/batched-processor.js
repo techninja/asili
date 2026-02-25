@@ -14,8 +14,6 @@ import {
   validateParquetFile,
   prepareFileForProcessing
 } from './processor-core.js';
-import { updateOutputManifest } from './manifest.js';
-import { getAllTraitMetadata } from './manifest-db-check.js';
 import {
   detectFormat,
   generateColumnExpressions,
@@ -418,135 +416,54 @@ async function directAppend(batchFiles, outputPath, baseName) {
 
   try {
     execSync(cmd, { cwd: OUTPUT_DIR, stdio: 'inherit' });
-
-    const stats = await fs.stat(outputPath);
-    console.log(
-      `    ✓ Merged ${validFiles.length} files (${(stats.size / 1024 / 1024).toFixed(1)}MB)`
-    );
-
     return outputPath;
   } catch (error) {
     throw new Error(`Python merge failed: ${error.message}`);
   }
 }
 
+
 export async function generateTraitPackBatched(traitName, config, allMetadataCache = null) {
   const traitTitle = config.title || traitName;
-  console.log(
-    `🧬 Starting batched processing for ${traitTitle} (${traitName})`
-  );
+  console.log(`🧬 Starting batched processing for ${traitTitle} (${traitName})`);
   console.log(`   Target: ${config.pgs_ids.length} PGS files`);
-
-  // Use cached metadata if provided, otherwise fetch for this trait only
-  const traitId = config.trait_id || traitName;
-  const existingMetadata = allMetadataCache?.[traitId] || {};
-  
-  console.log(`  🔍 DEBUG: generateTraitPackBatched for ${traitName}`);
-  console.log(`  🔍 DEBUG: allMetadataCache provided: ${allMetadataCache ? 'YES' : 'NO'}`);
-  console.log(`  🔍 DEBUG: traitId: ${traitId}`);
-  console.log(`  🔍 DEBUG: existingMetadata for ${traitId}: ${Object.keys(existingMetadata).length} entries`);
-  
-  console.log(`    Loaded ${Object.keys(existingMetadata).length} existing PGS metadata entries`);
-
-  console.log(
-    `  - Checking metadata for ${config.pgs_ids.length} PGS scores...`
-  );
-  const missingMetadataIds = config.pgs_ids.filter(
-    pgsId => !existingMetadata[pgsId]
-  );
-
-  let pgsMetadata = existingMetadata;
-  let hasNewMetadata = false;
-  if (missingMetadataIds.length > 0) {
-    console.log(
-      `    Found ${missingMetadataIds.length} PGS scores missing metadata`
-    );
-    const newMetadata = await collectPgsMetadata(
-      missingMetadataIds,
-      existingMetadata,
-      traitId
-    );
-    pgsMetadata = { ...existingMetadata, ...newMetadata };
-    hasNewMetadata = true;
-
-    console.log(
-      `    ✓ Saved metadata for ${Object.keys(newMetadata).length} PGS scores to DB`
-    );
-  } else {
-    console.log('    All PGS metadata already exists');
-  }
 
   const safeFileName = traitName.replace(':', '_');
   const finalOutputPath = path.join(PACKS_DIR, `${safeFileName}_hg38.parquet`);
 
-  // Check if final output already exists and is up-to-date
   const needsFileUpdate = await needsUpdate(traitName, config);
 
   if (!needsFileUpdate) {
-    console.log('  - Files up to date, updating metadata in manifest...');
-    
-    // Update manifest with metadata even though files are unchanged
-    await updateOutputManifest({
-      [traitName]: {
-        timestamp: new Date().toISOString(),
-        variant_count: config.expected_variants || 0,
-        fileName: `${safeFileName}_hg38.parquet`,
-        pgs_metadata: hasNewMetadata ? pgsMetadata : {},
-        pgsIds: config.pgs_ids,
-        source_hashes: {},
-        metadata_only: true
-      }
-    });
-    
+    console.log('  - Files up to date, skipping...');
     return {
       timestamp: new Date().toISOString(),
       variant_count: config.expected_variants || 0,
       fileName: `${safeFileName}_hg38.parquet`,
-      source_hashes: {},
-      pgs_metadata: hasNewMetadata ? pgsMetadata : {},
       metadata_only: true
     };
   }
 
-  console.log(
-    `  - Generating ${traitTitle} (${traitName}) using batched processing...`
-  );
+  console.log(`  - Generating ${traitTitle} (${traitName}) using batched processing...`);
 
-  // Collect source file hashes for validation
-  const sourceHashes = await collectSourceHashes(config.pgs_ids);
   const progressFile = path.join(OUTPUT_DIR, `${safeFileName}_progress.json`);
 
-  // Load progress for partial completion
   let progress = { completed_batches: [] };
   try {
     const progressData = await fs.readFile(progressFile, 'utf8');
     progress = JSON.parse(progressData);
     if (progress.completed_batches.length > 0) {
-      console.log(
-        `📂 Resuming: ${progress.completed_batches.length} batches already completed`
-      );
+      console.log(`📂 Resuming: ${progress.completed_batches.length} batches already completed`);
     }
-  } catch {
-    // No progress file, starting fresh
-  }
+  } catch {}
 
-  // Create batches
   const batches = await createBatches(config.pgs_ids);
   const batchFiles = [];
   for (let i = 0; i < batches.length; i++) {
     const batchNum = i + 1;
 
     if (progress.completed_batches.includes(batchNum)) {
-      const batchFile = path.join(
-        BATCH_DIR,
-        `${safeFileName}_batch_${batchNum}.parquet`
-      );
-      if (
-        await fs
-          .access(batchFile)
-          .then(() => true)
-          .catch(() => false)
-      ) {
+      const batchFile = path.join(BATCH_DIR, `${safeFileName}_batch_${batchNum}.parquet`);
+      if (await fs.access(batchFile).then(() => true).catch(() => false)) {
         console.log(`   Batch ${batchNum}/${batches.length}: ✅ DONE`);
         batchFiles.push(batchFile);
         continue;
@@ -554,69 +471,37 @@ export async function generateTraitPackBatched(traitName, config, allMetadataCac
     }
 
     try {
-      const batchFile = await processBatchWithDuckDB(
-        batches[i],
-        batchNum,
-        traitName,
-        batches.length
-      );
+      const batchFile = await processBatchWithDuckDB(batches[i], batchNum, traitName, batches.length);
       batchFiles.push(batchFile);
-
-      // Update progress
       progress.completed_batches.push(batchNum);
       await fs.writeFile(progressFile, JSON.stringify(progress, null, 2));
     } catch (error) {
-      console.log(
-        `❌ Batch ${batchNum}/${batches.length} failed: ${error.message}`
-      );
-      console.log(
-        `   DEBUG: Error processing batch ${batchNum} with ${batches[i].length} files`
-      );
-      console.log(
-        `   DEBUG: Batch files: ${JSON.stringify(batches[i].map(f => f.pgs_id))}`
-      );
-      console.log(`   DEBUG: Error stack: ${error.stack}`);
+      console.log(`❌ Batch ${batchNum}/${batches.length} failed: ${error.message}`);
       throw error;
     }
   }
 
-  // Final merge
   let finalFile;
   try {
     finalFile = await mergeBatchResults(batchFiles, traitName);
   } catch (error) {
-    console.log(`   DEBUG: mergeBatchResults failed for ${traitName}`);
-    console.log(`   DEBUG: batchFiles count: ${batchFiles.length}`);
-    console.log(`   DEBUG: Error: ${error.message}`);
-    console.log(`   DEBUG: Stack: ${error.stack}`);
     throw error;
   }
 
-  // Cleanup remaining batch files
   for (const filePath of batchFiles) {
     try {
       await fs.unlink(filePath);
     } catch {}
   }
 
-  // Get final stats
   const finalStats = await fs.stat(finalFile);
-  const fileName = path.basename(finalFile);
-  console.log(
-    `✅ Merge complete: ${finalFile} (${(finalStats.size / 1024 / 1024).toFixed(1)}MB)`
-  );
+  console.log(`✅ Merge complete: ${finalFile} (${(finalStats.size / 1024 / 1024).toFixed(1)}MB)`);
 
-  // Cleanup progress file
   try {
     await fs.unlink(progressFile);
   } catch {}
 
-  // Validate final file size
   const validation = await validateParquetFile(finalFile);
-  console.log(
-    `✓ Merge complete: ${finalFile} (${(validation.size / 1024 / 1024).toFixed(1)}MB)`
-  );
-
   const actualVariantCount = validation.variantCount;
 
   console.log(`🎯 ${traitTitle} (${traitName}) processing complete!`);
@@ -624,24 +509,9 @@ export async function generateTraitPackBatched(traitName, config, allMetadataCac
   console.log(`   Size: ${(validation.size / 1024 / 1024).toFixed(1)}MB`);
   console.log(`   Variants: ${actualVariantCount.toLocaleString()}`);
 
-  // Update trait manifest with actual variant count
-  await updateOutputManifest({
-    trait_update: {
-      [traitName]: {
-        ...config,
-        actual_variants: actualVariantCount,
-        file_size_mb: Math.round((validation.size / 1024 / 1024) * 10) / 10,
-        last_processed: new Date().toISOString()
-      }
-    }
-  });
-
   return {
     timestamp: new Date().toISOString(),
     variant_count: actualVariantCount,
-    fileName: validation.fileName,
-    pgsIds: config.pgs_ids,
-    source_hashes: sourceHashes,
-    pgs_metadata: pgsMetadata
+    fileName: validation.fileName
   };
 }
