@@ -1,0 +1,25 @@
+{
+  "name": "asili",
+  "version": "1.0.0",
+  "type": "module",
+  "private": true,
+  "description": "Privacy-first polygenic risk score analysis. All processing happens on your device.",
+  "scripts": {
+    "test": "echo 'No tests yet'"
+  },
+  "keywords": [
+    "genomics",
+    "polygenic-risk-scores",
+    "privacy",
+    "duckdb",
+    "web-components",
+    "pgs-catalog"
+  ],
+  "author": "techninja (James Todd)",
+  "license": "AGPL-3.0-or-later",
+  "engines": {
+    "node": ">=22",
+    "pnpm": ">=9"
+  },
+  "packageManager": "pnpm@9.15.4"
+}
