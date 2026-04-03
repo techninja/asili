@@ -1,0 +1,46 @@
+name: Spec Check
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  spec:
+    name: Full Spec Compliance
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v6
+
+      - uses: actions/setup-node@v6
+        with:
+          node-version: 24
+          cache: npm
+
+      - run: npm ci
+
+      - name: Install Playwright Chromium
+        run: npx playwright install chromium --with-deps
+
+      - name: Code line counts (≤150)
+        run: node scripts/spec.js code
+
+      - name: Doc line counts (≤500)
+        run: node scripts/spec.js docs
+
+      - name: ESLint
+        run: npx eslint --config .configs/eslint.config.js .
+
+      - name: Prettier
+        run: npx prettier --config .configs/.prettierrc --check src scripts server.js tests
+
+      - name: JSDoc types (tsc --checkJs)
+        run: npx tsc --project .configs/jsconfig.json
+
+      - name: Node tests
+        run: node --test tests/*.test.js src/utils/*.test.js src/store/*.test.js
+
+      - name: Browser tests
+        run: npx web-test-runner --config .configs/web-test-runner.config.js

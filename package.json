@@ -5,7 +5,11 @@
   "private": true,
   "description": "Privacy-first polygenic risk score analysis. All processing happens on your device.",
   "scripts": {
-    "test": "echo 'No tests yet'"
+    "test": "node scripts/test.js",
+    "start": "node src/server.js",
+    "dev": "node --watch --env-file=.env --env-file=.env.local src/server.js",
+    "postinstall": "node scripts/setup.js",
+    "spec": "clearstack"
   },
   "keywords": [
     "genomics",
@@ -21,5 +25,28 @@
     "node": ">=22",
     "pnpm": ">=9"
   },
-  "packageManager": "pnpm@9.15.4"
+  "packageManager": "pnpm@9.15.4",
+  "devDependencies": {
+    "@techninja/clearstack": "^0.2.0",
+    "@types/node": "^22.0.0",
+    "@open-wc/testing": "^4.0.0",
+    "@web/test-runner": "^0.20.0",
+    "@web/test-runner-playwright": "^0.11.0",
+    "eslint": "^10.1.0",
+    "eslint-config-prettier": "^10.1.8",
+    "eslint-plugin-jsdoc": "^62.8.1",
+    "eslint-plugin-unused-imports": "^4.0.0",
+    "markdownlint-cli2": "^0.22.0",
+    "playwright": "^1.50.0",
+    "prettier": "^3.8.1",
+    "stylelint": "^17.6.0",
+    "stylelint-config-standard": "^40.0.0",
+    "typescript": "^6.0.2"
+  },
+  "main": "src/server.js",
+  "dependencies": {
+    "express": "^5.2.1",
+    "hybrids": "^9.1.22",
+    "lucide-static": "^1.7.0"
+  }
 }
