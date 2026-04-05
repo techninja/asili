@@ -50,12 +50,36 @@ export default define({
           <div class="coming-soon__features-inner">
             <h2 class="coming-soon__features-title">What's coming</h2>
             <div class="coming-soon__grid">
-              ${card('📁', 'Upload your DNA', 'Drop in your raw file from 23andMe, AncestryDNA, MyHeritage, or others.')}
-              ${card('⚡', 'Browser-only scoring', 'DuckDB WASM scores your variants against published GWAS data — no server.')}
-              ${card('📊', 'Explore 44 traits', 'BMI, height, chronotype, caffeine metabolism, and more with clear explanations.')}
-              ${card('👨‍👩‍👧‍👦', 'Family comparison', 'Upload multiple family members and compare scores side by side.')}
-              ${card('🔬', 'Variant deep-dives', 'See which specific variants contribute most to each trait score.')}
-              ${card('📄', 'Printable reports', 'Category radar charts and full reports you can take to a consultation.')}
+              ${card(
+                '📁',
+                'Upload your DNA',
+                'Drop in your raw file from 23andMe, AncestryDNA, MyHeritage, or others.',
+              )}
+              ${card(
+                '⚡',
+                'Browser-only scoring',
+                'DuckDB WASM scores your variants against published GWAS data — no server.',
+              )}
+              ${card(
+                '📊',
+                'Explore 44 traits',
+                'BMI, height, chronotype, caffeine metabolism, and more with clear explanations.',
+              )}
+              ${card(
+                '👨‍👩‍👧‍👦',
+                'Family comparison',
+                'Upload multiple family members and compare scores side by side.',
+              )}
+              ${card(
+                '🔬',
+                'Variant deep-dives',
+                'See which specific variants contribute most to each trait score.',
+              )}
+              ${card(
+                '📄',
+                'Printable reports',
+                'Category radar charts and full reports you can take to a consultation.',
+              )}
             </div>
           </div>
         </section>

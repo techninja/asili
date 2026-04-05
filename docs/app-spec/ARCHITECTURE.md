@@ -34,7 +34,7 @@ docker compose up -d
 docker compose run --rm pipeline pnpm run etl
 ```
 
-Webapp: http://localhost:4242
+Webapp: <http://localhost:4242>
 
 Connecting DuckDB (In your Web Components App)
 
