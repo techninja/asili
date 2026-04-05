@@ -1,0 +1,124 @@
+import { describe, it } from 'node:test';
+import assert from 'node:assert/strict';
+import { normalizePGS, selectBestPGS } from '../src/normalizer.js';
+
+/** @returns {{ details: object, breakdown: object }} */
+function makePGS(overrides = {}) {
+  return {
+    details: {
+      score: 0, matchedVariants: 0, genotypedVariants: 0,
+      imputedVariants: 0, zScore: null, percentile: null,
+      qualityScore: 0, topVariants: [], ...overrides,
+    },
+    breakdown: {
+      positive: 0, negative: 0, positiveSum: 0, negativeSum: 0,
+      total: overrides.matchedVariants || 0, weightSumSquared: 0.01,
+      chromosomeCoverage: {}, genotypedVariants: 0, imputedVariants: 0,
+    },
+  };
+}
+
+describe('normalizePGS', () => {
+  it('uses unscaled empirical stats (the critical fix)', () => {
+    const { details, breakdown } = makePGS({
+      score: 0.08, matchedVariants: 150, genotypedVariants: 100,
+    });
+    breakdown.total = 150;
+    const np = { norm_mean: 0.5, norm_sd: 0.2, variants_number: 1000 };
+
+    normalizePGS(details, breakdown, np);
+
+    assert.equal(details.normMean, 0.5);
+    assert.equal(details.normSd, 0.2);
+    assert.ok(Math.abs(details.zScore - (-2.1)) < 0.1);
+  });
+
+  it('falls back to theoretical when no empirical data', () => {
+    const { details, breakdown } = makePGS({
+      score: 0.5, matchedVariants: 50,
+    });
+    breakdown.total = 50;
+    breakdown.weightSumSquared = 0.1;
+
+    normalizePGS(details, breakdown, {});
+
+    assert.equal(details.normMean, 0);
+    assert.ok(Math.abs(details.normSd - Math.sqrt(0.05)) < 1e-5);
+    assert.ok(details.zScore !== null);
+  });
+
+  it('falls back to theoretical when coverage < 5%', () => {
+    const { details, breakdown } = makePGS({
+      score: 0.01, matchedVariants: 300,
+    });
+    breakdown.total = 300;
+    breakdown.weightSumSquared = 0.001;
+    const np = { norm_mean: 1.0, norm_sd: 0.5, variants_number: 10000 };
+
+    normalizePGS(details, breakdown, np);
+
+    assert.equal(details.normMean, 0);
+  });
+
+  it('detects incompatible empirical stats', () => {
+    const { details, breakdown } = makePGS({
+      score: 0.79, matchedVariants: 790000, genotypedVariants: 790000,
+    });
+    breakdown.total = 790000;
+    breakdown.weightSumSquared = 0.001;
+    breakdown.genotypedVariants = 790000;
+    const np = { norm_mean: 193.5, norm_sd: 0.08, variants_number: 6900000 };
+
+    normalizePGS(details, breakdown, np);
+
+    assert.equal(details.normMean, 0);
+    assert.ok(Math.abs(details.zScore) < 50);
+  });
+
+  it('computes quantitative trait value', () => {
+    const { details, breakdown } = makePGS({
+      score: 1.0, matchedVariants: 500, genotypedVariants: 500,
+    });
+    breakdown.total = 500;
+    breakdown.weightSumSquared = 1;
+    const np = { norm_mean: 0, norm_sd: 1, variants_number: 500 };
+
+    normalizePGS(details, breakdown, np, 'quantitative', 25.0, 4.0,
+      { r2: 0.25 });
+
+    assert.ok(Math.abs(details.value - 27.0) < 0.1);
+  });
+});
+
+describe('selectBestPGS', () => {
+  it('selects highest quality score', () => {
+    const map = new Map([
+      ['A', { qualityScore: 30, zScore: 1, insufficientData: false }],
+      ['B', { qualityScore: 60, zScore: 1, insufficientData: false }],
+    ]);
+    assert.equal(selectBestPGS(map), 'B');
+  });
+
+  it('skips insufficient data', () => {
+    const map = new Map([
+      ['A', { qualityScore: 90, zScore: 1, insufficientData: true }],
+      ['B', { qualityScore: 30, zScore: 1, insufficientData: false }],
+    ]);
+    assert.equal(selectBestPGS(map), 'B');
+  });
+
+  it('skips extreme z-scores', () => {
+    const map = new Map([
+      ['A', { qualityScore: 90, zScore: 10, insufficientData: false }],
+      ['B', { qualityScore: 30, zScore: 1, insufficientData: false }],
+    ]);
+    assert.equal(selectBestPGS(map), 'B');
+  });
+
+  it('falls back to extreme z when all are insufficient', () => {
+    const map = new Map([
+      ['A', { qualityScore: 50, zScore: 10, insufficientData: true }],
+    ]);
+    assert.equal(selectBestPGS(map), 'A');
+  });
+});
