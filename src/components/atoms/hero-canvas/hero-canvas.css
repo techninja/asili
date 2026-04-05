@@ -1,0 +1,19 @@
+hero-canvas {
+  display: block;
+  position: absolute;
+  inset: 0 0 -20rem;
+  pointer-events: none;
+  z-index: 0;
+}
+
+.hero-canvas {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+@media (width <= 640px) {
+  hero-canvas {
+    bottom: -10rem;
+  }
+}

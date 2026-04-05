@@ -55,18 +55,19 @@ home-view {
   align-items: center;
   justify-content: center;
   text-align: center;
-  padding: var(--space-3xl) var(--space-xl);
-  background:
-    radial-gradient(ellipse at 30% 20%, rgb(99 102 241 / 18%) 0%, transparent 50%),
-    radial-gradient(ellipse at 70% 60%, rgb(52 211 153 / 10%) 0%, transparent 50%),
-    radial-gradient(ellipse at 50% 0%, rgb(129 140 248 / 14%) 0%, transparent 60%);
+  padding: var(--space-3xl) var(--space-xl) 0;
+  position: relative;
 }
 
-[data-theme='light'] .coming-soon__hero {
-  background:
-    radial-gradient(ellipse at 30% 20%, rgb(79 70 229 / 12%) 0%, transparent 50%),
-    radial-gradient(ellipse at 70% 60%, rgb(5 150 105 / 8%) 0%, transparent 50%),
-    radial-gradient(ellipse at 50% 0%, rgb(99 102 241 / 10%) 0%, transparent 60%);
+.coming-soon__hero > *:not(hero-canvas) {
+  position: relative;
+  z-index: 1;
+}
+
+.coming-soon__hero-fade {
+  height: 8rem;
+  background: linear-gradient(to bottom, transparent, var(--color-surface));
+  position: relative;
 }
 
 .coming-soon__emoji {

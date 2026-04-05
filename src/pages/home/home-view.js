@@ -5,6 +5,7 @@
 
 import { html, define } from 'hybrids';
 import '../../components/atoms/theme-toggle/theme-toggle.js';
+import '../../components/atoms/hero-canvas/hero-canvas.js';
 
 export default define({
   tag: 'home-view',
@@ -17,12 +18,15 @@ export default define({
             <span>asili</span>
           </a>
           <div class="coming-soon__header-actions">
-            <a href="https://asili.dev" class="btn btn-ghost">← Back to asili.dev</a>
+            <a href="https://asili.dev" class="btn btn-ghost"
+              ><span class="coming-soon__back-text">← Back to </span>asili.dev</a
+            >
             <theme-toggle></theme-toggle>
           </div>
         </header>
 
         <main class="coming-soon__hero">
+          <hero-canvas></hero-canvas>
           <div class="coming-soon__emoji">🧬</div>
           <h1 class="coming-soon__title">App Coming Soon</h1>
           <p class="coming-soon__sub">
@@ -45,6 +49,8 @@ export default define({
             <a href="https://asili.dev/blog" class="btn btn-secondary">Read the Blog</a>
           </div>
         </main>
+
+        <div class="coming-soon__hero-fade"></div>
 
         <section class="coming-soon__features">
           <div class="coming-soon__features-inner">

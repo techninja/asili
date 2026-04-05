@@ -7,6 +7,7 @@
 @import '../components/atoms/app-badge/app-badge.css';
 @import '../components/atoms/app-icon/app-icon.css';
 @import '../components/atoms/theme-toggle/theme-toggle.css';
+@import '../components/atoms/hero-canvas/hero-canvas.css';
 
 /* Pages */
 @import '../pages/home/home-view.css';
