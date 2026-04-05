@@ -99,9 +99,9 @@ export function parseVCF(line) {
   const pos = parseInt(parts[1], 10);
   if (isNaN(pos) || pos <= 0) return null;
   const ref = parts[3];
-  const alt = parts[4].split(',')[0];
+  const alts = parts[4].split(',');
   const gt = (parts[9] || '').split(':')[0];
-  const alleles = [ref, ...parts[4].split(',')];
+  const alleles = [ref, ...alts];
   const indices = gt.replace('|', '/').split('/').map(Number);
   const a1 = alleles[indices[0]] || ref;
   const a2 = alleles[indices[1] ?? indices[0]] || ref;

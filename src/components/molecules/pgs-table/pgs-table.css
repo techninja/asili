@@ -1,0 +1,30 @@
+.pgs-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: var(--text-sm);
+}
+
+.pgs-table th {
+  text-align: left;
+  padding: var(--space-xs) var(--space-sm);
+  border-bottom: 2px solid var(--color-border);
+  color: var(--color-text-muted);
+  font-weight: 600;
+}
+
+.pgs-table td {
+  padding: var(--space-xs) var(--space-sm);
+  border-bottom: 1px solid var(--color-border);
+  font-variant-numeric: tabular-nums;
+}
+
+.pgs-table__best td {
+  font-weight: 600;
+  color: var(--color-primary);
+}
+
+.pgs-table__empty {
+  color: var(--color-text-muted);
+  font-style: italic;
+  margin: 0;
+}

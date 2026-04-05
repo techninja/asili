@@ -85,3 +85,17 @@
     transform: rotate(360deg);
   }
 }
+
+.beta-view__scoring {
+  font-size: var(--text-sm);
+  color: var(--color-text-muted);
+  font-variant-numeric: tabular-nums;
+}
+
+.beta-view__scoring--done {
+  color: var(--color-success);
+}
+
+.beta-view__scoring--error {
+  color: var(--color-danger);
+}

@@ -19,6 +19,13 @@
 /* Molecules */
 @import '../components/molecules/upload-zone/upload-zone.css';
 @import '../components/molecules/trait-card/trait-card.css';
+@import '../components/molecules/family-compare/family-compare.css';
+@import '../components/molecules/pgs-table/pgs-table.css';
 
 /* Organisms */
 @import '../components/organisms/trait-grid/trait-grid.css';
+@import '../components/organisms/radar-chart/radar-chart.css';
+
+/* Pages (additional) */
+@import '../pages/trait-detail/trait-detail-view.css';
+@import '../pages/report/report-view.css';

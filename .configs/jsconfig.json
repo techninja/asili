@@ -15,5 +15,5 @@
     }
   },
   "include": ["../src/**/*.js", "../scripts/**/*.js", "../packages/**/*.js"],
-  "exclude": ["../node_modules", "../src/vendor", "../**/*.test.js"]
+  "exclude": ["../node_modules", "../src/vendor", "../src/deps", "../**/*.test.js"]
 }

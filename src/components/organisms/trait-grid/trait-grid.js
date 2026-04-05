@@ -1,5 +1,5 @@
 /**
- * Trait grid organism — loads manifest and renders trait cards.
+ * Trait grid organism — loads manifest, renders trait cards with results.
  * @module components/organisms/trait-grid
  */
 
@@ -19,12 +19,15 @@ export default define({
       });
     },
   },
+  resultCount: 0,
   search: '',
   category: '',
   render: {
-    value: ({ traits, search, category }) => {
+    value: ({ traits, search, category, resultCount }) => {
+      // resultCount is used to trigger re-render when scores arrive
+      void resultCount;
       const filtered = filterTraits(traits, search, category);
-      const categories = [...new Set(traits.flatMap((t) => t.categories || []))].sort();
+      const cats = [...new Set(traits.flatMap((t) => t.categories || []))].sort();
 
       return html`
         <div class="trait-grid">
@@ -34,18 +37,18 @@ export default define({
               class="trait-grid__search"
               placeholder="Search traits…"
               value="${search}"
-              oninput="${(host, e) => {
-                host.search = e.target.value;
+              oninput="${(h, e) => {
+                h.search = e.target.value;
               }}"
             />
             <select
               class="trait-grid__filter"
-              onchange="${(host, e) => {
-                host.category = e.target.value;
+              onchange="${(h, e) => {
+                h.category = e.target.value;
               }}"
             >
               <option value="">All categories</option>
-              ${categories.map((c) => html`<option value="${c}">${c}</option>`)}
+              ${cats.map((c) => html`<option value="${c}">${c}</option>`)}
             </select>
             <span class="trait-grid__count">${filtered.length} traits</span>
           </div>

@@ -1,0 +1,77 @@
+/**
+ * DuckDB WASM browser adapter.
+ * Initializes DuckDB, provides query interface with Arrow → plain object conversion.
+ * @module packages/core/src/duckdb/adapter
+ */
+
+/** @type {object|null} */
+let db = null;
+/** @type {object|null} */
+let conn = null;
+
+/**
+ * Initialize DuckDB WASM. Idempotent.
+ * @param {string} [basePath] - Path to WASM/worker files
+ * @returns {Promise<void>}
+ */
+export async function initDuckDB(basePath = '/deps/duckdb') {
+  if (db) return;
+  const isAbsolute = basePath.startsWith('http');
+  const base = isAbsolute ? basePath : new URL(basePath, self.location?.origin || 'http://localhost').href;
+  const importPath = isAbsolute ? basePath : basePath;
+  const duckdb = await import(`${importPath}/duckdb.js`);
+  const bundle = await duckdb.selectBundle({
+    mvp: { mainModule: `${base}/duckdb-mvp.wasm`, mainWorker: `${base}/duckdb-browser-mvp.worker.js` },
+    eh: { mainModule: `${base}/duckdb-eh.wasm`, mainWorker: `${base}/duckdb-browser-eh.worker.js` },
+  });
+  const worker = await duckdb.createWorker(bundle.mainWorker);
+  const logger = new duckdb.VoidLogger();
+  db = new duckdb.AsyncDuckDB(logger, worker);
+  await db.instantiate(bundle.mainModule, bundle.pthreadWorker);
+  conn = await db.connect();
+}
+
+/**
+ * Run a SQL query, return plain objects.
+ * @param {string} sql
+ * @returns {Promise<Array<object>>}
+ */
+export async function query(sql) {
+  if (!conn) throw new Error('DuckDB not initialized');
+  const result = await conn.query(sql);
+  return result.toArray().map(row => {
+    const obj = {};
+    for (const key of Object.keys(row)) obj[key] = row[key];
+    return obj;
+  });
+}
+
+/**
+ * Count rows in a table or parquet URL.
+ * @param {string} tableOrUrl
+ * @returns {Promise<number>}
+ */
+export async function count(tableOrUrl) {
+  const rows = await query(`SELECT COUNT(*) as cnt FROM '${tableOrUrl}'`);
+  return Number(rows[0].cnt);
+}
+
+/**
+ * Register a parquet file from an ArrayBuffer (e.g. from IndexedDB).
+ * @param {string} name - Virtual filename
+ * @param {ArrayBuffer} buffer
+ * @returns {Promise<void>}
+ */
+export async function registerBuffer(name, buffer) {
+  if (!db) throw new Error('DuckDB not initialized');
+  await db.registerFileBuffer(name, new Uint8Array(buffer));
+}
+
+/** @returns {boolean} */
+export function isReady() { return !!conn; }
+
+/** Shut down DuckDB. */
+export async function closeDuckDB() {
+  if (conn) { await conn.close(); conn = null; }
+  if (db) { await db.terminate(); db = null; }
+}

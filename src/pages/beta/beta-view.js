@@ -1,25 +1,35 @@
 /**
- * Beta view — the app during development.
- * Upload → parse → store → display variant count → trait grid.
+ * Beta view — upload → parse → score → trait grid with results.
  * @module pages/beta
  */
 
 import { html, define, store, router } from 'hybrids';
 import AppState from '../../store/AppState.js';
+// @ts-ignore — side-effect imports for web component registration
 import '../../components/molecules/upload-zone/upload-zone.js';
+// @ts-ignore
 import '../../components/atoms/confidence-badge/confidence-badge.js';
+// @ts-ignore
 import '../../components/organisms/trait-grid/trait-grid.js';
 import { handleFileSelected } from './upload-handler.js';
+import { clearResults } from './results-store.js';
+import TraitDetailView from '../trait-detail/trait-detail-view.js';
+import ReportView from '../report/report-view.js';
 
 export default define({
   tag: 'beta-view',
-  [router.connect]: { url: '/beta' },
+  [router.connect]: { url: '/beta', stack: [TraitDetailView, ReportView] },
   state: store(AppState),
   parseStatus: '',
   parseError: '',
   parsedCount: 0,
   parsedFormat: '',
   individualName: '',
+  scoringStatus: '',
+  scoringCurrent: 0,
+  scoringTotal: 0,
+  scoringTrait: '',
+  resultCount: 0,
   render: {
     value: (host) => html`
       <div class="beta-view">
@@ -30,7 +40,6 @@ export default define({
           </a>
           <span class="beta-view__tag">beta</span>
         </header>
-
         <main class="beta-view__main">
           ${host.parseStatus === ''
             ? uploadSection()
@@ -50,7 +59,7 @@ export default define({
 function uploadSection() {
   return html`
     <h1 class="beta-view__title">Upload your DNA</h1>
-    <p class="beta-view__sub">Your file stays on your device. Nothing is uploaded to any server.</p>
+    <p class="beta-view__sub">Your file stays on your device.</p>
     <upload-zone onfile-selected="${handleFileSelected}"></upload-zone>
   `;
 }
@@ -70,13 +79,33 @@ function parsingSection(host) {
 function doneSection(host) {
   return html`
     <div class="beta-view__result">
-      <span class="beta-view__check">✅</span>
       <h2>${host.individualName} — ${host.parsedCount.toLocaleString()} variants</h2>
-      <p class="beta-view__count">${host.parsedFormat} format</p>
+      ${scoringBanner(host)}
       <button class="btn btn-ghost" onclick="${resetUpload}">Upload another</button>
     </div>
-    <trait-grid></trait-grid>
+    <trait-grid resultCount="${host.resultCount}"></trait-grid>
   `;
+}
+
+/** @param {object} host */
+function scoringBanner(host) {
+  if (host.scoringStatus === 'init') {
+    return html`<p class="beta-view__scoring">Initializing DuckDB WASM…</p>`;
+  }
+  if (host.scoringStatus === 'scoring') {
+    return html`<p class="beta-view__scoring">
+      Scoring: ${host.scoringTrait} (${host.scoringCurrent + 1}/${host.scoringTotal})
+    </p>`;
+  }
+  if (host.scoringStatus === 'done') {
+    return html`<p class="beta-view__scoring beta-view__scoring--done">
+      ✅ ${host.resultCount} traits scored
+    </p>`;
+  }
+  if (host.scoringStatus === 'error') {
+    return html`<p class="beta-view__scoring beta-view__scoring--error">❌ ${host.parseError}</p>`;
+  }
+  return html``;
 }
 
 /** @param {object} host */
@@ -95,5 +124,7 @@ function resetUpload(host) {
   host.parseStatus = '';
   host.parseError = '';
   host.parsedCount = 0;
-  host.parsedFormat = '';
+  host.scoringStatus = '';
+  host.resultCount = 0;
+  clearResults();
 }
