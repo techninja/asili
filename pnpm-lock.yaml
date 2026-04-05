@@ -22,8 +22,8 @@ importers:
         specifier: ^4.0.0
         version: 4.0.0
       '@techninja/clearstack':
-        specifier: ^0.2.0
-        version: 0.2.21(@types/node@22.19.17)
+        specifier: ^0.3.7
+        version: 0.3.7(@types/node@22.19.17)
       '@types/node':
         specifier: ^22.0.0
         version: 22.19.17
@@ -526,8 +526,8 @@ packages:
     resolution: {integrity: sha512-tlqY9xq5ukxTUZBmoOp+m61cqwQD5pHJtFY3Mn8CA8ps6yghLH/Hw8UPdqg4OLmFW3IFlcXnQNmo/dh8HzXYIQ==}
     engines: {node: '>=18'}
 
-  '@techninja/clearstack@0.2.21':
-    resolution: {integrity: sha512-fL1Qk9e86akl68nF1ojiwkyTSbGmHZ3o8bIjUW2ThpzEzZStboTRkGynIM+1gImF5Z2cEzCANkyhHK9WXTEthA==}
+  '@techninja/clearstack@0.3.7':
+    resolution: {integrity: sha512-ehw3c5RkB+fqljVQ2fXWvKckbdBNejo0k9Os6zJsFcNBjj5F/cdTE87FiTTbw8Ju6A2ftczeb3j+snEPM2sDTA==}
     hasBin: true
 
   '@tootallnate/quickjs-emscripten@0.23.0':
@@ -3056,7 +3056,7 @@ snapshots:
 
   '@sindresorhus/merge-streams@4.0.0': {}
 
-  '@techninja/clearstack@0.2.21(@types/node@22.19.17)':
+  '@techninja/clearstack@0.3.7(@types/node@22.19.17)':
     dependencies:
       '@inquirer/prompts': 8.3.2(@types/node@22.19.17)
     transitivePeerDependencies:
