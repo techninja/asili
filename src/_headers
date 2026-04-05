@@ -1,0 +1,37 @@
+# Cache static assets aggressively
+/vendor/*
+  Cache-Control: public, max-age=31536000, immutable
+
+/styles/*
+  Cache-Control: public, max-age=86400
+
+/icons.json
+  Cache-Control: public, max-age=86400
+
+/logo.svg
+  Cache-Control: public, max-age=86400
+
+# Short cache for JS (changes on deploy)
+/pages/*
+  Cache-Control: public, max-age=300
+
+/components/*
+  Cache-Control: public, max-age=300
+
+/utils/*
+  Cache-Control: public, max-age=300
+
+/router/*
+  Cache-Control: public, max-age=300
+
+/store/*
+  Cache-Control: public, max-age=300
+
+/index.html
+  Cache-Control: public, max-age=60
+
+# Security headers for all pages
+/*
+  X-Content-Type-Options: nosniff
+  X-Frame-Options: DENY
+  Referrer-Policy: strict-origin-when-cross-origin
