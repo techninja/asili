@@ -18,7 +18,9 @@ function initCanvas(canvas) {
    *
    */
   function resize() {
-    const rect = canvas.parentElement.getBoundingClientRect();
+    const host = canvas.closest('hero-canvas');
+    if (!host) return;
+    const rect = host.getBoundingClientRect();
     const oldW = w;
     const oldH = h;
     w = canvas.width = rect.width;
@@ -84,12 +86,13 @@ function initCanvas(canvas) {
     raf = requestAnimationFrame(draw);
   }
 
+  const host = canvas.closest('hero-canvas');
   resize();
   createParticles();
   draw();
 
   const ro = new ResizeObserver(resize);
-  ro.observe(canvas.parentElement);
+  ro.observe(host);
 
   return () => {
     cancelAnimationFrame(raf);
