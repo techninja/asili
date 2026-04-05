@@ -8,6 +8,8 @@
 @import '../components/atoms/app-icon/app-icon.css';
 @import '../components/atoms/theme-toggle/theme-toggle.css';
 @import '../components/atoms/hero-canvas/hero-canvas.css';
+@import '../components/atoms/percentile-bar/percentile-bar.css';
+@import '../components/atoms/confidence-badge/confidence-badge.css';
 
 /* Pages */
 @import '../pages/home/home-view.css';

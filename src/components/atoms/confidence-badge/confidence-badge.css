@@ -1,0 +1,29 @@
+.confidence-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: var(--space-xs) var(--space-sm);
+  font-size: var(--text-sm);
+  font-weight: 500;
+  border-radius: var(--radius-sm);
+  line-height: 1;
+}
+
+.confidence-badge--success {
+  background: color-mix(in srgb, var(--color-success) 15%, transparent);
+  color: var(--color-success);
+}
+
+.confidence-badge--info {
+  background: color-mix(in srgb, var(--color-info) 15%, transparent);
+  color: var(--color-info);
+}
+
+.confidence-badge--warning {
+  background: color-mix(in srgb, var(--color-warning) 15%, transparent);
+  color: var(--color-warning);
+}
+
+.confidence-badge--danger {
+  background: color-mix(in srgb, var(--color-danger) 15%, transparent);
+  color: var(--color-danger);
+}
