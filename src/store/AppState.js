@@ -9,7 +9,7 @@ import { store } from 'hybrids';
 
 /** @type {import('hybrids').Model<AppState>} */
 const AppState = {
-  theme: 'light',
+  theme: 'dark',
   count: 0,
   [store.connect]: {
     get: () => {

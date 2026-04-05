@@ -1,0 +1,199 @@
+/* Coming Soon — app.asili.dev landing page */
+
+home-view {
+  display: block;
+}
+
+.coming-soon {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+/* --- Header bar --- */
+
+.coming-soon__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--space-md) var(--space-xl);
+  border-bottom: 1px solid var(--color-border);
+  overflow: hidden;
+}
+
+.coming-soon__logo {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+  text-decoration: none;
+  color: var(--color-text);
+  font-weight: 800;
+  font-size: var(--text-xl);
+  letter-spacing: 0.04em;
+  text-transform: lowercase;
+}
+
+.coming-soon__logo-img {
+  height: 9rem;
+  width: auto;
+  margin-top: -3.4em;
+  margin-bottom: -1.3em;
+}
+
+.coming-soon__header-actions {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+}
+
+/* --- Hero --- */
+
+.coming-soon__hero {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding: var(--space-3xl) var(--space-xl);
+  background:
+    radial-gradient(ellipse at 30% 20%, rgb(99 102 241 / 18%) 0%, transparent 50%),
+    radial-gradient(ellipse at 70% 60%, rgb(52 211 153 / 10%) 0%, transparent 50%),
+    radial-gradient(ellipse at 50% 0%, rgb(129 140 248 / 14%) 0%, transparent 60%);
+}
+
+[data-theme='light'] .coming-soon__hero {
+  background:
+    radial-gradient(ellipse at 30% 20%, rgb(79 70 229 / 12%) 0%, transparent 50%),
+    radial-gradient(ellipse at 70% 60%, rgb(5 150 105 / 8%) 0%, transparent 50%),
+    radial-gradient(ellipse at 50% 0%, rgb(99 102 241 / 10%) 0%, transparent 60%);
+}
+
+.coming-soon__emoji {
+  font-size: 3rem;
+  margin-bottom: var(--space-lg);
+}
+
+.coming-soon__title {
+  font-size: var(--text-hero);
+  font-weight: 800;
+  line-height: 1.1;
+  letter-spacing: -0.02em;
+  margin-bottom: var(--space-md);
+}
+
+.coming-soon__sub {
+  font-size: var(--text-lg);
+  color: var(--color-text-muted);
+  line-height: 1.6;
+  max-width: 36rem;
+  margin-bottom: var(--space-2xl);
+}
+
+.coming-soon__badges {
+  display: flex;
+  gap: var(--space-sm);
+  flex-wrap: wrap;
+  justify-content: center;
+  margin-bottom: var(--space-2xl);
+}
+
+.coming-soon__badge {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-xs);
+  padding: var(--space-xs) var(--space-md);
+  border-radius: 999px;
+  font-size: var(--text-sm);
+  font-weight: 500;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  color: var(--color-text-muted);
+}
+
+.coming-soon__cta {
+  display: flex;
+  gap: var(--space-md);
+  flex-wrap: wrap;
+  justify-content: center;
+}
+
+/* --- Features --- */
+
+.coming-soon__features {
+  padding: var(--space-3xl) var(--space-xl);
+  background: var(--color-surface);
+}
+
+.coming-soon__features-inner {
+  max-width: var(--max-width);
+  margin: 0 auto;
+}
+
+.coming-soon__features-title {
+  text-align: center;
+  font-size: var(--text-2xl);
+  font-weight: 700;
+  margin-bottom: var(--space-2xl);
+}
+
+.coming-soon__grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(15rem, 1fr));
+  gap: var(--space-lg);
+}
+
+.coming-soon__card {
+  padding: var(--space-lg);
+  background: var(--color-bg);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+}
+
+.coming-soon__card-emoji {
+  font-size: 1.5rem;
+  margin-bottom: var(--space-sm);
+}
+
+.coming-soon__card h3 {
+  font-size: var(--text-base);
+  font-weight: 600;
+  margin-bottom: var(--space-xs);
+}
+
+.coming-soon__card p {
+  font-size: var(--text-sm);
+  color: var(--color-text-muted);
+  line-height: 1.5;
+}
+
+/* --- Footer --- */
+
+.coming-soon__footer {
+  text-align: center;
+  padding: var(--space-xl);
+  color: var(--color-text-muted);
+  font-size: var(--text-sm);
+  border-top: 1px solid var(--color-border);
+}
+
+.coming-soon__footer a {
+  color: var(--color-primary);
+}
+
+/* --- Mobile --- */
+
+@media (width <= 640px) {
+  .coming-soon__title {
+    font-size: clamp(1.8rem, 8vw, 2.5rem);
+  }
+
+  .coming-soon__sub {
+    font-size: var(--text-base);
+  }
+
+  .coming-soon__cta {
+    flex-direction: column;
+    align-items: center;
+  }
+}
