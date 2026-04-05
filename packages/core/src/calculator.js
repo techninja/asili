@@ -13,7 +13,7 @@ const DEFAULT_R2 = 0.05;
  * @returns {number|null}
  */
 export function calculateZScore(rawScore, stats) {
-  if (!stats || stats.mean == null || !stats.sd) return null;
+  if (!stats || stats.mean === undefined || stats.mean === null || !stats.sd) return null;
   return (rawScore - stats.mean) / stats.sd;
 }
 
@@ -23,7 +23,7 @@ export function calculateZScore(rawScore, stats) {
  * @returns {number|null} Percentile 0-100
  */
 export function calculatePercentile(zScore) {
-  if (zScore == null) return null;
+  if (zScore === null || zScore === undefined) return null;
   const sign = zScore >= 0 ? 1 : -1;
   const x = Math.abs(zScore / Math.sqrt(2));
   const t = 1.0 / (1.0 + 0.3275911 * x);
@@ -91,7 +91,7 @@ export function calculateQualityScore(
   const normalization = hasNormalization ? 5 : 2.5;
 
   let signal = 0;
-  if (zScore != null && !isNaN(zScore)) {
+  if (zScore !== null && zScore !== undefined && !isNaN(zScore)) {
     const absZ = Math.abs(zScore);
     signal = absZ > 5 ? 0 : Math.min(absZ / 3, 1) * 10;
   }

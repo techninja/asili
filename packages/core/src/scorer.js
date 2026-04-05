@@ -5,7 +5,6 @@
  */
 
 import { normalizePGS, selectBestPGS } from './normalizer.js';
-import { calculatePercentile } from './calculator.js';
 
 /** @returns {{ details: object, breakdown: object }} Fresh PGS accumulators */
 function createPGSAccumulators() {
@@ -29,7 +28,7 @@ function createPGSAccumulators() {
  * @param {Map<string, number>} pgsVariantCounts - total variants per PGS
  * @returns {{ pgsDetails: Map, pgsBreakdown: Map, totalMatches: number }}
  */
-export async function scoreFromMatches(matchIterator, pgsVariantCounts) {
+export async function scoreFromMatches(matchIterator, _pgsVariantCounts) {
   const pgsDetails = new Map();
   const pgsBreakdown = new Map();
   let totalMatches = 0;
@@ -102,7 +101,7 @@ export function finalize(scored, normParams = {}, opts = {}) {
     pgsBreakdown: Object.fromEntries(pgsBreakdown),
   };
 
-  if (traitType === 'quantitative' && best?.value != null) {
+  if (traitType === 'quantitative' && best?.value !== null && best?.value !== undefined) {
     result.value = best.value;
   }
 

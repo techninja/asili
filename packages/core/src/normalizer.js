@@ -54,14 +54,15 @@ export function normalizePGS(
   details.normMean = mean;
   details.normSd = sd;
 
+  const hasGoodNorm = hasEmpirical && sufficientCoverage;
   if (mean !== undefined && sd !== undefined && sd > 0 && details.matchedVariants > 0) {
     details.zScore = calculateZScore(details.score, { mean, sd });
     details.percentile = calculatePercentile(details.zScore);
     details.qualityScore = calculateQualityScore(
       details.matchedVariants, totalVariants, perfWeight,
-      hasEmpirical && sufficientCoverage, details.zScore, details.genotypedVariants
+      hasGoodNorm, details.zScore, details.genotypedVariants
     );
-    if (traitType === 'quantitative' && phenotypeMean != null && phenotypeSd != null) {
+    if (traitType === 'quantitative' && phenotypeMean !== null && phenotypeMean !== undefined && phenotypeSd !== null && phenotypeSd !== undefined) {
       const r2 = perfMetrics?.r2 || perfWeight;
       details.value = phenotypeMean + details.zScore * Math.sqrt(r2) * phenotypeSd;
     }
@@ -70,7 +71,7 @@ export function normalizePGS(
     details.percentile = null;
     details.qualityScore = calculateQualityScore(
       details.matchedVariants, totalVariants, perfWeight,
-      hasEmpirical && sufficientCoverage, null, details.genotypedVariants
+      hasGoodNorm, null, details.genotypedVariants
     );
   }
 }
@@ -86,7 +87,7 @@ export function selectBestPGS(pgsDetails) {
 
   for (const [id, d] of pgsDetails) {
     if (d.insufficientData) continue;
-    if (d.zScore != null && Math.abs(d.zScore) > 5) continue;
+    if (d.zScore !== null && d.zScore !== undefined && Math.abs(d.zScore) > 5) continue;
     if (d.qualityScore > bestScore) {
       bestScore = d.qualityScore;
       bestId = id;
@@ -95,7 +96,7 @@ export function selectBestPGS(pgsDetails) {
 
   if (!bestId) {
     for (const [id, d] of pgsDetails) {
-      if (d.qualityScore > bestScore && d.zScore != null) {
+      if (d.qualityScore > bestScore && d.zScore !== null && d.zScore !== undefined) {
         bestScore = d.qualityScore;
         bestId = id;
       }

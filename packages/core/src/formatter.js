@@ -48,7 +48,7 @@ const UNIT_MAP = {
  * @returns {{ display: string, value: string, unit: string }}
  */
 export function formatTraitValue(value, unit) {
-  if (value == null) return { display: '—', value: '—', unit: '' };
+  if (value === null || value === undefined) return { display: '—', value: '—', unit: '' };
 
   const spec = UNIT_MAP[unit];
   const decimals = spec?.decimals ?? 2;
