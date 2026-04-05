@@ -1,0 +1,88 @@
+.beta-view {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  max-width: var(--max-width);
+  margin: 0 auto;
+  padding: var(--space-lg);
+}
+
+.beta-view__header {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+  margin-bottom: var(--space-3xl);
+}
+
+.beta-view__logo {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+  text-decoration: none;
+  color: var(--color-text);
+  font-size: var(--text-xl);
+  font-weight: 600;
+}
+
+.beta-view__logo-img {
+  height: 2rem;
+}
+
+.beta-view__tag {
+  font-size: var(--text-sm);
+  padding: 2px var(--space-sm);
+  border-radius: var(--radius-sm);
+  background: var(--color-warning);
+  color: #000;
+  font-weight: 600;
+}
+
+.beta-view__main {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-md);
+}
+
+.beta-view__title {
+  font-size: var(--text-2xl);
+  margin: 0;
+}
+
+.beta-view__sub {
+  color: var(--color-text-muted);
+  margin: 0 0 var(--space-lg);
+}
+
+.beta-view__status,
+.beta-view__result,
+.beta-view__error {
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-md);
+}
+
+.beta-view__spinner {
+  font-size: 3rem;
+  animation: spin 2s linear infinite;
+}
+
+.beta-view__check {
+  font-size: 3rem;
+}
+
+.beta-view__count {
+  font-size: var(--text-lg);
+  color: var(--color-text-muted);
+  font-variant-numeric: tabular-nums;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}

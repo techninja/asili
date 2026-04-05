@@ -10,9 +10,10 @@
     "skipLibCheck": true,
     "types": ["node"],
     "paths": {
-      "hybrids": ["../node_modules/hybrids/types/index.d.ts"]
+      "hybrids": ["../node_modules/hybrids/types/index.d.ts"],
+      "/packages/*": ["../packages/*"]
     }
   },
-  "include": ["../src/**/*.js", "../scripts/**/*.js"],
+  "include": ["../src/**/*.js", "../scripts/**/*.js", "../packages/**/*.js"],
   "exclude": ["../node_modules", "../src/vendor", "../**/*.test.js"]
 }

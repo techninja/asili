@@ -25,8 +25,8 @@ function createPGSAccumulators() {
 /**
  * Score all PGS for a trait from an async match iterator.
  * @param {AsyncIterable<Array>} matchIterator - yields batches of matches
- * @param {Map<string, number>} pgsVariantCounts - total variants per PGS
- * @returns {{ pgsDetails: Map, pgsBreakdown: Map, totalMatches: number }}
+ * @param {Map<string, number>} _pgsVariantCounts - total variants per PGS
+ * @returns {Promise<{pgsDetails: Map, pgsBreakdown: Map, totalMatches: number}>}
  */
 export async function scoreFromMatches(matchIterator, _pgsVariantCounts) {
   const pgsDetails = new Map();

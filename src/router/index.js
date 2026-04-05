@@ -8,7 +8,7 @@ import HomeView from '../pages/home/home-view.js';
 
 export default define({
   tag: 'app-router',
-  stack: router(HomeView, { url: '/' }),
+  stack: router(HomeView),
   render: {
     value: ({ stack }) => html`<div class="app-router">${stack}</div>`,
     shadow: false,

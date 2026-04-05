@@ -29,10 +29,10 @@ export async function openDB() {
 
 /**
  * @param {string} storeName
- * @param {string} mode
+ * @param {IDBTransactionMode} mode
  * @returns {Promise<IDBObjectStore>}
  */
-async function getStore(storeName, mode = 'readonly') {
+async function getStore(storeName, mode = /** @type {IDBTransactionMode} */ ('readonly')) {
   const d = await openDB();
   return d.transaction(storeName, mode).objectStore(storeName);
 }
@@ -82,7 +82,7 @@ export async function getAllKeys(storeName) {
   const store = await getStore(storeName);
   return new Promise((resolve, reject) => {
     const req = store.getAllKeys();
-    req.onsuccess = () => resolve(req.result);
+    req.onsuccess = () => resolve(/** @type {string[]} */ (req.result));
     req.onerror = () => reject(req.error);
   });
 }

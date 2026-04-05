@@ -9,6 +9,7 @@ import express from 'express';
 const app = express();
 
 app.use(express.static('src'));
+app.use('/packages', express.static('packages'));
 
 app.use((req, res, next) => {
   if (req.method === 'GET' && !req.path.includes('.')) {

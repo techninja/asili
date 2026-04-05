@@ -14,3 +14,7 @@
 /* Pages */
 @import '../pages/home/home-view.css';
 @import '../pages/home/home-sections.css';
+@import '../pages/beta/beta-view.css';
+
+/* Molecules */
+@import '../components/molecules/upload-zone/upload-zone.css';
