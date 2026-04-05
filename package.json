@@ -23,7 +23,7 @@
   "author": "techninja (James Todd)",
   "license": "AGPL-3.0-or-later",
   "engines": {
-    "node": ">=22",
+    "node": ">=24",
     "pnpm": ">=9"
   },
   "packageManager": "pnpm@9.15.4",
