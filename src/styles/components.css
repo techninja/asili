@@ -18,3 +18,7 @@
 
 /* Molecules */
 @import '../components/molecules/upload-zone/upload-zone.css';
+@import '../components/molecules/trait-card/trait-card.css';
+
+/* Organisms */
+@import '../components/organisms/trait-grid/trait-grid.css';

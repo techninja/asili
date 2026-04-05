@@ -1,0 +1,48 @@
+.trait-card {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  padding: var(--space-md);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-sm);
+  transition: box-shadow 0.2s;
+}
+
+.trait-card:hover {
+  box-shadow: var(--shadow-md);
+}
+
+.trait-card--empty {
+  opacity: 0.7;
+}
+
+.trait-card__header {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+}
+
+.trait-card__emoji {
+  font-size: 1.5rem;
+  line-height: 1;
+}
+
+.trait-card__name {
+  font-weight: 600;
+  font-size: var(--text-base);
+  text-transform: capitalize;
+}
+
+.trait-card__value {
+  font-size: var(--text-sm);
+  color: var(--color-text-muted);
+  margin: 0;
+}
+
+.trait-card__empty {
+  font-size: var(--text-sm);
+  color: var(--color-text-muted);
+  margin: 0;
+  font-style: italic;
+}

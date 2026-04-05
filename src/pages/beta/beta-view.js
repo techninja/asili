@@ -1,6 +1,6 @@
 /**
  * Beta view — the app during development.
- * Upload → parse → store → display variant count.
+ * Upload → parse → store → display variant count → trait grid.
  * @module pages/beta
  */
 
@@ -8,6 +8,7 @@ import { html, define, store, router } from 'hybrids';
 import AppState from '../../store/AppState.js';
 import '../../components/molecules/upload-zone/upload-zone.js';
 import '../../components/atoms/confidence-badge/confidence-badge.js';
+import '../../components/organisms/trait-grid/trait-grid.js';
 import { handleFileSelected } from './upload-handler.js';
 
 export default define({
@@ -32,11 +33,11 @@ export default define({
 
         <main class="beta-view__main">
           ${host.parseStatus === ''
-            ? uploadSection(host)
+            ? uploadSection()
             : host.parseStatus === 'parsing'
               ? parsingSection(host)
               : host.parseStatus === 'done'
-                ? resultSection(host)
+                ? doneSection(host)
                 : errorSection(host)}
         </main>
       </div>
@@ -45,8 +46,8 @@ export default define({
   },
 });
 
-/** @param {object} host */
-function uploadSection(host) {
+/** Upload prompt */
+function uploadSection() {
   return html`
     <h1 class="beta-view__title">Upload your DNA</h1>
     <p class="beta-view__sub">Your file stays on your device. Nothing is uploaded to any server.</p>
@@ -60,23 +61,21 @@ function parsingSection(host) {
     <div class="beta-view__status">
       <span class="beta-view__spinner">🧬</span>
       <p>Parsing ${host.parsedFormat || 'DNA'} file…</p>
-      <p class="beta-view__count">${host.parsedCount.toLocaleString()} variants found</p>
+      <p class="beta-view__count">${host.parsedCount.toLocaleString()} variants</p>
     </div>
   `;
 }
 
 /** @param {object} host */
-function resultSection(host) {
+function doneSection(host) {
   return html`
     <div class="beta-view__result">
       <span class="beta-view__check">✅</span>
-      <h2>${host.individualName || 'DNA'} loaded</h2>
-      <p class="beta-view__count">
-        ${host.parsedCount.toLocaleString()} variants · ${host.parsedFormat}
-      </p>
-      <confidence-badge level="high"></confidence-badge>
-      <button class="btn btn-secondary" onclick="${resetUpload}">Upload another</button>
+      <h2>${host.individualName} — ${host.parsedCount.toLocaleString()} variants</h2>
+      <p class="beta-view__count">${host.parsedFormat} format</p>
+      <button class="btn btn-ghost" onclick="${resetUpload}">Upload another</button>
     </div>
+    <trait-grid></trait-grid>
   `;
 }
 
