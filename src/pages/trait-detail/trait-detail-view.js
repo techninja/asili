@@ -6,17 +6,17 @@
 
 import { html, define, router } from 'hybrids';
 // @ts-ignore
-import '../../components/atoms/percentile-bar/percentile-bar.js';
+import '#atoms/percentile-bar/percentile-bar.js';
 // @ts-ignore
-import '../../components/atoms/confidence-badge/confidence-badge.js';
+import '#atoms/confidence-badge/confidence-badge.js';
 // @ts-ignore
-import '../../components/molecules/pgs-table/pgs-table.js';
+import '#molecules/pgs-table/pgs-table.js';
 // @ts-ignore
-import '../../components/molecules/family-compare/family-compare.js';
+import '#molecules/family-compare/family-compare.js';
 // @ts-ignore
-import '../../components/molecules/individual-switcher/individual-switcher.js';
-import { results, getActiveId, loadResults } from '../beta/results-store.js';
-import { getTraitList } from '../../utils/manifest.js';
+import '#molecules/individual-switcher/individual-switcher.js';
+import { results, getActiveId, loadResults } from '#pages/beta/results-store.js';
+import { getTraitList } from '#utils/manifest.js';
 import { formatTraitValue } from '/packages/core/src/formatter.js';
 import { buildPgsEntries, loadFamily } from './trait-detail-helpers.js';
 

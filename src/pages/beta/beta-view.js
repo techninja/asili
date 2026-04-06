@@ -7,17 +7,17 @@
 import { html, define, router } from 'hybrids';
 import * as idb from '/packages/core/src/data-layer/idb.js';
 // @ts-ignore
-import '../../components/molecules/upload-zone/upload-zone.js';
+import '#molecules/upload-zone/upload-zone.js';
 // @ts-ignore
-import '../../components/molecules/individual-setup/individual-setup.js';
+import '#molecules/individual-setup/individual-setup.js';
 // @ts-ignore
-import '../../components/organisms/trait-grid/trait-grid.js';
+import '#organisms/trait-grid/trait-grid.js';
 import { individualSelector, appContent, uploadContent } from './beta-render.js';
 import { loadResults } from './results-store.js';
 import { startScoring } from './scoring-controller.js';
-import TraitDetailView from '../trait-detail/trait-detail-view.js';
-import ReportView from '../report/report-view.js';
-import SettingsView from '../settings/settings-view.js';
+import TraitDetailView from '#pages/trait-detail/trait-detail-view.js';
+import ReportView from '#pages/report/report-view.js';
+import SettingsView from '#pages/settings/settings-view.js';
 
 export default define({
   tag: 'beta-view',

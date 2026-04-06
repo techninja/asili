@@ -7,13 +7,13 @@
 import { html, define, router } from 'hybrids';
 import * as idb from '/packages/core/src/data-layer/idb.js';
 // @ts-ignore
-import '../../components/organisms/trait-grid/trait-grid.js';
-import { loadResults } from '../beta/results-store.js';
-import { initScoring, loadDNA, scoreAll, stopScoring, isScoring } from '../../utils/scoring.js';
-import { getTraitList } from '../../utils/manifest.js';
-import { setResult } from '../beta/results-store.js';
-import TraitDetailView from '../trait-detail/trait-detail-view.js';
-import ReportView from '../report/report-view.js';
+import '#organisms/trait-grid/trait-grid.js';
+import { loadResults } from '#pages/beta/results-store.js';
+import { initScoring, loadDNA, scoreAll, stopScoring, isScoring } from '#utils/scoring.js';
+import { getTraitList } from '#utils/manifest.js';
+import { setResult } from '#pages/beta/results-store.js';
+import TraitDetailView from '#pages/trait-detail/trait-detail-view.js';
+import ReportView from '#pages/report/report-view.js';
 
 export default define({
   tag: 'individual-view',

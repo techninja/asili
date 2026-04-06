@@ -6,9 +6,9 @@
 
 import { html, define } from 'hybrids';
 // @ts-ignore — side-effect import for web component registration
-import '../../atoms/percentile-bar/percentile-bar.js';
+import '#atoms/percentile-bar/percentile-bar.js';
 // @ts-ignore — side-effect import for web component registration
-import '../../atoms/confidence-badge/confidence-badge.js';
+import '#atoms/confidence-badge/confidence-badge.js';
 
 export default define({
   tag: 'trait-card',

@@ -7,7 +7,7 @@
 
 import { html, define, dispatch } from 'hybrids';
 // @ts-ignore
-import '../emoji-builder/emoji-builder.js';
+import '#molecules/emoji-builder/emoji-builder.js';
 
 /** @param {object & HTMLElement} host */
 function handleSubmit(host, e) {

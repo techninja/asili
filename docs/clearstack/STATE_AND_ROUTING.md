@@ -33,6 +33,43 @@ export default define({
 
 Local state resets when the component disconnects from the DOM.
 
+#### Property Defaults: Never Use `undefined` or `null`
+
+Hybrids infers a property's type from its initial value. The router's cache
+observer calls `.toString()` on property values during state transitions.
+If a property is defined as `undefined` or later set to `null`, this crashes:
+
+```javascript
+// ❌ BAD — undefined has no type info, null crashes .toString()
+export default define({
+  tag: 'my-view',
+  _data: undefined, // no type info for hybrids to work with
+  // ...
+});
+
+// Later in a handler:
+host._data = null; // TypeError: Cannot read properties of null (reading 'toString')
+```
+
+Always provide a typed default value, and reset to the same type:
+
+```javascript
+// ✅ GOOD — array default, connect no-op prevents hybrids from observing it
+export default define({
+  tag: 'my-view',
+  _data: { value: [], connect: () => {} },
+  // ...
+});
+
+// Later in a handler:
+host._data = []; // safe — same type as default
+```
+
+The `connect: () => {}` no-op prevents hybrids from doing anything special
+with the property — it's just internal state storage. This pattern is useful
+for "private" properties that hold transient data (parsed results, file
+contents, etc.) that shouldn't participate in the reactive render cycle.
+
 ### Shared State via Store
 
 For state shared across components or persisted beyond a component's lifetime,
@@ -180,6 +217,42 @@ tasks.map((task) =>
 This is especially important after batch operations (e.g. drag reorder)
 where multiple items are invalidated simultaneously.
 
+#### Async `connect` on Array Properties
+
+When a plain array property uses `connect` to load data asynchronously,
+the render function fires **before** the async load completes. Even though
+the default `value` is `[]`, hybrids may resolve the property as a
+non-array during the pending phase.
+
+Always guard with `Array.isArray()` before calling array methods:
+
+```javascript
+export default define({
+  tag: 'my-view',
+  items: {
+    value: [],
+    connect: (host, _key, invalidate) => {
+      fetchItems().then((list) => {
+        host.items = list;
+        invalidate();
+      });
+    },
+  },
+  render: ({ items }) => html`
+    // ❌ BAD — items may not be an array yet when render fires
+    ${items.filter((i) => i.active).map((i) => html`<span>${i.name}</span>`)} // ✅ GOOD — guard
+    before calling array methods
+    ${Array.isArray(items) && items.length > 0
+      ? items.filter((i) => i.active).map((i) => html`<span>${i.name}</span>`)
+      : html``}
+  `,
+});
+```
+
+This applies to any property with `value: []` and an async `connect`.
+The `connect` callback sets the value and calls `invalidate()`, but the
+first render happens before that resolves.
+
 ---
 
 ## Routing
@@ -233,6 +306,71 @@ export default define({
 | Check active view    | `router.active(View)`                    |
 | Guarded route        | `guard: () => isAuthenticated()`         |
 | Dialog overlay       | `dialog: true` on the view config        |
+
+#### Router Property Cache: Same-Value Writes Are No-Ops
+
+The router caches component property values across navigations and page
+reloads. When a view reconnects, its properties are restored from cache
+**before** `connect` callbacks run.
+
+This means if a `connect` callback loads data asynchronously and then sets
+a property to the same value the cache already holds, hybrids sees no
+change and skips the re-render:
+
+```javascript
+// ❌ BAD — if router cache already has resultCount=22,
+// setting it to 22 again is a no-op. No re-render happens.
+connect: (host, _key, invalidate) => {
+  loadFromDB(host.userId).then((data) => {
+    populateMemoryCache(data);     // side effect: fills an external object
+    host.resultCount = data.length; // may equal cached value → no re-render
+    invalidate();
+  });
+},
+
+// ✅ GOOD — reset to a sentinel value first, then set the real value.
+// Hybrids sees 0 → 22, triggers re-render after data is loaded.
+connect: (host, _key, invalidate) => {
+  loadFromDB(host.userId).then((data) => {
+    populateMemoryCache(data);
+    host.resultCount = 0;           // force a change
+    host.resultCount = data.length; // now hybrids sees a real change
+    invalidate();
+  });
+},
+```
+
+This is especially important when render depends on external mutable state
+(e.g. an in-memory cache object) that the property change is meant to
+signal. Without the reset, the component renders with stale external state.
+
+#### `router.backUrl()` Serializes All Parent Properties
+
+`router.backUrl()` encodes the parent view's property values into query
+params so hybrids can restore them when navigating back. If the parent has
+properties holding complex objects (arrays of records, parsed data, etc.),
+the URL becomes enormous — potentially megabytes — and the browser locks
+up just rendering the `<a>` element.
+
+The `connect: () => {}` no-op prevents hybrids from _observing_ a property,
+but the router still serializes it. The only way to fully exclude a
+property from URL serialization is to not define it on the routed view at
+all (use a module-level variable or a separate store).
+
+For child views that don't need to restore specific parent state, use a
+direct href instead of `router.backUrl()`:
+
+```javascript
+// ❌ BAD — serializes ALL parent properties into the href
+// If parent has a 700K-item array, the URL is megabytes
+html`<a href="${router.backUrl()}">← Back</a>`;
+
+// ✅ GOOD — direct link, no serialization
+html`<a href="/dashboard">← Back</a>`;
+```
+
+Use `router.backUrl()` only when the parent view has simple scalar
+properties (strings, numbers, booleans) that are cheap to serialize.
 
 ---
 
@@ -340,25 +478,11 @@ re-fetches automatically.
 ### Debouncing Batch Operations
 
 Operations like drag-to-reorder send multiple PUTs, each triggering an SSE
-event. Without debouncing, each event clears the store and triggers a
-re-render while the previous render is still pending — causing cascading
-errors.
+event. Without debouncing, each event clears the store mid-render.
 
 The `connectRealtime()` utility debounces by entity type: multiple SSE
-events within 300ms trigger only one `store.clear()`. This means a reorder
-of 5 tasks sends 5 PUTs → 5 SSE events → 1 store clear after 300ms.
+events within 300ms trigger only one `store.clear()`. A reorder of 5 tasks
+sends 5 PUTs → 5 SSE events → 1 store clear after the batch settles.
 
-```javascript
-// Inside connectRealtime — debounce per entity type
-const timers = {};
-source.addEventListener('update', (event) => {
-  const { type } = JSON.parse(event.data);
-  clearTimeout(timers[type]);
-  timers[type] = setTimeout(() => {
-    store.clear([Model]); // one clear after the batch settles
-  }, 300);
-});
-```
-
-For the local user, the UI should not call `store.clear()` explicitly
-after batch operations — let the debounced SSE handler do it once.
+For the local user, don't call `store.clear()` explicitly after batch
+operations — let the debounced SSE handler do it once.

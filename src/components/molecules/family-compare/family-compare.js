@@ -5,7 +5,7 @@
 
 import { html, define } from 'hybrids';
 // @ts-ignore
-import '../../atoms/percentile-bar/percentile-bar.js';
+import '#atoms/percentile-bar/percentile-bar.js';
 
 export default define({
   tag: 'family-compare',

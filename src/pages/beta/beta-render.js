@@ -5,7 +5,7 @@
 
 import { html, router } from 'hybrids';
 import { handleFile, handleSetup } from './beta-sections.js';
-import ReportView from '../report/report-view.js';
+import ReportView from '#pages/report/report-view.js';
 
 /** @param {object} host @param {Array<object>} list @param {Function} switchFn */
 export function individualSelector(host, list, switchFn) {

@@ -5,7 +5,7 @@
 
 import { html, define, router } from 'hybrids';
 // @ts-ignore
-import '../../components/molecules/individual-list/individual-list.js';
+import '#molecules/individual-list/individual-list.js';
 import * as idb from '/packages/core/src/data-layer/idb.js';
 import { exportData, importData } from './settings-helpers.js';
 

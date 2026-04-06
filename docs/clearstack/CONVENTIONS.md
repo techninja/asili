@@ -109,6 +109,50 @@ render: ({ items }) => html`
 
 ---
 
+## Import Map Aliases
+
+All cross-directory imports in browser-facing code use `#prefix/` aliases
+defined in the import map (`src/index.html`). This eliminates fragile
+relative paths like `../../../utils/foo.js`.
+
+### Available Prefixes
+
+| Prefix        | Resolves to              |
+| ------------- | ------------------------ |
+| `#store/`     | `/store/`                |
+| `#utils/`     | `/utils/`                |
+| `#atoms/`     | `/components/atoms/`     |
+| `#molecules/` | `/components/molecules/` |
+| `#organisms/` | `/components/organisms/` |
+| `#templates/` | `/components/templates/` |
+| `#pages/`     | `/pages/`                |
+
+### Rules
+
+- **No `../` imports.** The spec check (`npm run spec`) flags any `../`
+  in browser-facing JS. Use a `#prefix/` alias instead.
+- **Same-directory `./` is fine.** `index.js` re-exports and co-located
+  files use `./` naturally.
+- **Server/API files are exempt.** `src/api/` and `src/server.js` run in
+  Node, not the browser — they use `./` relative imports.
+- **Test files are exempt.** `*.test.js` files may use relative paths.
+- **jsconfig.json mirrors the import map.** The `paths` entries in
+  `.configs/jsconfig.json` let `tsc --checkJs` resolve `#prefix/` imports.
+
+### Examples
+
+```javascript
+// ✅ Good — clear, refactor-safe
+import AppState from '#store/AppState.js';
+import { formatDate } from '#utils/formatDate.js';
+import '#atoms/app-badge/app-badge.js';
+
+// ❌ Bad — fragile, hard to read
+import AppState from '../../../store/AppState.js';
+```
+
+---
+
 ## Error Handling
 
 Errors are handled **at the boundary where they are actionable.** Each layer
@@ -193,8 +237,8 @@ state: store(AppState),
 // In src/utils/filterActive.js
 export const filterActive = (items) => items.filter(i => i.active);
 
-// In component
-import { filterActive } from '../../utils/filterActive.js';
+// In component — use import map alias, never ../
+import { filterActive } from '#utils/filterActive.js';
 render: ({ items }) => html`<ul>${filterActive(items).map(...)}</ul>`,
 ```
 

@@ -4,9 +4,9 @@
  */
 
 import { html, define, router } from 'hybrids';
-import '../../components/atoms/theme-toggle/theme-toggle.js';
-import '../../components/atoms/hero-canvas/hero-canvas.js';
-import BetaView from '../beta/beta-view.js';
+import '#atoms/theme-toggle/theme-toggle.js';
+import '#atoms/hero-canvas/hero-canvas.js';
+import BetaView from '#pages/beta/beta-view.js';
 
 export default define({
   tag: 'home-view',

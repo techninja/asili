@@ -5,8 +5,8 @@
 
 import { parseDNAFile } from '/packages/core/src/parser/parse.js';
 import * as idb from '/packages/core/src/data-layer/idb.js';
-import { initScoring, loadDNA, scoreAll, stopScoring, isScoring } from '../../utils/scoring.js';
-import { getTraitList } from '../../utils/manifest.js';
+import { initScoring, loadDNA, scoreAll, stopScoring, isScoring } from '#utils/scoring.js';
+import { getTraitList } from '#utils/manifest.js';
 import { setResult, loadResults } from './results-store.js';
 
 /** Handle file-selected event — parse DNA, transition to setup step. */

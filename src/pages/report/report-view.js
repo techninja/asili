@@ -6,12 +6,12 @@
 
 import { html, define, router } from 'hybrids';
 // @ts-ignore
-import '../../components/organisms/radar-chart/radar-chart.js';
+import '#organisms/radar-chart/radar-chart.js';
 // @ts-ignore
-import '../../components/atoms/confidence-badge/confidence-badge.js';
-import { results, getActiveId } from '../beta/results-store.js';
-import { buildCategorySummary } from '../../utils/categories.js';
-import { getTraitList } from '../../utils/manifest.js';
+import '#atoms/confidence-badge/confidence-badge.js';
+import { results, getActiveId } from '#pages/beta/results-store.js';
+import { buildCategorySummary } from '#utils/categories.js';
+import { getTraitList } from '#utils/manifest.js';
 import { formatTraitValue } from '/packages/core/src/formatter.js';
 import * as idb from '/packages/core/src/data-layer/idb.js';
 

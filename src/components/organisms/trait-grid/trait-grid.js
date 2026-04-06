@@ -5,13 +5,13 @@
  */
 
 import { html, define, router } from 'hybrids';
-import { getTraitList } from '../../../utils/manifest.js';
-import { results } from '../../../pages/beta/results-store.js';
+import { getTraitList } from '#utils/manifest.js';
+import { results } from '#pages/beta/results-store.js';
 import { formatTraitValue } from '/packages/core/src/formatter.js';
 // @ts-ignore
-import '../../molecules/trait-card/trait-card.js';
-import TraitDetailView from '../../../pages/trait-detail/trait-detail-view.js';
-import { CATEGORY_ORDER, CATEGORY_MAP } from '../../../utils/categories.js';
+import '#molecules/trait-card/trait-card.js';
+import TraitDetailView from '#pages/trait-detail/trait-detail-view.js';
+import { CATEGORY_ORDER, CATEGORY_MAP } from '#utils/categories.js';
 
 const PAGE_SIZE = 20;
 
