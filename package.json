@@ -10,7 +10,8 @@
     "dev": "node --watch --env-file=.env --env-file=.env.local src/server.js",
     "build": "node scripts/build.js",
     "postinstall": "node scripts/setup.js",
-    "spec": "clearstack"
+    "spec": "clearstack",
+    "traits": "node scripts/traits.js"
   },
   "keywords": [
     "genomics",
@@ -23,7 +24,7 @@
   "author": "techninja (James Todd)",
   "license": "AGPL-3.0-or-later",
   "engines": {
-    "node": ">=24",
+    "node": ">=22",
     "pnpm": ">=9"
   },
   "packageManager": "pnpm@9.15.4",

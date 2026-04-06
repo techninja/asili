@@ -1,0 +1,11 @@
+{
+  "name": "@asili/pipeline",
+  "version": "1.0.0",
+  "type": "module",
+  "private": true,
+  "description": "Asili trait management and ETL pipeline",
+  "dependencies": {
+    "better-sqlite3": "^11.9.1",
+    "prompts": "^2.4.2"
+  }
+}
