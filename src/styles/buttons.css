@@ -85,3 +85,8 @@
     background: var(--color-info-hover);
   }
 }
+
+.btn-sm {
+  padding: var(--space-xs) var(--space-sm);
+  font-size: var(--text-sm);
+}

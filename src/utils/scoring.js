@@ -1,5 +1,6 @@
 /**
  * Scoring service — promise-based wrapper around the scoring Web Worker.
+ * Supports abort via stopScoring().
  * @module utils/scoring
  */
 
@@ -12,6 +13,8 @@ const pending = new Map();
 let onProgress = null;
 /** @type {Function|null} */
 let onTraitScored = null;
+/** @type {number} Active scoring run ID — callbacks ignored if stale. */
+let activeScoringRunId = 0;
 
 /**
  * Initialize the scoring worker and DuckDB WASM.
@@ -35,26 +38,49 @@ export function loadDNA(variants) {
 
 /**
  * Score all traits. Calls onProgress and onTraitScored callbacks.
- * @param {Array<object>} traits - From manifest
- * @param {string} dataPath - Base URL for parquet files
+ * @param {Array<object>} traits
+ * @param {string} dataPath
  * @param {object} callbacks
  * @returns {Promise<void>}
  */
 export function scoreAll(traits, dataPath, callbacks = {}) {
   onProgress = callbacks.onProgress || null;
   onTraitScored = callbacks.onTraitScored || null;
-  return send('scoreAll', { traits, dataPath: `${window.location.origin}${dataPath}` });
+  const promise = send('scoreAll', { traits, dataPath: `${window.location.origin}${dataPath}` });
+  activeScoringRunId = msgId;
+  return promise;
 }
 
-/** @param {object} e */
+/**
+ * Stop the current scoring run. Worker finishes current trait then stops.
+ * @returns {Promise<void>}
+ */
+export function stopScoring() {
+  activeScoringRunId = 0;
+  onProgress = null;
+  onTraitScored = null;
+  return send('abort', {});
+}
+
+/** @returns {boolean} */
+export function isScoring() {
+  return activeScoringRunId > 0;
+}
+
+/** @param {MessageEvent} e */
 function handleMessage(e) {
   const { type, id } = e.data;
+
+  if ((type === 'progress' || type === 'scored') && id !== activeScoringRunId) return;
+
   if (type === 'progress' && onProgress) {
     onProgress(e.data);
   } else if (type === 'scored' && onTraitScored) {
     onTraitScored(e.data);
   }
-  if (type === 'ready' || type === 'dnaLoaded' || type === 'allDone') {
+
+  if (type === 'ready' || type === 'dnaLoaded' || type === 'allDone' || type === 'aborted') {
+    if (type === 'allDone' || type === 'aborted') activeScoringRunId = 0;
     pending.get(id)?.resolve(e.data);
     pending.delete(id);
   } else if (type === 'error') {

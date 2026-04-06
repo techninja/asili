@@ -36,6 +36,10 @@ export default define({
         class="upload-zone ${dragover ? 'upload-zone--active' : ''} ${disabled
           ? 'upload-zone--disabled'
           : ''}"
+        onclick="${(host, e) => {
+          if (disabled || e.target.closest('label')) return;
+          host.querySelector('.upload-zone__input')?.click();
+        }}"
         ondragover="${(host, e) => {
           e.preventDefault();
           host.dragover = true;

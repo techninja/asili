@@ -1,0 +1,65 @@
+.emoji-builder {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-sm);
+}
+
+.emoji-builder__preview {
+  font-size: 3rem;
+  text-align: center;
+  line-height: 1;
+  padding: var(--space-sm) 0;
+}
+
+.emoji-builder__row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-xs);
+  flex-wrap: wrap;
+}
+
+.emoji-builder__label {
+  font-size: var(--text-sm);
+  color: var(--color-text-muted);
+  min-width: 3.5rem;
+  text-transform: uppercase;
+  font-weight: 600;
+}
+
+.emoji-builder__opt {
+  font-size: 1.25rem;
+  padding: var(--space-xs) var(--space-sm);
+  border: 2px solid transparent;
+  border-radius: var(--radius-md);
+  background: var(--color-surface-alt);
+  cursor: pointer;
+  line-height: 1;
+  transition: border-color 0.1s;
+}
+
+.emoji-builder__opt:hover {
+  border-color: var(--color-border);
+}
+
+.emoji-builder__opt--sel {
+  border-color: var(--color-primary);
+  background: var(--color-surface);
+}
+
+.emoji-builder__dot {
+  width: 1.5rem;
+  height: 1.5rem;
+  border-radius: 50%;
+  border: 2px solid transparent;
+  cursor: pointer;
+  transition: border-color 0.1s;
+}
+
+.emoji-builder__dot:hover {
+  border-color: var(--color-text-muted);
+}
+
+.emoji-builder__dot--sel {
+  border-color: var(--color-primary);
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--color-primary) 30%, transparent);
+}

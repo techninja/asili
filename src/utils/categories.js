@@ -3,8 +3,25 @@
  * @module utils/categories
  */
 
+export const CATEGORY_ORDER = [
+  'Body',
+  'Metabolism',
+  'Cardiovascular',
+  'Blood',
+  'Cancer',
+  'Metabolic',
+  'Neurological',
+  'Immune',
+  'Digestive',
+  'Lifestyle',
+  'Appearance',
+  'Nutrition',
+  'Reproductive',
+  'Other',
+];
+
 /** @type {Record<string, string>} */
-const CATEGORY_MAP = {
+export const CATEGORY_MAP = {
   Cancer: 'Cancer',
   'Cardiovascular disease': 'Cardiovascular',
   'Cardiovascular measurement': 'Cardiovascular',

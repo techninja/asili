@@ -67,13 +67,15 @@ export function createBrowserAdapter(manifestUrl = '/data/trait_manifest.json') 
     async getAllResults(individualId) {
       const keys = await idb.getAllKeys('results');
       const prefix = `${individualId}:`;
-      const results = [];
+      const out = [];
       for (const k of keys) {
         if (String(k).startsWith(prefix)) {
-          results.push(await idb.get('results', k));
+          const r = await idb.get('results', k);
+          const traitId = String(k).slice(prefix.length);
+          if (r) out.push({ ...r, traitId });
         }
       }
-      return results;
+      return out;
     },
 
     async saveRiskScore(individualId, traitId, result) {

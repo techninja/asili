@@ -43,6 +43,21 @@
   display: flex;
   align-items: center;
   gap: var(--space-sm);
+  cursor: pointer;
+  user-select: none;
+}
+
+.trait-grid__group-title:hover {
+  color: var(--color-primary);
+}
+
+.trait-grid__chevron {
+  transition: transform 0.2s;
+  font-size: var(--text-sm);
+}
+
+.trait-grid__chevron--closed {
+  transform: rotate(-90deg);
 }
 
 .trait-grid__group-count {
@@ -61,4 +76,22 @@
   text-decoration: none;
   color: inherit;
   display: contents;
+}
+
+.trait-grid__more {
+  grid-column: 1 / -1;
+  padding: var(--space-sm) var(--space-md);
+  background: var(--color-surface-alt);
+  border: 2px dashed var(--color-border);
+  border-radius: var(--radius-md);
+  color: var(--color-text-muted);
+  font: inherit;
+  font-size: var(--text-sm);
+  cursor: pointer;
+  transition: border-color 0.15s;
+}
+
+.trait-grid__more:hover {
+  border-color: var(--color-primary);
+  color: var(--color-primary);
 }

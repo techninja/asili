@@ -21,6 +21,9 @@
 @import '../components/molecules/trait-card/trait-card.css';
 @import '../components/molecules/family-compare/family-compare.css';
 @import '../components/molecules/pgs-table/pgs-table.css';
+@import '../components/molecules/individual-list/individual-list.css';
+@import '../components/molecules/emoji-builder/emoji-builder.css';
+@import '../components/molecules/individual-switcher/individual-switcher.css';
 
 /* Organisms */
 @import '../components/organisms/trait-grid/trait-grid.css';
@@ -29,3 +32,4 @@
 /* Pages (additional) */
 @import '../pages/trait-detail/trait-detail-view.css';
 @import '../pages/report/report-view.css';
+@import '../pages/settings/settings-view.css';
