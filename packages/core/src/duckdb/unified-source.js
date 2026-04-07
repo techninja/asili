@@ -24,14 +24,17 @@ const n = (v) => Number(v);
 /**
  * Score a trait by JOINing against each chromosome parquet separately.
  * @param {string} traitUrl - URL/path to trait parquet
+ * @param {Function} [onChr] - callback(chrDone, chrTotal) for sub-progress
  * @returns {Promise<{pgsAggregates: Array, chrCoverage: Array}>}
  */
-export async function scoreUnified(traitUrl) {
+export async function scoreUnified(traitUrl, onChr) {
   if (!chrFiles.length) throw new Error('Unified DNA not loaded');
   const pgsAgg = new Map();
   const chrCov = [];
 
-  for (const chrFile of chrFiles) {
+  for (let ci = 0; ci < chrFiles.length; ci++) {
+    if (onChr) onChr(ci, chrFiles.length);
+    const chrFile = chrFiles[ci];
     const rows = await ddb.query(`
       SELECT t.pgs_id,
         SUM(t.effect_weight * d.genotype_dosage

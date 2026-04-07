@@ -34,6 +34,17 @@ export default define({
   scoringTrait: { value: '', connect: () => {} },
   scoringCurrent: { value: 0, connect: () => {} },
   scoringTotal: { value: 0, connect: () => {} },
+  scoringChrDone: { value: 0, connect: () => {} },
+  scoringChrTotal: { value: 0, connect: () => {} },
+  scoringTick: {
+    value: 0,
+    connect: (host) => {
+      const iv = setInterval(() => {
+        if (host.scoringStatus === 'scoring') host.scoringTick++;
+      }, 2000);
+      return () => clearInterval(iv);
+    },
+  },
   showUpload: { value: false, connect: () => {} },
   _variants: { value: [], connect: () => {} },
   _manifest: { value: '', connect: () => {} },

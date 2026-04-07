@@ -16,6 +16,7 @@
 @import '../pages/home/home-sections.css';
 @import '../pages/beta/beta-view.css';
 @import '../pages/beta/beta-upload.css';
+@import '../pages/beta/beta-scoring.css';
 
 /* Molecules */
 @import '../components/molecules/upload-zone/upload-zone.css';

@@ -127,17 +127,3 @@
   gap: var(--space-sm);
   flex-wrap: wrap;
 }
-
-.beta-view__scoring {
-  font-size: var(--text-sm);
-  color: var(--color-text-muted);
-  font-variant-numeric: tabular-nums;
-  margin: 0;
-  display: flex;
-  align-items: center;
-  gap: var(--space-sm);
-}
-
-.beta-view__scoring--done {
-  color: var(--color-success);
-}

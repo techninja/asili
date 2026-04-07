@@ -5,7 +5,7 @@
 
 import { html, router } from 'hybrids';
 import { handleFile, handleSetup } from './beta-sections.js';
-import { handleStopScoring } from './scoring-controller.js';
+import { scoringBanner } from './scoring-banner.js';
 import ReportView from '#pages/report/report-view.js';
 
 /** @param {object} host @param {Array<object>} list @param {Function} switchFn */
@@ -41,7 +41,7 @@ export function individualSelector(host, list, switchFn) {
   `;
 }
 
-/** Upload panel — rendered inside header, visually connected to + Add tab */
+/** Upload panel — rendered between header and main */
 export function uploadPanel(host, cancelFn) {
   const isParsing = host.parseStatus === 'parsing';
   const isSetup = host.parseStatus === 'setup';
@@ -85,22 +85,6 @@ export function uploadContent(host, cancelFn) {
     ${isParsing ? parsingInline(host) : html``} ${isSetup ? setupInline(host, cancelFn) : html``}
     ${isError ? errorInline(host, cancelFn) : html``}
   `;
-}
-
-/** @param {object} host */
-function scoringBanner(host) {
-  if (host.scoringStatus === 'scoring')
-    return html`<p class="beta-view__scoring">
-      Scoring: ${host.scoringTrait} (${host.scoringCurrent + 1}/${host.scoringTotal})
-      <button class="btn btn-ghost btn-sm" onclick="${handleStopScoring}">⏹ Stop</button>
-    </p>`;
-  if (host.scoringStatus === 'init')
-    return html`<p class="beta-view__scoring">Initializing DuckDB…</p>`;
-  if (host.scoringStatus === 'done')
-    return html`<p class="beta-view__scoring beta-view__scoring--done">
-      ✅ ${host.resultCount} traits scored
-    </p>`;
-  return html``;
 }
 
 /** @param {object} host */

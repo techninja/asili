@@ -76,11 +76,21 @@ async function handleScoreAll(msg) {
       return;
     }
     const t = traits[i];
-    self.postMessage({ type: 'progress', id, current: i, total: traits.length, traitName: t.name });
+    const prog = (cd = 0, ct = 0) =>
+      self.postMessage({
+        type: 'progress',
+        id,
+        current: i,
+        total: traits.length,
+        traitName: t.name,
+        chrDone: cd,
+        chrTotal: ct,
+      });
+    prog();
     try {
       const traitUrl = `${dataPath}/${t.file_path}`;
       const result = unifiedMode
-        ? await scoreUnifiedTrait(traitUrl, t)
+        ? await scoreUnifiedTrait(traitUrl, t, prog)
         : await scoreGenotypedTrait(traitUrl, t);
       result.calculatedAt = new Date().toISOString();
       self.postMessage({ type: 'scored', id, traitId: t.trait_id, result });
@@ -107,9 +117,9 @@ async function scoreGenotypedTrait(traitUrl, t) {
   );
 }
 
-/** @param {string} traitUrl @param {object} t */
-async function scoreUnifiedTrait(traitUrl, t) {
-  const { pgsAggregates, chrCoverage } = await scoreUnified(traitUrl);
+/** @param {string} traitUrl @param {object} t @param {Function} [onChr] */
+async function scoreUnifiedTrait(traitUrl, t, onChr) {
+  const { pgsAggregates, chrCoverage } = await scoreUnified(traitUrl, onChr);
   const scored = buildScoredMaps(pgsAggregates, chrCoverage);
   return finalize(
     scored,

@@ -12,6 +12,19 @@ import { getPendingImputedFile, clearPendingImputedFile } from './beta-sections.
 
 /** @type {string} */
 let activeScoringId = '';
+/** @type {number} */
+let scoringStartMs = 0;
+/** @type {number} */
+let scoringVariantTotal = 0;
+
+/** @returns {number} */
+export function getScoringStartTime() {
+  return scoringStartMs;
+}
+/** @returns {number} */
+export function getScoringVariants() {
+  return scoringVariantTotal;
+}
 
 /**
  * Start scoring for an individual. Detects imputed File vs genotyped.
@@ -47,17 +60,22 @@ async function runScoring(host, individualId, variants, imputedFile) {
     await loadDNA(variants, imputedFile);
     if (activeScoringId !== individualId) return;
     host.scoringStatus = 'scoring';
+    scoringStartMs = Date.now();
+    scoringVariantTotal = 0;
     const traits = await getTraitList();
     host.scoringTotal = traits.length;
     await scoreAll(traits, '/data', {
-      onProgress: ({ current, total, traitName }) => {
+      onProgress: ({ current, total, traitName, chrDone, chrTotal }) => {
         host.scoringCurrent = current;
         host.scoringTotal = total;
         host.scoringTrait = traitName;
+        host.scoringChrDone = chrDone || 0;
+        host.scoringChrTotal = chrTotal || 0;
       },
       onTraitScored: async ({ traitId, result }) => {
         await setResult(traitId, result);
         host.resultCount++;
+        scoringVariantTotal += result.totalMatches || 0;
       },
     });
     host.scoringStatus = 'done';
