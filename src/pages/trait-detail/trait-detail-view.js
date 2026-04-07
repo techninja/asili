@@ -18,7 +18,14 @@ import '#molecules/individual-switcher/individual-switcher.js';
 import { results, getActiveId, loadResults } from '#pages/beta/results-store.js';
 import { getTraitList } from '#utils/manifest.js';
 import { formatTraitValue } from '/packages/core/src/formatter.js';
-import { buildPgsEntries, loadFamily } from './trait-detail-helpers.js';
+import {
+  buildPgsEntries,
+  loadFamily,
+  riskBalance,
+  coverageIndicator,
+} from './trait-detail-helpers.js';
+
+const NULL_CONF = ['none', 'insufficient', ''];
 
 export default define({
   tag: 'trait-detail-view',
@@ -62,7 +69,9 @@ export default define({
           ${trait?.description
             ? html`<p class="trait-detail__desc">${trait.description}</p>`
             : html``}
-          ${r ? scoredContent(r, trait) : noResultMsg()}
+          ${r
+            ? scoredContent(r, trait)
+            : html`<p class="trait-detail__empty">No result for this individual yet.</p>`}
           ${familyData.length > 0
             ? html`
                 <section class="trait-detail__section">
@@ -80,6 +89,7 @@ export default define({
 
 /** @param {object} r @param {object|null} trait */
 function scoredContent(r, trait) {
+  if (NULL_CONF.includes(r.confidence || '')) return insufficientContent(r);
   const fmt =
     r.value !== null && r.value !== undefined ? formatTraitValue(r.value, trait?.unit) : null;
   const pgsEntries = r.pgsDetails ? buildPgsEntries(r) : [];
@@ -90,7 +100,7 @@ function scoredContent(r, trait) {
       <confidence-badge level="${r.confidence || 'none'}"></confidence-badge>
       ${fmt ? html`<p class="trait-detail__value">Predicted: ${fmt.display}</p>` : html``}
     </section>
-    ${riskBalance(r)}
+    ${riskBalance(r)} ${coverageIndicator(r)}
     <section class="trait-detail__section">
       <h2>Best PGS</h2>
       <p>${r.bestPGS || '—'} · Quality: ${(r.bestPGSQualityScore || 0).toFixed(1)}</p>
@@ -108,27 +118,18 @@ function scoredContent(r, trait) {
 }
 
 /** @param {object} r */
-function riskBalance(r) {
-  const best = r.pgsDetails?.[r.bestPGS];
-  if (!best?.positive_sum) return html``;
-  const total = Math.abs(best.positive_sum) + Math.abs(best.negative_sum);
-  const pct = total > 0 ? Math.round((Math.abs(best.positive_sum) / total) * 100) : 50;
+function insufficientContent(r) {
   return html`
     <section class="trait-detail__section">
-      <h2>Risk vs Protective</h2>
-      <div class="trait-detail__balance-bar">
-        <div class="trait-detail__balance-risk" style="${{ width: `${pct}%` }}"></div>
-      </div>
-      <p class="trait-detail__meta">${pct}% risk · ${100 - pct}% protective</p>
+      <h2>Score</h2>
+      <p class="trait-detail__nodata">No variant matches for this trait with your current data.</p>
+      <p class="trait-detail__upsell">
+        Imputation typically unlocks 60–80% variant coverage, turning empty results into meaningful
+        scores.
+      </p>
     </section>
+    ${coverageIndicator(r)}
   `;
-}
-
-/**
- *
- */
-function noResultMsg() {
-  return html`<p class="trait-detail__empty">No result for this individual yet.</p>`;
 }
 
 /** @param {object & HTMLElement} host @param {CustomEvent} e */

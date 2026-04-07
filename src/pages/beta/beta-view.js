@@ -12,7 +12,7 @@ import '#molecules/upload-zone/upload-zone.js';
 import '#molecules/individual-setup/individual-setup.js';
 // @ts-ignore
 import '#organisms/trait-grid/trait-grid.js';
-import { individualSelector, appContent, uploadContent } from './beta-render.js';
+import { individualSelector, appContent, uploadContent, uploadPanel } from './beta-render.js';
 import { loadResults } from './results-store.js';
 import { startScoring } from './scoring-controller.js';
 import TraitDetailView from '#pages/trait-detail/trait-detail-view.js';
@@ -29,12 +29,14 @@ export default define({
   parsedCount: { value: 0, connect: () => {} },
   parsedFormat: { value: '', connect: () => {} },
   parsedFilename: { value: '', connect: () => {} },
+  parseError: { value: '', connect: () => {} },
   scoringStatus: { value: '', connect: () => {} },
   scoringTrait: { value: '', connect: () => {} },
   scoringCurrent: { value: 0, connect: () => {} },
   scoringTotal: { value: 0, connect: () => {} },
   showUpload: { value: false, connect: () => {} },
   _variants: { value: [], connect: () => {} },
+  _manifest: { value: '', connect: () => {} },
   _init: {
     value: false,
     connect: (host, _key, invalidate) => {
@@ -45,18 +47,22 @@ export default define({
     value: (host) => {
       const list = Array.isArray(host.individuals) ? host.individuals : [];
       const hasData = list.length > 0;
+      const showPanel = hasData && (host.showUpload || host.parseStatus);
       return html`
         <div class="beta-view">
           <header class="beta-view__header">
-            <a href="/" class="beta-view__logo">
-              <img src="/logo.svg" alt="" class="beta-view__logo-img" /><span>asili</span>
-            </a>
-            <span class="beta-view__tag">beta</span>
-            ${hasData ? individualSelector(host, list, switchIndividual) : html``}
-            <a href="${router.url(SettingsView)}" class="beta-view__settings">⚙️</a>
+            <div class="beta-view__header-top">
+              <a href="/" class="beta-view__logo">
+                <img src="/logo.svg" alt="" class="beta-view__logo-img" /><span>asili</span>
+              </a>
+              <span class="beta-view__tag">beta</span>
+              ${hasData ? individualSelector(host, list, switchIndividual) : html``}
+              <a href="${router.url(SettingsView)}" class="beta-view__settings">⚙️</a>
+            </div>
           </header>
+          ${showPanel ? uploadPanel(host, cancelSetup) : html``}
           <main class="beta-view__main">
-            ${hasData ? appContent(host, cancelSetup) : uploadContent(host, cancelSetup)}
+            ${hasData ? appContent(host) : uploadContent(host, cancelSetup)}
           </main>
         </div>
       `;
@@ -89,5 +95,7 @@ function cancelSetup(host) {
   host.parseStatus = '';
   host.parsedCount = 0;
   host._variants = [];
+  host._manifest = '';
+  host.parseError = '';
   host.showUpload = false;
 }

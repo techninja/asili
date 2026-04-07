@@ -27,17 +27,46 @@ Watch the repo or check [app.asili.dev](https://app.asili.dev) for progress.
 
 ---
 
-## What This Will Be
+## What This Is
 
 Asili is a free, open-source app where you upload your consumer DNA file
-(23andMe, AncestryDNA, etc.) and get polygenic risk scores for dozens of
+(23andMe, AncestryDNA, etc.) and get polygenic risk scores for hundreds of
 traits — entirely in your browser. No server, no accounts, no data leaves
 your device.
 
-- **44 curated traits** at launch (BMI, height, chronotype, caffeine metabolism, and more)
-- **DuckDB WASM** scores your variants against published GWAS data client-side
+### Working Features
+
+- **Upload & parse** — drag-and-drop DNA files with auto-format detection (23andMe, AncestryDNA, MyHeritage, FTDNA, VCF)
+- **Emoji avatar builder** — pick gender, skin tone, and style for each individual
+- **DuckDB WASM scoring** — scores variants against published GWAS data client-side in a Web Worker with abort support
+- **Trait grid** — search, sort (name/percentile/confidence), filter by category, grouped with persistent collapse state
+- **Trait detail** — percentile bar, PGS comparison table, risk/protective balance, coverage indicator, family comparison
 - **Family comparison** — upload multiple family members and compare side by side
+- **Printable reports** — category radar chart, top elevated/below average traits
+- **Settings** — export/import/clear-all data
 - **Zero data collection** — no analytics, no cookies, no tracking
+- **IndexedDB persistence** — results survive page reloads
+
+## Architecture
+
+```
+src/
+├── components/
+│   ├── atoms/          # percentile-bar, confidence-badge, theme-toggle, etc.
+│   ├── molecules/      # trait-card, upload-zone, emoji-builder, pgs-table, etc.
+│   └── organisms/      # trait-grid, radar-chart
+├── pages/
+│   ├── home/           # Landing page
+│   ├── beta/           # Main app view (individual switcher + trait grid)
+│   ├── trait-detail/   # Single trait deep-dive
+│   ├── report/         # Printable genomic report
+│   └── settings/       # Data management
+├── store/              # AppState (Hybrids store, localStorage-backed)
+├── workers/            # scoring-worker.js (DuckDB WASM)
+├── utils/              # manifest, scoring, categories, formatDate
+├── router/             # Hybrids router shell
+└── styles/             # Design tokens, reset, shared CSS
+```
 
 ## Tech Stack
 
@@ -55,24 +84,11 @@ your device.
 
 ```bash
 pnpm install
-pnpm run dev       # Start dev server on :3000
-pnpm test          # Run tests
-pnpm run spec      # Spec compliance checker
+pnpm run dev          # Start dev server
+pnpm test             # Run browser tests (web-test-runner)
+node --test            # Run node tests
+pnpm spec check all   # Spec compliance checker (9 checks)
 ```
-
-## Build Order
-
-See [`docs/app-spec/PROMPT_ASILI_APP.md`](docs/app-spec/PROMPT_ASILI_APP.md)
-for the full phased build plan. Each phase must pass its tests before the next.
-
-1. Core scoring library (pure functions, no DOM)
-2. Data layer (IndexedDB + DuckDB WASM adapter)
-3. DNA parser (Web Worker, format auto-detection)
-4. Atoms + store (base UI components)
-5. Upload flow (first working feature)
-6. Scoring + trait grid
-7. Trait detail + family comparison
-8. Reports + radar chart
 
 ## Privacy
 

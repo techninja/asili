@@ -1,8 +1,9 @@
 /**
- * Trait detail helpers — family loading and PGS entry building.
+ * Trait detail helpers — family loading, PGS entries, section renderers.
  * @module pages/trait-detail/trait-detail-helpers
  */
 
+import { html } from 'hybrids';
 import * as idb from '/packages/core/src/data-layer/idb.js';
 import { getActiveId } from '#pages/beta/results-store.js';
 
@@ -48,4 +49,53 @@ export async function loadFamily(host) {
   } catch {
     /* no family data */
   }
+}
+
+/** @param {object} r */
+export function riskBalance(r) {
+  const best = r.pgsDetails?.[r.bestPGS];
+  if (!best?.positive_sum) return html``;
+  const total = Math.abs(best.positive_sum) + Math.abs(best.negative_sum);
+  const pct = total > 0 ? Math.round((Math.abs(best.positive_sum) / total) * 100) : 50;
+  const posN = (best.positive_variants || 0).toLocaleString();
+  const negN = (best.negative_variants || 0).toLocaleString();
+  return html`
+    <section class="trait-detail__section">
+      <h2>Risk vs Protective</h2>
+      <div class="trait-detail__balance-bar">
+        <div class="trait-detail__balance-risk" style="${{ width: `${pct}%` }}"></div>
+      </div>
+      <p class="trait-detail__meta">
+        ${posN} risk variants (${pct}%) · ${negN} protective (${100 - pct}%)
+      </p>
+    </section>
+  `;
+}
+
+/** @param {object} r */
+export function coverageIndicator(r) {
+  const matched = r.totalMatches || 0;
+  const expected = r.totalExpected || 0;
+  if (!expected) return html``;
+  const pct = Math.round((matched / expected) * 100);
+  const low = pct < 20;
+  return html`
+    <section class="trait-detail__section">
+      <h2>Coverage</h2>
+      <div class="trait-detail__coverage-bar">
+        <div
+          class="trait-detail__coverage-fill"
+          style="${{ width: `${Math.min(pct, 100)}%` }}"
+        ></div>
+      </div>
+      <p class="trait-detail__meta">
+        ${matched.toLocaleString()} / ${expected.toLocaleString()} variants matched (${pct}%)
+      </p>
+      ${low
+        ? html`<p class="trait-detail__upsell">
+            Low coverage — imputation could unlock 60–80% coverage
+          </p>`
+        : html``}
+    </section>
+  `;
 }

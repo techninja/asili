@@ -31,6 +31,7 @@ export default define({
           <individual-list
             individuals="${JSON.stringify(individuals)}"
             ondelete-individual="${handleDelete}"
+            onupgrade-individual="${handleUpgrade}"
           ></individual-list>
         </section>
 
@@ -109,6 +110,26 @@ async function loadData(host) {
 async function handleDelete(host) {
   await idb.openDB();
   host.individuals = await idb.getAll('individuals');
+}
+
+/** @param {object & HTMLElement} host @param {CustomEvent} e */
+async function handleUpgrade(host, e) {
+  const { id, file } = e.detail;
+  try {
+    await idb.openDB();
+    const ind = await idb.get('individuals', id);
+    if (ind) {
+      await idb.put('individuals', id, { ...ind, hasImputed: true });
+    }
+    const keys = await idb.getAllKeys('results');
+    for (const k of keys) {
+      if (String(k).startsWith(`${id}:`)) await idb.del('results', k);
+    }
+    await idb.del('variants', id);
+    host.individuals = await idb.getAll('individuals');
+  } catch {
+    /* upgrade failed */
+  }
 }
 
 /** @param {object & HTMLElement} host */

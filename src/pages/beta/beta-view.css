@@ -8,11 +8,16 @@
 }
 
 .beta-view__header {
+  margin-bottom: var(--space-lg);
+}
+
+.beta-view__header-top {
   display: flex;
   align-items: center;
   gap: var(--space-sm);
-  margin-bottom: var(--space-xl);
   flex-wrap: wrap;
+  position: relative;
+  z-index: 10;
 }
 
 .beta-view__logo {
@@ -57,7 +62,9 @@
   font: inherit;
   font-size: var(--text-sm);
   cursor: pointer;
-  transition: border-color 0.15s;
+  transition:
+    border-color 0.15s,
+    background 0.15s;
 }
 
 .beta-view__ind-btn:hover {
@@ -68,6 +75,21 @@
   border-color: var(--color-primary);
   background: var(--color-surface-alt);
   font-weight: 600;
+}
+
+.beta-view__ind-btn--add:hover {
+  border-color: var(--color-warning);
+}
+
+.beta-view__ind-btn--add-active {
+  border-color: var(--color-warning);
+  background: var(--color-surface-alt);
+  font-weight: 600;
+  border-bottom-left-radius: 0;
+  border-bottom-right-radius: 0;
+  border-bottom-color: var(--color-surface-alt);
+  position: relative;
+  z-index: 21;
 }
 
 .beta-view__settings {
@@ -111,34 +133,11 @@
   color: var(--color-text-muted);
   font-variant-numeric: tabular-nums;
   margin: 0;
-}
-
-.beta-view__upload-section {
-  padding: var(--space-md);
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-lg);
   display: flex;
-  flex-direction: column;
   align-items: center;
-  gap: var(--space-md);
-  margin-bottom: var(--space-md);
+  gap: var(--space-sm);
 }
 
-.beta-view__status {
-  text-align: center;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: var(--space-md);
-}
-
-.beta-view__spinner {
-  font-size: 3rem;
-  animation: spin 2s linear infinite;
-}
-
-@keyframes spin {
-  to {
-    transform: rotate(360deg);
-  }
+.beta-view__scoring--done {
+  color: var(--color-success);
 }

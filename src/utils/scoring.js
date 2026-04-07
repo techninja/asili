@@ -28,11 +28,13 @@ export async function initScoring() {
 }
 
 /**
- * Load parsed DNA variants into the worker.
- * @param {Array<object>} variants
+ * Load parsed DNA variants or imputed .asili File into the worker.
+ * @param {Array<object>|null} variants
+ * @param {File} [imputedFile]
  * @returns {Promise<{variantCount: number}>}
  */
-export function loadDNA(variants) {
+export function loadDNA(variants, imputedFile) {
+  if (imputedFile) return send('loadDNA', { imputedFile });
   return send('loadDNA', { variants });
 }
 
@@ -77,6 +79,8 @@ function handleMessage(e) {
     onProgress(e.data);
   } else if (type === 'scored' && onTraitScored) {
     onTraitScored(e.data);
+  } else if (type === 'traitError') {
+    console.error(`Scoring error for ${e.data.traitId}:`, e.data.error);
   }
 
   if (type === 'ready' || type === 'dnaLoaded' || type === 'allDone' || type === 'aborted') {

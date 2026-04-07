@@ -18,12 +18,14 @@ function barColor(p) {
 function formatLabel(p) {
   if (p === null || p === undefined) return '—';
   const r = Math.round(p);
+  if (r <= 0) return '<1st %ile';
+  if (r >= 100) return '>99th %ile';
   const s =
-    r === 1 || r === 21 || r === 31
+    r % 10 === 1 && r !== 11
       ? 'st'
-      : r === 2 || r === 22 || r === 32
+      : r % 10 === 2 && r !== 12
         ? 'nd'
-        : r === 3 || r === 23 || r === 33
+        : r % 10 === 3 && r !== 13
           ? 'rd'
           : 'th';
   return `${r}${s} %ile`;

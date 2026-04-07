@@ -62,3 +62,9 @@
   font-style: italic;
   margin: 0;
 }
+
+.individual-list__upgrade {
+  font-size: var(--text-xs, 0.7rem);
+  white-space: nowrap;
+  color: var(--color-warning);
+}

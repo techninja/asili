@@ -65,3 +65,40 @@
   display: flex;
   gap: var(--space-sm);
 }
+
+.individual-setup__imputed-card {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-xs);
+  padding: var(--space-md);
+  border: 2px solid var(--color-success);
+  border-radius: var(--radius-md);
+  background: color-mix(in srgb, var(--color-success) 5%, var(--color-surface));
+}
+
+.individual-setup__verified {
+  font-weight: 600;
+  color: var(--color-success);
+  margin: 0;
+}
+
+.individual-setup__imputed-name {
+  font-size: var(--text-lg);
+  font-weight: 600;
+  margin: 0;
+}
+
+.individual-setup__imputed-stats {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  font-size: var(--text-sm);
+  color: var(--color-text-muted);
+}
+
+.individual-setup__imputed-date {
+  font-size: var(--text-sm);
+  color: var(--color-text-muted);
+  margin: 0;
+  font-style: italic;
+}

@@ -1,65 +1,126 @@
 /**
  * Unified DNA source — SQL pushdown scoring via DuckDB WASM.
- * Loads imputed parquet into DuckDB table, JOINs against trait packs.
+ * Scores one chromosome parquet at a time to keep memory bounded.
+ * Uses Number() for all aggregate values to handle DuckDB BigInt returns.
  * @module packages/core/src/duckdb/unified-source
  */
 
 import * as ddb from './adapter.js';
 
-let dnaLoaded = false;
+/** @type {string[]} */
+let chrFiles = [];
 
 /**
- * Load unified DNA parquet into DuckDB as _dna table.
- * @param {string} parquetPath - Virtual filename registered via registerBuffer
- * @returns {Promise<void>}
+ * Set the chromosome parquet files for unified scoring.
+ * @param {string[]} files - Virtual filenames of registered chromosome parquets
  */
-export async function loadUnifiedDNA(parquetPath) {
-  if (dnaLoaded) return;
-  await ddb.query(
-    `CREATE OR REPLACE TABLE _dna AS SELECT chr, pos, allele_key, variant_id AS user_variant_id, genotype_dosage, imputed, imputation_quality FROM '${parquetPath}'`
-  );
-  dnaLoaded = true;
+export async function loadUnifiedDNA(files) {
+  chrFiles = files;
 }
 
+/** @param {*} v @returns {number} */
+const n = (v) => Number(v);
+
 /**
- * Score a trait via SQL pushdown — JOIN + GROUP BY entirely in DuckDB.
+ * Score a trait by JOINing against each chromosome parquet separately.
  * @param {string} traitUrl - URL/path to trait parquet
  * @returns {Promise<{pgsAggregates: Array, chrCoverage: Array}>}
  */
 export async function scoreUnified(traitUrl) {
-  await ddb.query(`
-    CREATE OR REPLACE TEMP TABLE _matched AS
-    SELECT t.pgs_id, t.chr, t.effect_weight,
-           d.genotype_dosage AS dosage, d.imputed,
-           t.effect_weight * d.genotype_dosage
-             * CASE WHEN d.imputed AND d.imputation_quality IS NOT NULL
-                    THEN SQRT(d.imputation_quality) ELSE 1.0 END
-             AS contribution
-    FROM '${traitUrl}' t
-    INNER JOIN _dna d ON t.chr = d.chr AND t.pos = d.pos AND t.allele_key = d.allele_key
-  `);
+  if (!chrFiles.length) throw new Error('Unified DNA not loaded');
+  const pgsAgg = new Map();
+  const chrCov = [];
 
-  const pgsAggregates = await ddb.query(`
-    SELECT pgs_id, SUM(contribution) AS raw_score,
-      COUNT(*) AS matched_variants,
-      SUM(CASE WHEN imputed THEN 1 ELSE 0 END) AS imputed_variants,
-      SUM(CASE WHEN NOT imputed THEN 1 ELSE 0 END) AS genotyped_variants,
-      SUM(CASE WHEN contribution > 0 THEN 1 ELSE 0 END) AS positive_count,
-      SUM(CASE WHEN contribution > 0 THEN contribution ELSE 0 END) AS positive_sum,
-      SUM(CASE WHEN contribution < 0 THEN 1 ELSE 0 END) AS negative_count,
-      SUM(CASE WHEN contribution < 0 THEN contribution ELSE 0 END) AS negative_sum,
-      SUM(effect_weight * effect_weight) AS weight_sum_squared,
-      MIN(effect_weight) AS weight_min, MAX(effect_weight) AS weight_max
-    FROM _matched GROUP BY pgs_id
-  `);
+  for (const chrFile of chrFiles) {
+    const rows = await ddb.query(`
+      SELECT t.pgs_id,
+        SUM(t.effect_weight * d.genotype_dosage
+          * CASE WHEN d.imputed AND d.imputation_quality IS NOT NULL
+                 THEN SQRT(d.imputation_quality) ELSE 1.0 END) AS raw_score,
+        COUNT(*) AS matched_variants,
+        SUM(CASE WHEN d.imputed THEN 1 ELSE 0 END) AS imputed_variants,
+        SUM(CASE WHEN NOT d.imputed THEN 1 ELSE 0 END) AS genotyped_variants,
+        SUM(CASE WHEN t.effect_weight*d.genotype_dosage>0 THEN 1 ELSE 0 END) AS pos_count,
+        SUM(CASE WHEN t.effect_weight*d.genotype_dosage>0
+              THEN t.effect_weight*d.genotype_dosage ELSE 0 END) AS pos_sum,
+        SUM(CASE WHEN t.effect_weight*d.genotype_dosage<0 THEN 1 ELSE 0 END) AS neg_count,
+        SUM(CASE WHEN t.effect_weight*d.genotype_dosage<0
+              THEN t.effect_weight*d.genotype_dosage ELSE 0 END) AS neg_sum,
+        SUM(t.effect_weight * t.effect_weight) AS wsq
+      FROM '${traitUrl}' t
+      INNER JOIN '${chrFile}' d ON t.chr=d.chr AND t.pos=d.pos AND t.allele_key=d.allele_key
+      GROUP BY t.pgs_id
+    `);
+    for (const r of rows) accumulate(pgsAgg, r);
 
-  const chrCoverage = await ddb.query(
-    `SELECT pgs_id, chr, COUNT(*) AS cnt FROM _matched GROUP BY pgs_id, chr`
-  );
-
-  await ddb.query('DROP TABLE IF EXISTS _matched');
-  return { pgsAggregates, chrCoverage };
+    const cov = await ddb.query(`
+      SELECT t.pgs_id, t.chr, COUNT(*) AS cnt
+      FROM '${traitUrl}' t
+      INNER JOIN '${chrFile}' d ON t.chr=d.chr AND t.pos=d.pos AND t.allele_key=d.allele_key
+      GROUP BY t.pgs_id, t.chr
+    `);
+    chrCov.push(...cov);
+  }
+  return { pgsAggregates: [...pgsAgg.values()], chrCoverage: chrCov };
 }
 
-/** Reset DNA loaded state (for switching individuals). */
-export function resetUnifiedDNA() { dnaLoaded = false; }
+/** @param {Map} map @param {object} r */
+function accumulate(map, r) {
+  const pid = r.pgs_id;
+  const e = map.get(pid);
+  if (e) {
+    e.raw_score += n(r.raw_score);
+    e.matched_variants += n(r.matched_variants);
+    e.imputed_variants += n(r.imputed_variants);
+    e.genotyped_variants += n(r.genotyped_variants);
+    e.positive_count += n(r.pos_count);
+    e.positive_sum += n(r.pos_sum);
+    e.negative_count += n(r.neg_count);
+    e.negative_sum += n(r.neg_sum);
+    e.weight_sum_squared += n(r.wsq);
+  } else {
+    map.set(pid, {
+      pgs_id: pid, raw_score: n(r.raw_score),
+      matched_variants: n(r.matched_variants), imputed_variants: n(r.imputed_variants),
+      genotyped_variants: n(r.genotyped_variants),
+      positive_count: n(r.pos_count), positive_sum: n(r.pos_sum),
+      negative_count: n(r.neg_count), negative_sum: n(r.neg_sum),
+      weight_sum_squared: n(r.wsq),
+    });
+  }
+}
+
+/**
+ * Build finalize-compatible Maps from aggregate results.
+ * @param {Array} pgsAggregates
+ * @param {Array} chrCoverage
+ * @returns {{pgsDetails: Map, pgsBreakdown: Map, totalMatches: number}}
+ */
+export function buildScoredMaps(pgsAggregates, chrCoverage) {
+  const pgsDetails = new Map();
+  const pgsBreakdown = new Map();
+  let totalMatches = 0;
+  for (const r of pgsAggregates) {
+    const mv = n(r.matched_variants);
+    pgsDetails.set(r.pgs_id, {
+      score: n(r.raw_score), matchedVariants: mv,
+      genotypedVariants: n(r.genotyped_variants), imputedVariants: n(r.imputed_variants),
+      zScore: null, percentile: null, qualityScore: 0, topVariants: [], _topMinAbs: 0,
+    });
+    pgsBreakdown.set(r.pgs_id, {
+      positive: n(r.positive_count), negative: n(r.negative_count),
+      positiveSum: n(r.positive_sum), negativeSum: n(r.negative_sum),
+      total: mv, weightSumSquared: n(r.weight_sum_squared), chromosomeCoverage: {},
+      genotypedVariants: n(r.genotyped_variants), imputedVariants: n(r.imputed_variants),
+    });
+    totalMatches += mv;
+  }
+  for (const r of chrCoverage) {
+    const bd = pgsBreakdown.get(r.pgs_id);
+    if (bd) bd.chromosomeCoverage[r.chr] = Number(r.cnt);
+  }
+  return { pgsDetails, pgsBreakdown, totalMatches };
+}
+
+/** Reset chromosome files (for switching individuals). */
+export function resetUnifiedDNA() { chrFiles = []; }

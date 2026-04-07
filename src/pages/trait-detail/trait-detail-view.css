@@ -73,3 +73,28 @@
   background: var(--color-danger);
   transition: width 0.3s ease;
 }
+
+.trait-detail__coverage-bar {
+  height: 12px;
+  background: var(--color-surface-alt);
+  border-radius: var(--radius-md);
+  overflow: hidden;
+}
+
+.trait-detail__coverage-fill {
+  height: 100%;
+  background: var(--color-info);
+  transition: width 0.3s ease;
+}
+
+.trait-detail__upsell {
+  font-size: var(--text-sm);
+  color: var(--color-warning);
+  margin: 0;
+  font-style: italic;
+}
+
+.trait-detail__nodata {
+  color: var(--color-text-muted);
+  margin: 0;
+}

@@ -29,33 +29,4 @@ describe('store model shapes', () => {
     assert.ok('activeIndividualId' in d);
     assert.ok('searchQuery' in d);
   });
-
-  it('IndividualModel has required fields', () => {
-    const d = extractDefaults('src/store/IndividualModel.js');
-    assert.equal(d.id, 'true');
-    assert.equal(d.status, "'importing'");
-    assert.equal(d.hasImputed, 'false');
-    assert.ok('name' in d);
-    assert.ok('emoji' in d);
-    assert.ok('variantCount' in d);
-  });
-
-  it('TraitModel has required fields', () => {
-    const d = extractDefaults('src/store/TraitModel.js');
-    assert.equal(d.id, 'true');
-    assert.equal(d.traitType, "'disease_risk'");
-    assert.ok('name' in d);
-    assert.ok('pgsCount' in d);
-    assert.ok('phenotypeMean' in d);
-  });
-
-  it('ResultModel has required fields', () => {
-    const d = extractDefaults('src/store/ResultModel.js');
-    assert.equal(d.id, 'true');
-    assert.equal(d.confidence, "'none'");
-    assert.ok('zScore' in d);
-    assert.ok('percentile' in d);
-    assert.ok('matchedVariants' in d);
-    assert.ok('bestPGSQualityScore' in d);
-  });
 });

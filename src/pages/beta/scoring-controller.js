@@ -1,5 +1,6 @@
 /**
  * Scoring controller — manages DuckDB WASM scoring for the active individual.
+ * Supports genotyped (text variants) and imputed (.asili archive) sources.
  * @module pages/beta/scoring-controller
  */
 
@@ -7,25 +8,43 @@ import * as idb from '/packages/core/src/data-layer/idb.js';
 import { initScoring, loadDNA, scoreAll, stopScoring, isScoring } from '#utils/scoring.js';
 import { getTraitList } from '#utils/manifest.js';
 import { setResult } from './results-store.js';
+import { getPendingImputedFile, clearPendingImputedFile } from './beta-sections.js';
 
 /** @type {string} */
 let activeScoringId = '';
 
 /**
- * Start scoring for an individual. Attaches progress to the host.
+ * Start scoring for an individual. Detects imputed File vs genotyped.
  * @param {object} host
  * @param {string} individualId
  */
 export async function startScoring(host, individualId) {
   if (isScoring()) await stopScoring();
+
+  const iFile = getPendingImputedFile();
+  if (iFile) {
+    clearPendingImputedFile();
+    await runScoring(host, individualId, null, iFile);
+    return;
+  }
+
   const stored = await idb.get('variants', individualId);
   if (!stored?.variants) return;
+  await runScoring(host, individualId, stored.variants, null);
+}
 
+/**
+ * @param {object} host
+ * @param {string} individualId
+ * @param {Array|null} variants
+ * @param {File|null} imputedFile
+ */
+async function runScoring(host, individualId, variants, imputedFile) {
   activeScoringId = individualId;
   host.scoringStatus = 'init';
   try {
     await initScoring();
-    await loadDNA(stored.variants);
+    await loadDNA(variants, imputedFile);
     if (activeScoringId !== individualId) return;
     host.scoringStatus = 'scoring';
     const traits = await getTraitList();

@@ -1,0 +1,65 @@
+.beta-view__upload-panel {
+  position: relative;
+  z-index: 20;
+  padding: var(--space-lg);
+  border: 2px solid var(--color-warning);
+  border-radius: 0 0 var(--radius-lg) var(--radius-lg);
+  background: var(--color-surface-alt);
+  box-shadow: var(--shadow-md, 0 4px 12px rgb(0 0 0 / 15%));
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-md);
+  animation: slide-down 0.2s ease-out;
+}
+
+@keyframes slide-down {
+  from {
+    opacity: 0;
+    transform: translateY(-8px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.beta-view__status {
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-md);
+}
+
+.beta-view__spinner {
+  font-size: 3rem;
+  animation: spin 2s linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.beta-view__error {
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-sm);
+  padding: var(--space-lg);
+}
+
+.beta-view__error-icon {
+  font-size: 2rem;
+  margin: 0;
+}
+
+.beta-view__error-msg {
+  color: var(--color-danger);
+  margin: 0;
+  max-width: 24rem;
+}

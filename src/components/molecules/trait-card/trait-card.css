@@ -46,3 +46,12 @@
   margin: 0;
   font-style: italic;
 }
+
+.trait-card__empty--nodata {
+  color: var(--color-warning);
+}
+
+.trait-card__hint {
+  font-size: var(--text-xs, 0.7rem);
+  opacity: 0.8;
+}

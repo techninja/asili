@@ -38,7 +38,7 @@ export default define({
                 onclick="${(host) =>
                   dispatch(host, 'switch-individual', { detail: ind.id, bubbles: true })}"
               >
-                ${ind.emoji} ${ind.name}
+                ${ind.hasImputed ? '⭐' : ''} ${ind.emoji} ${ind.name}
               </button>
             `,
           )}

@@ -8,6 +8,8 @@
 let db = null;
 /** @type {object|null} */
 let conn = null;
+/** @type {object|null} */
+let duckdbModule = null;
 
 /**
  * Initialize DuckDB WASM. Idempotent.
@@ -19,16 +21,18 @@ export async function initDuckDB(basePath = '/deps/duckdb') {
   const isAbsolute = basePath.startsWith('http');
   const base = isAbsolute ? basePath : new URL(basePath, self.location?.origin || 'http://localhost').href;
   const importPath = isAbsolute ? basePath : basePath;
-  const duckdb = await import(`${importPath}/duckdb.js`);
-  const bundle = await duckdb.selectBundle({
+  duckdbModule = await import(`${importPath}/duckdb.js`);
+  const bundle = await duckdbModule.selectBundle({
     mvp: { mainModule: `${base}/duckdb-mvp.wasm`, mainWorker: `${base}/duckdb-browser-mvp.worker.js` },
     eh: { mainModule: `${base}/duckdb-eh.wasm`, mainWorker: `${base}/duckdb-browser-eh.worker.js` },
   });
-  const worker = await duckdb.createWorker(bundle.mainWorker);
-  const logger = new duckdb.VoidLogger();
-  db = new duckdb.AsyncDuckDB(logger, worker);
+  const worker = await duckdbModule.createWorker(bundle.mainWorker);
+  const logger = new duckdbModule.VoidLogger();
+  db = new duckdbModule.AsyncDuckDB(logger, worker);
   await db.instantiate(bundle.mainModule, bundle.pthreadWorker);
   conn = await db.connect();
+  await conn.query("SET memory_limit='2GB'");
+  await conn.query("SET threads=1");
 }
 
 /**
@@ -57,7 +61,7 @@ export async function count(tableOrUrl) {
 }
 
 /**
- * Register a parquet file from an ArrayBuffer (e.g. from IndexedDB).
+ * Register a parquet file from an ArrayBuffer.
  * @param {string} name - Virtual filename
  * @param {ArrayBuffer} buffer
  * @returns {Promise<void>}
@@ -65,6 +69,18 @@ export async function count(tableOrUrl) {
 export async function registerBuffer(name, buffer) {
   if (!db) throw new Error('DuckDB not initialized');
   await db.registerFileBuffer(name, new Uint8Array(buffer));
+}
+
+/**
+ * Register a File handle for DuckDB to read on demand (no full memory copy).
+ * Uses BROWSER_FILEREADER protocol for streaming reads.
+ * @param {string} name - Virtual filename
+ * @param {File} file - File object from input or drag-drop
+ * @returns {Promise<void>}
+ */
+export async function registerFileHandle(name, file) {
+  if (!db || !duckdbModule) throw new Error('DuckDB not initialized');
+  await db.registerFileHandle(name, file, duckdbModule.DuckDBDataProtocol.BROWSER_FILEREADER, true);
 }
 
 /** @returns {boolean} */
