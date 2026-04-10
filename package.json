@@ -30,7 +30,7 @@
   "packageManager": "pnpm@9.15.4",
   "devDependencies": {
     "@open-wc/testing": "^4.0.0",
-    "@techninja/clearstack": "^0.3.11",
+    "@techninja/clearstack": "^0.3.16",
     "@types/node": "^22.0.0",
     "@web/test-runner": "^0.20.0",
     "@web/test-runner-playwright": "^0.11.0",
@@ -47,7 +47,7 @@
   },
   "main": "src/server.js",
   "dependencies": {
-    "@duckdb/duckdb-wasm": "1.33.1-dev20.0",
+    "@duckdb/duckdb-wasm": "1.33.1-dev44.0",
     "express": "^5.2.1",
     "hybrids": "^9.1.22",
     "lucide-static": "^1.7.0"

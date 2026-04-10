@@ -11,9 +11,11 @@ import '#molecules/emoji-builder/emoji-builder.js';
 /** @param {object & HTMLElement} host */
 function handleSubmit(host, e) {
   e.preventDefault();
-  if (!host.name.trim()) return;
+  const m = host.manifest ? JSON.parse(host.manifest) : null;
+  const name = host.name.trim() || m?.individual || '';
+  if (!name) return;
   dispatch(host, 'setup-complete', {
-    detail: { name: host.name.trim(), emoji: host.emoji },
+    detail: { name, emoji: host.emoji },
     bubbles: true,
   });
 }
@@ -29,6 +31,7 @@ export default define({
   render: {
     value: ({ name, emoji, variantCount, format, filename, manifest }) => {
       const m = manifest ? JSON.parse(manifest) : null;
+      const effectiveName = name || m?.individual || '';
       return html`
         <div class="individual-setup">
           <div class="individual-setup__status">
@@ -41,7 +44,7 @@ export default define({
                 type="text"
                 class="individual-setup__input"
                 placeholder="e.g. Sarah"
-                value="${name}"
+                value="${effectiveName}"
                 oninput="${(h, e) => {
                   h.name = e.target.value;
                 }}"
@@ -57,7 +60,7 @@ export default define({
               ></emoji-builder>
             </div>
             <div class="individual-setup__actions">
-              <button type="submit" class="btn btn-primary" disabled="${!name.trim()}">
+              <button type="submit" class="btn btn-primary" disabled="${!effectiveName.trim()}">
                 Continue & Score
               </button>
               <button

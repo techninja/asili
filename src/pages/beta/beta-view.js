@@ -14,7 +14,7 @@ import '#molecules/individual-setup/individual-setup.js';
 import '#organisms/trait-grid/trait-grid.js';
 import { individualSelector, appContent, uploadContent, uploadPanel } from './beta-render.js';
 import { loadResults } from './results-store.js';
-import { startScoring } from './scoring-controller.js';
+import { initQueue, switchIndividual } from './scoring-controller.js';
 import TraitDetailView from '#pages/trait-detail/trait-detail-view.js';
 import ReportView from '#pages/report/report-view.js';
 import SettingsView from '#pages/settings/settings-view.js';
@@ -36,6 +36,8 @@ export default define({
   scoringTotal: { value: 0, connect: () => {} },
   scoringChrDone: { value: 0, connect: () => {} },
   scoringChrTotal: { value: 0, connect: () => {} },
+  scoringIndividualCount: { value: 0, connect: () => {} },
+  scoringCurrentId: { value: '', connect: () => {} },
   scoringTick: {
     value: 0,
     connect: (host) => {
@@ -51,7 +53,13 @@ export default define({
   _init: {
     value: false,
     connect: (host, _key, invalidate) => {
-      initApp(host).then(invalidate);
+      initApp(host).then(() => {
+        invalidate();
+        // Trigger switchIndividual after render — same path as user click
+        requestAnimationFrame(() => {
+          if (host.activeId) switchIndividual(host, host.activeId);
+        });
+      });
     },
   },
   render: {
@@ -67,7 +75,7 @@ export default define({
                 <img src="/logo.svg" alt="" class="beta-view__logo-img" /><span>asili</span>
               </a>
               <span class="beta-view__tag">beta</span>
-              ${hasData ? individualSelector(host, list, switchIndividual) : html``}
+              ${hasData ? individualSelector(host, list, handleSwitch) : html``}
               <a href="${router.url(SettingsView)}" class="beta-view__settings">⚙️</a>
             </div>
           </header>
@@ -83,12 +91,8 @@ export default define({
 });
 
 /** @param {object} host @param {string} id */
-async function switchIndividual(host, id) {
-  host.activeId = id;
-  host.resultCount = 0;
-  const count = await loadResults(id);
-  host.resultCount = count;
-  if (count === 0) startScoring(host, id);
+async function handleSwitch(host, id) {
+  await switchIndividual(host, id);
 }
 
 /** @param {object} host */
@@ -97,7 +101,10 @@ async function initApp(host) {
   host.individuals = await idb.getAll('individuals');
   if (host.individuals.length > 0) {
     const id = host.activeId || host.individuals[0].id;
-    await switchIndividual(host, id);
+    host.activeId = id;
+    // Pre-load results into cache so first render has data
+    host.resultCount = await loadResults(id);
+    await initQueue(host);
   }
 }
 

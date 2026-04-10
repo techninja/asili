@@ -105,7 +105,8 @@ async function doDelete(host, ind) {
   try {
     const dl = getDataLayer();
     await dl.deleteIndividual(ind.id);
-  } catch {
+  } catch (e) {
+    console.error(e);
     /* data layer not init */
   }
   host.confirmDelete = '';

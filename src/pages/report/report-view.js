@@ -138,7 +138,8 @@ async function loadIndividual(host) {
     if (!id) return;
     await idb.openDB();
     host.individual = await idb.get('individuals', id);
-  } catch {
+  } catch (e) {
+    console.error(e);
     /* no individual */
   }
 }

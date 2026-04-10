@@ -1,97 +1,148 @@
 /**
- * Scoring controller — manages DuckDB WASM scoring for the active individual.
- * Supports genotyped (text variants) and imputed (.asili archive) sources.
+ * Scoring controller — thin wrapper around the global scoring queue.
+ * Bridges queue state to the beta-view host properties.
  * @module pages/beta/scoring-controller
  */
 
-import * as idb from '/packages/core/src/data-layer/idb.js';
-import { initScoring, loadDNA, scoreAll, stopScoring, isScoring } from '#utils/scoring.js';
-import { getTraitList } from '#utils/manifest.js';
-import { setResult } from './results-store.js';
-import { getPendingImputedFile, clearPendingImputedFile } from './beta-sections.js';
+import * as queue from '#utils/scoring-queue.js';
+import { loadResults } from './results-store.js';
+import {
+  getPendingImputedFile,
+  getPendingImputedHandle,
+  clearPendingImputedFile,
+} from './beta-sections.js';
+import { storeHandle, restoreAll } from '#utils/file-handle.js';
 
-/** @type {string} */
-let activeScoringId = '';
-/** @type {number} */
-let scoringStartMs = 0;
-/** @type {number} */
-let scoringVariantTotal = 0;
+/** @type {Function|null} */
+let unsubscribe = null;
 
-/** @returns {number} */
-export function getScoringStartTime() {
-  return scoringStartMs;
-}
-/** @returns {number} */
-export function getScoringVariants() {
-  return scoringVariantTotal;
+/**
+ * Ensure the host is subscribed to queue state updates.
+ * @param {object} host
+ */
+function ensureSubscribed(host) {
+  if (unsubscribe) return;
+  unsubscribe = queue.subscribe((state) => syncHostState(host, state));
 }
 
 /**
- * Start scoring for an individual. Detects imputed File vs genotyped.
+ * Initialize the queue — scan IDB, subscribe to state changes, start scoring.
+ * Called once on app init.
+ * @param {object} host
+ */
+export async function initQueue(host) {
+  ensureSubscribed(host);
+
+  const restored = await restoreAll();
+  for (const [id, file] of restored) queue.registerImputedFile(id, file);
+
+  if (host.activeId) queue.setActiveIndividual(host.activeId);
+
+  await queue.scanAndQueue();
+
+  const settings = await queue.getScoringSettings();
+  if (settings.autoScore) {
+    await queue.start();
+  }
+}
+
+/**
+ * Called when switching active individual.
+ * Boosts their priority and reloads results into memory.
  * @param {object} host
  * @param {string} individualId
  */
-export async function startScoring(host, individualId) {
-  if (isScoring()) await stopScoring();
+export async function switchIndividual(host, individualId) {
+  queue.setActiveIndividual(individualId);
+  host.activeId = individualId;
+  host.resultCount = 0;
+  const count = await loadResults(individualId);
+  host.resultCount = count;
+}
+
+/**
+ * Called after a new individual is created.
+ * Registers imputed file if applicable, rescans queue, starts scoring.
+ * @param {object} host
+ * @param {string} individualId
+ */
+export async function onNewIndividual(host, individualId) {
+  ensureSubscribed(host);
 
   const iFile = getPendingImputedFile();
   if (iFile) {
+    const handle = getPendingImputedHandle();
     clearPendingImputedFile();
-    await runScoring(host, individualId, null, iFile);
-    return;
+    queue.registerImputedFile(individualId, iFile);
+    if (handle) storeHandle(individualId, handle);
   }
 
-  const stored = await idb.get('variants', individualId);
-  if (!stored?.variants) return;
-  await runScoring(host, individualId, stored.variants, null);
-}
+  queue.setActiveIndividual(individualId);
+  await queue.scanAndQueue();
 
-/**
- * @param {object} host
- * @param {string} individualId
- * @param {Array|null} variants
- * @param {File|null} imputedFile
- */
-async function runScoring(host, individualId, variants, imputedFile) {
-  activeScoringId = individualId;
-  host.scoringStatus = 'init';
-  try {
-    await initScoring();
-    await loadDNA(variants, imputedFile);
-    if (activeScoringId !== individualId) return;
-    host.scoringStatus = 'scoring';
-    scoringStartMs = Date.now();
-    scoringVariantTotal = 0;
-    const traits = await getTraitList();
-    host.scoringTotal = traits.length;
-    await scoreAll(traits, '/data', {
-      onProgress: ({ current, total, traitName, chrDone, chrTotal }) => {
-        host.scoringCurrent = current;
-        host.scoringTotal = total;
-        host.scoringTrait = traitName;
-        host.scoringChrDone = chrDone || 0;
-        host.scoringChrTotal = chrTotal || 0;
-      },
-      onTraitScored: async ({ traitId, result }) => {
-        await setResult(traitId, result);
-        host.resultCount++;
-        scoringVariantTotal += result.totalMatches || 0;
-      },
-    });
-    host.scoringStatus = 'done';
-  } catch {
-    host.scoringStatus = 'error';
+  // Start queue if not already running
+  const state = queue.getState();
+  if (!state.running && state.pending > 0) {
+    await queue.start();
   }
 }
 
-/** @returns {{ isScoring: boolean }} */
-export function scoringState() {
-  return { isScoring: isScoring() };
+/** Pause the global queue. */
+export async function handlePause() {
+  await queue.pause();
 }
 
-/** @param {object} host */
-export async function handleStopScoring(host) {
-  await stopScoring();
-  activeScoringId = '';
-  host.scoringStatus = host.resultCount > 0 ? 'done' : '';
+/** Resume the global queue. */
+export async function handleResume() {
+  await queue.resume();
+}
+
+/** Request file permissions (requires user gesture) and restart scoring. */
+export async function handleResumePermission() {
+  const restored = await restoreAll(true);
+  for (const [id, file] of restored) queue.registerImputedFile(id, file);
+  if (restored.size > 0) {
+    await queue.scanAndQueue();
+    await queue.start();
+  }
+}
+
+/** Get current queue state. */
+export function getQueueState() {
+  return queue.getState();
+}
+
+/** @type {ReturnType<typeof setTimeout>|null} */ let loadTimer = null;
+
+/** @param {object} host @param {object} state */
+function syncHostState(host, state) {
+  host.scoringStatus = state.paused
+    ? 'paused'
+    : state.running
+      ? 'scoring'
+      : state.pending === 0 && state.total > 0
+        ? 'done'
+        : state.pending > 0 && !state.running
+          ? 'blocked'
+          : '';
+
+  host.scoringTrait = state.currentTraitName;
+  host.scoringChrDone = state.currentChrDone;
+  host.scoringChrTotal = state.currentChrTotal;
+  host.scoringCurrent = state.done + state.errors;
+  host.scoringTotal = state.total;
+  host.scoringIndividualCount = state.individualCount;
+  host.scoringCurrentId = state.currentScoringId;
+
+  if (state.activeIndividualId === host.activeId) {
+    const ind = state.byIndividual[host.activeId];
+    if (ind && ind.done !== host.resultCount) {
+      if (loadTimer) clearTimeout(loadTimer);
+      loadTimer = setTimeout(() => {
+        loadResults(host.activeId).then((c) => {
+          host.resultCount = c;
+        });
+      }, 500);
+    }
+  }
 }

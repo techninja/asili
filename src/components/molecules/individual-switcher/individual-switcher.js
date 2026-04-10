@@ -20,7 +20,7 @@ export default define({
           host.individuals = list;
           invalidate();
         })
-        .catch(() => {});
+        .catch((e) => console.error(e));
     },
   },
   render: {

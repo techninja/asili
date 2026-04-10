@@ -9,8 +9,8 @@ importers:
   .:
     dependencies:
       '@duckdb/duckdb-wasm':
-        specifier: 1.33.1-dev20.0
-        version: 1.33.1-dev20.0
+        specifier: 1.33.1-dev44.0
+        version: 1.33.1-dev44.0
       express:
         specifier: ^5.2.1
         version: 5.2.1
@@ -25,8 +25,8 @@ importers:
         specifier: ^4.0.0
         version: 4.0.0
       '@techninja/clearstack':
-        specifier: ^0.3.11
-        version: 0.3.11(@types/node@22.19.17)
+        specifier: ^0.3.16
+        version: 0.3.16(@types/node@22.19.17)
       '@types/node':
         specifier: ^22.0.0
         version: 22.19.17
@@ -136,8 +136,8 @@ packages:
     peerDependencies:
       postcss-selector-parser: ^7.1.1
 
-  '@duckdb/duckdb-wasm@1.33.1-dev20.0':
-    resolution: {integrity: sha512-ual3d/WDZnyZHNZ3tGdFvTZY22IDdg63Bh0icSBA6JPOy1u89rNfVH/3wQhtoJPv3Xn7eWVJ/4gpT3wprrisoA==}
+  '@duckdb/duckdb-wasm@1.33.1-dev44.0':
+    resolution: {integrity: sha512-3A2OsQEqW0POrLVx4V1+8YlFaPS6HuCkbpEexhrDgET54XhGYwwOvfotveiRI7YpE4ZpUna8YdhriItxl8zF5A==}
 
   '@es-joy/jsdoccomment@0.86.0':
     resolution: {integrity: sha512-ukZmRQ81WiTpDWO6D/cTBM7XbrNtutHKvAVnZN/8pldAwLoJArGOvkNyxPTBGsPjsoaQBJxlH+tE2TNA/92Qgw==}
@@ -544,8 +544,8 @@ packages:
   '@swc/helpers@0.5.21':
     resolution: {integrity: sha512-jI/VAmtdjB/RnI8GTnokyX7Ug8c+g+ffD6QRLa6XQewtnGyukKkKSk3wLTM3b5cjt1jNh9x0jfVlagdN2gDKQg==}
 
-  '@techninja/clearstack@0.3.11':
-    resolution: {integrity: sha512-XZqf1HtUNcfqKRhw7ktuYyPI/1cF3xz4tJwa88+T71eca5Q0UilQLT1j8CPkxgrGQK8AxLqo8fYUgwmHrNoFGA==}
+  '@techninja/clearstack@0.3.16':
+    resolution: {integrity: sha512-yMn+736iClPKEWEgi6VjuFtrZu2h9LOXaWWzL9q7rcJGFnwEntOJgbxLlRZjc3SHiLUbzkrwSOCQ7mUby/hjBQ==}
     hasBin: true
 
   '@tootallnate/quickjs-emscripten@0.23.0':
@@ -2844,7 +2844,7 @@ snapshots:
     dependencies:
       postcss-selector-parser: 7.1.1
 
-  '@duckdb/duckdb-wasm@1.33.1-dev20.0':
+  '@duckdb/duckdb-wasm@1.33.1-dev44.0':
     dependencies:
       apache-arrow: 17.0.0
       qs: 6.15.0
@@ -3211,7 +3211,7 @@ snapshots:
     dependencies:
       tslib: 2.8.1
 
-  '@techninja/clearstack@0.3.11(@types/node@22.19.17)':
+  '@techninja/clearstack@0.3.16(@types/node@22.19.17)':
     dependencies:
       '@inquirer/prompts': 8.3.2(@types/node@22.19.17)
     transitivePeerDependencies:

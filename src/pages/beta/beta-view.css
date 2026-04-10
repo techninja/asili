@@ -77,6 +77,16 @@
   font-weight: 600;
 }
 
+.beta-view__ind-btn--scoring {
+  border-color: var(--color-accent);
+}
+
+.beta-view__ind-progress {
+  font-size: var(--text-xs);
+  color: var(--color-text-muted);
+  font-variant-numeric: tabular-nums;
+}
+
 .beta-view__ind-btn--add:hover {
   border-color: var(--color-warning);
 }

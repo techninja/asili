@@ -31,9 +31,10 @@ export async function scoreUnified(traitUrl, onChr) {
   if (!chrFiles.length) throw new Error('Unified DNA not loaded');
   const pgsAgg = new Map();
   const chrCov = [];
+  let matchedSoFar = 0;
 
   for (let ci = 0; ci < chrFiles.length; ci++) {
-    if (onChr) onChr(ci, chrFiles.length);
+    if (onChr) onChr(ci, chrFiles.length, matchedSoFar);
     const chrFile = chrFiles[ci];
     const rows = await ddb.query(`
       SELECT t.pgs_id,
@@ -54,7 +55,10 @@ export async function scoreUnified(traitUrl, onChr) {
       INNER JOIN '${chrFile}' d ON t.chr=d.chr AND t.pos=d.pos AND t.allele_key=d.allele_key
       GROUP BY t.pgs_id
     `);
-    for (const r of rows) accumulate(pgsAgg, r);
+    for (const r of rows) {
+      accumulate(pgsAgg, r);
+      matchedSoFar += Number(r.matched_variants) || 0;
+    }
 
     const cov = await ddb.query(`
       SELECT t.pgs_id, t.chr, COUNT(*) AS cnt

@@ -6,27 +6,38 @@
 import { html, router } from 'hybrids';
 import { handleFile, handleSetup } from './beta-sections.js';
 import { scoringBanner } from './scoring-banner.js';
+import { getQueueState } from './scoring-controller.js';
 import ReportView from '#pages/report/report-view.js';
 
 /** @param {object} host @param {Array<object>} list @param {Function} switchFn */
 export function individualSelector(host, list, switchFn) {
+  const state = getQueueState();
   return html`
     <div class="beta-view__selector">
-      ${list.map(
-        (ind) => html`
+      ${list.map((ind) => {
+        const progress = state.byIndividual[ind.id];
+        const fraction = progress ? `${progress.done}/${progress.total}` : '';
+        const isScoring = state.currentScoringId === ind.id;
+        return html`
           <button
             class="beta-view__ind-btn ${ind.id === host.activeId
               ? 'beta-view__ind-btn--active'
-              : ''}"
+              : ''} ${isScoring ? 'beta-view__ind-btn--scoring' : ''}"
             onclick="${(h) => {
               h.showUpload = false;
               switchFn(h, ind.id);
             }}"
+            title="${fraction}"
           >
             ${ind.hasImputed ? '⭐' : ''} ${ind.emoji} ${ind.name}
+            ${progress && progress.done < progress.total
+              ? html`<span class="beta-view__ind-progress"
+                  >${progress.done}/${progress.total}</span
+                >`
+              : html``}
           </button>
-        `,
-      )}
+        `;
+      })}
       <button
         class="beta-view__ind-btn beta-view__ind-btn--add ${host.showUpload || host.parseStatus
           ? 'beta-view__ind-btn--add-active'

@@ -7,7 +7,9 @@ import { html, define, router } from 'hybrids';
 // @ts-ignore
 import '#molecules/individual-list/individual-list.js';
 import * as idb from '/packages/core/src/data-layer/idb.js';
-import { exportData, importData } from './settings-helpers.js';
+import { getScoringSettings, saveScoringSettings } from '#utils/queue-settings.js';
+import { resetQueue } from '#utils/scoring-queue.js';
+import { storageSection, scoringSection, dangerSection } from './settings-sections.js';
 
 export default define({
   tag: 'settings-view',
@@ -20,8 +22,18 @@ export default define({
   },
   storageInfo: '',
   confirmClear: false,
+  memoryLimit: '2GB',
+  workerCount: 1,
+  autoScore: true,
   render: {
-    value: ({ individuals, storageInfo, confirmClear }) => html`
+    value: ({
+      individuals,
+      storageInfo,
+      confirmClear,
+      memoryLimit,
+      workerCount,
+      autoScore,
+    }) => html`
       <div class="settings">
         <a href="/beta" class="settings__back">← Back</a>
         <h1 class="settings__title">Settings</h1>
@@ -35,48 +47,16 @@ export default define({
           ></individual-list>
         </section>
 
-        <section class="settings__section">
-          <h2>Storage</h2>
-          <p class="settings__meta">${storageInfo || 'Calculating…'}</p>
-          <div class="settings__actions">
-            <button class="btn btn-secondary" onclick="${exportData}">📦 Export data</button>
-            <label class="btn btn-secondary">
-              📥 Import data
-              <input type="file" accept=".json" class="sr-only" onchange="${importData}" />
-            </label>
-          </div>
-        </section>
-
-        <section class="settings__section">
-          <h2>Danger Zone</h2>
-          ${confirmClear
-            ? html`
-                <p class="settings__warn">
-                  This will delete all individuals, variants, and results.
-                </p>
-                <div class="settings__actions">
-                  <button class="btn btn-danger" onclick="${doClearAll}">
-                    Yes, delete everything
-                  </button>
-                  <button
-                    class="btn btn-ghost"
-                    onclick="${(h) => {
-                      h.confirmClear = false;
-                    }}"
-                  >
-                    Cancel
-                  </button>
-                </div>
-              `
-            : html`<button
-                class="btn btn-danger"
-                onclick="${(h) => {
-                  h.confirmClear = true;
-                }}"
-              >
-                🗑 Clear all data
-              </button>`}
-        </section>
+        ${storageSection(storageInfo)}
+        ${scoringSection(
+          memoryLimit,
+          workerCount,
+          autoScore,
+          handleMemoryChange,
+          handleWorkerChange,
+          handleAutoScoreChange,
+        )}
+        ${dangerSection(confirmClear, doClearAll)}
 
         <section class="settings__section">
           <h2>About</h2>
@@ -101,9 +81,32 @@ async function loadData(host) {
       const quota = (estimate.quota / 1024 / 1024 / 1024).toFixed(1);
       host.storageInfo = `${used} MB used of ${quota} GB available`;
     }
-  } catch {
+    const prefs = await getScoringSettings();
+    host.memoryLimit = prefs.memoryLimit;
+    host.workerCount = prefs.workerCount;
+    host.autoScore = prefs.autoScore;
+  } catch (e) {
+    console.error(e);
     /* first visit */
   }
+}
+
+/** @param {object} host @param {Event} e */
+async function handleMemoryChange(host, e) {
+  host.memoryLimit = /** @type {HTMLSelectElement} */ (e.target).value;
+  await saveScoringSettings({ memoryLimit: host.memoryLimit });
+}
+
+/** @param {object} host @param {Event} e */
+async function handleWorkerChange(host, e) {
+  host.workerCount = Number(/** @type {HTMLSelectElement} */ (e.target).value);
+  await saveScoringSettings({ workerCount: host.workerCount });
+}
+
+/** @param {object} host @param {Event} e */
+async function handleAutoScoreChange(host, e) {
+  host.autoScore = /** @type {HTMLInputElement} */ (e.target).checked;
+  await saveScoringSettings({ autoScore: host.autoScore });
 }
 
 /** @param {object & HTMLElement} host */
@@ -114,26 +117,26 @@ async function handleDelete(host) {
 
 /** @param {object & HTMLElement} host @param {CustomEvent} e */
 async function handleUpgrade(host, e) {
-  const { id, file } = e.detail;
+  const { id } = e.detail;
   try {
     await idb.openDB();
     const ind = await idb.get('individuals', id);
-    if (ind) {
-      await idb.put('individuals', id, { ...ind, hasImputed: true });
-    }
+    if (ind) await idb.put('individuals', id, { ...ind, hasImputed: true });
     const keys = await idb.getAllKeys('results');
     for (const k of keys) {
       if (String(k).startsWith(`${id}:`)) await idb.del('results', k);
     }
     await idb.del('variants', id);
     host.individuals = await idb.getAll('individuals');
-  } catch {
+  } catch (e) {
+    console.error(e);
     /* upgrade failed */
   }
 }
 
 /** @param {object & HTMLElement} host */
 async function doClearAll(host) {
+  resetQueue();
   await idb.openDB();
   for (const store of ['individuals', 'variants', 'results', 'settings']) {
     await idb.clear(store);

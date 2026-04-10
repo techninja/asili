@@ -47,3 +47,32 @@
   font-size: var(--text-sm);
   margin: 0 0 var(--space-sm);
 }
+
+.settings__field {
+  margin-bottom: var(--space-md);
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+  font-size: var(--text-sm);
+}
+
+.settings__field label {
+  display: flex;
+  align-items: center;
+  gap: var(--space-xs);
+}
+
+.settings__select {
+  padding: var(--space-xs) var(--space-sm);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  background: var(--color-surface);
+  color: var(--color-text);
+  font: inherit;
+  font-size: var(--text-sm);
+}
+
+.settings__hint {
+  font-size: var(--text-xs);
+  color: var(--color-text-muted);
+}

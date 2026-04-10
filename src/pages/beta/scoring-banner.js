@@ -1,13 +1,14 @@
 /**
- * Scoring banner — dual progress bars, ETA, variants/sec, pause.
+ * Scoring banner — global queue progress with dual bars, ETA, variants/sec, pause/resume.
  * @module pages/beta/scoring-banner
  */
 
 import { html } from 'hybrids';
 import {
-  handleStopScoring,
-  getScoringStartTime,
-  getScoringVariants,
+  handlePause,
+  handleResume,
+  handleResumePermission,
+  getQueueState,
 } from './scoring-controller.js';
 
 /** @param {number} n */
@@ -27,32 +28,55 @@ const fmtT = (s) => {
 export function scoringBanner(host) {
   if (host.scoringStatus === 'scoring') {
     void host.scoringTick;
-    const d = host.scoringCurrent,
-      t = host.scoringTotal || 1;
-    const totalPct = Math.round((d / t) * 100);
+    const state = getQueueState();
+    const d = state.done + state.errors;
+    const t = state.total || 1;
+    const totalPct = ((d / t) * 100).toFixed(1);
     const chrPct =
-      host.scoringChrTotal > 0 ? Math.round((host.scoringChrDone / host.scoringChrTotal) * 100) : 0;
-    const sec = (Date.now() - getScoringStartTime()) / 1000;
-    const rem = d > 0 ? Math.round((sec / d) * (t - d)) : 0;
-    const vps = sec > 2 ? fmtN(Math.round(getScoringVariants() / sec)) : '—';
+      state.currentChrTotal > 0
+        ? Math.round((state.currentChrDone / state.currentChrTotal) * 100)
+        : 0;
+    const vps = state.rate > 0 ? fmtN(Math.round(state.rate)) : '—';
+    const indLabel = state.individualCount > 1 ? `${state.individualCount} individuals · ` : '';
+    const trait = state.currentTraitName || '';
+
     return html`
       <div class="beta-view__scoring-panel">
         <div class="beta-view__scoring-bars">
-          <div class="beta-view__scoring-bar" title="${totalPct}% complete for all traits">
+          <div
+            class="beta-view__scoring-bar"
+            title="${totalPct}% · ${d}/${t} traits across all individuals"
+          >
             <div class="beta-view__scoring-fill" style="${{ width: `${totalPct}%` }}"></div>
           </div>
           <div
             class="beta-view__scoring-bar beta-view__scoring-bar--chr"
-            title="${chrPct}% complete for ${host.scoringTrait}"
+            title="${chrPct}% complete for ${trait}"
           >
             <div class="beta-view__scoring-fill--chr" style="${{ width: `${chrPct}%` }}"></div>
           </div>
         </div>
         <p class="beta-view__scoring">
-          ${host.scoringTrait} · ${d}/${t}${d > 0 ? html` · ~${fmtT(rem)} · ${vps}/s` : html``}
-          <button class="btn btn-ghost btn-sm" onclick="${handleStopScoring}">⏸ Pause</button>
+          ${indLabel}${trait}${state.currentChrTotal > 0
+            ? html` chr ${state.currentChrDone}/${state.currentChrTotal}`
+            : html``}
+          ·
+          ${d}/${t}${state.rate > 0 ? html` · ${vps}/s` : html``}${state.etaSeconds > 0
+            ? html` · ~${fmtT(state.etaSeconds)}`
+            : html``}
+          <button class="btn btn-ghost btn-sm" onclick="${() => handlePause()}">⏸ Pause</button>
         </p>
       </div>
+    `;
+  }
+  if (host.scoringStatus === 'paused') {
+    const state = getQueueState();
+    const d = state.done + state.errors;
+    return html`
+      <p class="beta-view__scoring">
+        ⏸ Paused · ${d}/${state.total} traits scored
+        <button class="btn btn-ghost btn-sm" onclick="${() => handleResume()}">▶ Resume</button>
+      </p>
     `;
   }
   if (host.scoringStatus === 'init')
@@ -61,5 +85,14 @@ export function scoringBanner(host) {
     return html`<p class="beta-view__scoring beta-view__scoring--done">
       ✅ ${host.resultCount} traits scored
     </p>`;
+  if (host.scoringStatus === 'blocked') {
+    const state = getQueueState();
+    const need = state.individualCount;
+    return html`<p class="beta-view__scoring">
+      ⏸ ${need > 1 ? `${need} imputed individuals` : 'Imputed individual'}
+      need${need > 1 ? '' : 's'} permission to resume
+      <button class="btn btn-ghost btn-sm" onclick="${handleResumePermission}">▶ Resume</button>
+    </p>`;
+  }
   return html``;
 }

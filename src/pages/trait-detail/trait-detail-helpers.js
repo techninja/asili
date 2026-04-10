@@ -46,7 +46,8 @@ export async function loadFamily(host) {
       }
     }
     host.familyData = family;
-  } catch {
+  } catch (e) {
+    console.error(e);
     /* no family data */
   }
 }

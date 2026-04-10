@@ -31,7 +31,8 @@ export async function validateAsili(file) {
       entries.push({ name, offset: off + 512, size });
       off += 512 + Math.ceil(size / 512) * 512;
     }
-  } catch {
+  } catch (e) {
+    console.error(e);
     return { ok: false, error: 'Could not read archive — file may be corrupted' };
   }
 
@@ -45,7 +46,8 @@ export async function validateAsili(file) {
       .slice(manifestEntry.offset, manifestEntry.offset + manifestEntry.size)
       .text();
     manifest = JSON.parse(text);
-  } catch {
+  } catch (e) {
+    console.error(e);
     return { ok: false, error: 'manifest.json is corrupted — re-download recommended' };
   }
 

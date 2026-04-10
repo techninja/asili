@@ -9,6 +9,11 @@ import { createDataLayer, getDataLayer } from '/packages/core/src/data-layer/cre
 /** @type {Record<string, object>} In-memory cache for render perf. */
 export const results = {};
 
+/** @param {string} traitId @returns {object|undefined} */
+export function getResult(traitId) {
+  return results[traitId];
+}
+
 /** @type {string} */
 let activeId = '';
 
@@ -84,6 +89,7 @@ async function ensureDataLayer() {
   try {
     return getDataLayer();
   } catch {
-    return createDataLayer({ mode: 'browser' });
+    /* first call */
   }
+  return createDataLayer({ mode: 'browser' });
 }

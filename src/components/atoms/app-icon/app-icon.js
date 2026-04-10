@@ -20,7 +20,8 @@ const loading = fetch('/icons.json')
     iconCache = data;
     return data;
   })
-  .catch(() => {
+  .catch((e) => {
+    console.error('Failed to load icons:', e);
     iconCache = {};
     return {};
   });

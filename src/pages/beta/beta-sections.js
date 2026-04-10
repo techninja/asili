@@ -8,14 +8,16 @@ import * as idb from '/packages/core/src/data-layer/idb.js';
 import { parseDNAFile } from '/packages/core/src/parser/parse.js';
 import { validateAsili } from '#utils/asili-validator.js';
 import { loadResults } from './results-store.js';
-import { startScoring } from './scoring-controller.js';
+import { onNewIndividual } from './scoring-controller.js';
 
 /** @type {File|null} Module-level to avoid Hybrids cache serialization */
 let imputedFile = null;
+/** @type {FileSystemFileHandle|null} */
+let imputedHandle = null;
 
 /** @param {object & HTMLElement} host @param {CustomEvent} e */
 export async function handleFile(host, e) {
-  const file = e.detail;
+  const { file, handle } = e.detail || {};
   if (!file) return;
   host.parseStatus = 'parsing';
   host.parsedCount = 0;
@@ -31,6 +33,7 @@ export async function handleFile(host, e) {
       return;
     }
     imputedFile = file;
+    imputedHandle = handle || null;
     host._variants = [];
     host._manifest = JSON.stringify(result.manifest);
     host.parsedFormat = 'asili-imputed';
@@ -41,6 +44,7 @@ export async function handleFile(host, e) {
 
   try {
     imputedFile = null;
+    imputedHandle = null;
     const text = await file.text();
     const result = parseDNAFile(text, ({ parsed }) => {
       host.parsedCount = parsed;
@@ -65,9 +69,15 @@ export function getPendingImputedFile() {
   return imputedFile;
 }
 
+/** @returns {FileSystemFileHandle|null} */
+export function getPendingImputedHandle() {
+  return imputedHandle;
+}
+
 /** Clear the pending imputed file */
 export function clearPendingImputedFile() {
   imputedFile = null;
+  imputedHandle = null;
 }
 
 /** @param {object & HTMLElement} host @param {CustomEvent} e */
@@ -100,5 +110,5 @@ export async function handleSetup(host, e) {
   host.activeId = id;
   host.resultCount = 0;
   await loadResults(id);
-  startScoring(host, id);
+  onNewIndividual(host, id);
 }

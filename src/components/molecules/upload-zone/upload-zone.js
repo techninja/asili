@@ -8,17 +8,28 @@
 import { html, define, dispatch } from 'hybrids';
 
 /** @param {object & HTMLElement} host */
-function handleDrop(host, e) {
+async function handleDrop(host, e) {
   e.preventDefault();
   host.dragover = false;
+  const item = e.dataTransfer?.items?.[0];
   const file = e.dataTransfer?.files[0];
-  if (file) dispatch(host, 'file-selected', { detail: file, bubbles: true });
+  if (!file) return;
+  let handle = null;
+  if (item?.getAsFileSystemHandle) {
+    try {
+      handle = await item.getAsFileSystemHandle();
+    } catch (e) {
+      console.error(e);
+      /* unsupported */
+    }
+  }
+  dispatch(host, 'file-selected', { detail: { file, handle }, bubbles: true });
 }
 
 /** @param {object & HTMLElement} host */
 function handleInput(host, e) {
   const file = e.target.files?.[0];
-  if (file) dispatch(host, 'file-selected', { detail: file, bubbles: true });
+  if (file) dispatch(host, 'file-selected', { detail: { file, handle: null }, bubbles: true });
   e.target.value = '';
 }
 

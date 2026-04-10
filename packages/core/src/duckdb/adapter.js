@@ -16,12 +16,10 @@ let duckdbModule = null;
  * @param {string} [basePath] - Path to WASM/worker files
  * @returns {Promise<void>}
  */
-export async function initDuckDB(basePath = '/deps/duckdb') {
+export async function initDuckDB(basePath = '/deps/duckdb', opts = {}) {
   if (db) return;
-  const isAbsolute = basePath.startsWith('http');
-  const base = isAbsolute ? basePath : new URL(basePath, self.location?.origin || 'http://localhost').href;
-  const importPath = isAbsolute ? basePath : basePath;
-  duckdbModule = await import(`${importPath}/duckdb.js`);
+  duckdbModule = await import(`${basePath}/duckdb.js`);
+  const base = new URL(basePath, self.location?.origin || 'http://localhost').href;
   const bundle = await duckdbModule.selectBundle({
     mvp: { mainModule: `${base}/duckdb-mvp.wasm`, mainWorker: `${base}/duckdb-browser-mvp.worker.js` },
     eh: { mainModule: `${base}/duckdb-eh.wasm`, mainWorker: `${base}/duckdb-browser-eh.worker.js` },
@@ -31,7 +29,8 @@ export async function initDuckDB(basePath = '/deps/duckdb') {
   db = new duckdbModule.AsyncDuckDB(logger, worker);
   await db.instantiate(bundle.mainModule, bundle.pthreadWorker);
   conn = await db.connect();
-  await conn.query("SET memory_limit='2GB'");
+  const mem = opts.memoryLimit || '2GB';
+  await conn.query(`SET memory_limit='${mem}'`);
   await conn.query("SET threads=1");
 }
 
@@ -40,10 +39,15 @@ export async function initDuckDB(basePath = '/deps/duckdb') {
  * @param {string} sql
  * @returns {Promise<Array<object>>}
  */
-export async function query(sql) {
+export async function query(sql, timeoutMs = 120_000) {
   if (!conn) throw new Error('DuckDB not initialized');
-  const result = await conn.query(sql);
-  return result.toArray().map(row => {
+  const result = await Promise.race([
+    conn.query(sql),
+    new Promise((_, reject) =>
+      setTimeout(() => reject(new Error('DuckDB query timeout')), timeoutMs),
+    ),
+  ]);
+  return result.toArray().map((row) => {
     const obj = {};
     for (const key of Object.keys(row)) obj[key] = row[key];
     return obj;
