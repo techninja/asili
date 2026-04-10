@@ -90,6 +90,12 @@ export async function registerFileHandle(name, file) {
 /** @returns {boolean} */
 export function isReady() { return !!conn; }
 
+/** Drop a registered file by name. */
+export async function dropFile(name) {
+  if (!db) return;
+  try { await db.dropFile(name); } catch (e) { console.warn('dropFile:', e.message); }
+}
+
 /** Shut down DuckDB. */
 export async function closeDuckDB() {
   if (conn) { await conn.close(); conn = null; }

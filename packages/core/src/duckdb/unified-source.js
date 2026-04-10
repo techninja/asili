@@ -22,20 +22,24 @@ export async function loadUnifiedDNA(files) {
 const n = (v) => Number(v);
 
 /**
- * Score a trait by JOINing against each chromosome parquet separately.
- * @param {string} traitUrl - URL/path to trait parquet
- * @param {Function} [onChr] - callback(chrDone, chrTotal) for sub-progress
+ * Score a trait by JOINing per-chromosome trait packs against DNA chromosomes.
+ * @param {Map<string, string>} traitChrFiles - chr number → registered trait file name
+ * @param {Function} [onChr] - callback(chrDone, chrTotal, matchedSoFar)
  * @returns {Promise<{pgsAggregates: Array, chrCoverage: Array}>}
  */
-export async function scoreUnified(traitUrl, onChr) {
+export async function scoreUnifiedChrPacks(traitChrFiles, onChr) {
   if (!chrFiles.length) throw new Error('Unified DNA not loaded');
   const pgsAgg = new Map();
   const chrCov = [];
   let matchedSoFar = 0;
+  const total = chrFiles.length;
 
-  for (let ci = 0; ci < chrFiles.length; ci++) {
-    if (onChr) onChr(ci, chrFiles.length, matchedSoFar);
-    const chrFile = chrFiles[ci];
+  for (let ci = 0; ci < total; ci++) {
+    if (onChr) onChr(ci, total, matchedSoFar);
+    const dnaChr = chrFiles[ci];
+    const chrNum = dnaChr.replace(/[^0-9]/g, '');
+    const traitChr = traitChrFiles.get(chrNum);
+    if (!traitChr) continue;
     const rows = await ddb.query(`
       SELECT t.pgs_id,
         SUM(t.effect_weight * d.genotype_dosage
@@ -51,20 +55,19 @@ export async function scoreUnified(traitUrl, onChr) {
         SUM(CASE WHEN t.effect_weight*d.genotype_dosage<0
               THEN t.effect_weight*d.genotype_dosage ELSE 0 END) AS neg_sum,
         SUM(t.effect_weight * t.effect_weight) AS wsq
-      FROM '${traitUrl}' t
-      INNER JOIN '${chrFile}' d ON t.chr=d.chr AND t.pos=d.pos AND t.allele_key=d.allele_key
+      FROM '${traitChr}' t
+      INNER JOIN '${dnaChr}' d ON t.pos=d.pos AND t.allele_key=d.allele_key
       GROUP BY t.pgs_id
     `);
     for (const r of rows) {
       accumulate(pgsAgg, r);
       matchedSoFar += Number(r.matched_variants) || 0;
     }
-
     const cov = await ddb.query(`
-      SELECT t.pgs_id, t.chr, COUNT(*) AS cnt
-      FROM '${traitUrl}' t
-      INNER JOIN '${chrFile}' d ON t.chr=d.chr AND t.pos=d.pos AND t.allele_key=d.allele_key
-      GROUP BY t.pgs_id, t.chr
+      SELECT t.pgs_id, '${chrNum}' as chr, COUNT(*) AS cnt
+      FROM '${traitChr}' t
+      INNER JOIN '${dnaChr}' d ON t.pos=d.pos AND t.allele_key=d.allele_key
+      GROUP BY t.pgs_id
     `);
     chrCov.push(...cov);
   }
