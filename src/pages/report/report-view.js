@@ -28,7 +28,7 @@ export default define({
     },
   },
   individual: {
-    value: /** @type {object|null} */ (null),
+    value: /** @type {object} */ ({}),
     connect(host, _key, invalidate) {
       loadIndividual(host).then(invalidate);
     },
@@ -48,7 +48,7 @@ export default define({
         );
       const elevated = sorted.slice(0, 5);
       const low = [...sorted].reverse().slice(0, 5);
-      const name = individual ? `${individual.emoji} ${individual.name}` : 'Asili';
+      const name = individual?.name ? `${individual.emoji} ${individual.name}` : 'Asili';
 
       return html`
         <div class="report">

@@ -49,6 +49,8 @@ export async function loadDNA(s, variants, file) {
       await registerBuffer(e.name, buf);
     }
     await loadUnifiedDNA(entries.filter((e) => e.name.endsWith('.parquet')).map((e) => e.name));
+    // Let DuckDB's worker fully process all registered buffers
+    await new Promise((r) => setTimeout(r, 100));
     unifiedMode = true;
     posMap = null;
   } else {

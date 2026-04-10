@@ -62,6 +62,7 @@ export async function scoreUnifiedTrait(url, t, onProgress) {
     );
   } finally {
     for (const name of regNames) await dropFile(name);
+    await new Promise((r) => setTimeout(r, 10));
   }
 }
 

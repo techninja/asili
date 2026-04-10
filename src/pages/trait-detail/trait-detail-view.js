@@ -34,7 +34,7 @@ export default define({
   activeId: { value: '', connect: () => {} },
   resultVersion: { value: 0, connect: () => {} },
   trait: {
-    value: /** @type {object|null} */ (null),
+    value: /** @type {object} */ ({}),
     connect: (host, _key, invalidate) => {
       host.activeId = getActiveId();
       getTraitList().then((list) => {

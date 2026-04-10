@@ -7,6 +7,7 @@ import { html, router } from 'hybrids';
 import { handleFile, handleSetup } from './beta-sections.js';
 import { scoringBanner } from './scoring-banner.js';
 import { getQueueState } from './scoring-controller.js';
+import { heroContent } from './beta-hero.js';
 import ReportView from '#pages/report/report-view.js';
 
 /** @param {object} host @param {Array<object>} list @param {Function} switchFn */
@@ -84,18 +85,7 @@ export function appContent(host) {
 
 /** @param {object} host @param {Function} cancelFn */
 export function uploadContent(host, cancelFn) {
-  const isParsing = host.parseStatus === 'parsing';
-  const isSetup = host.parseStatus === 'setup';
-  const isError = host.parseStatus === 'error';
-  return html`
-    <h1 class="beta-view__title">Upload your DNA</h1>
-    <p class="beta-view__sub">Your file stays on your device.</p>
-    ${!isParsing && !isSetup && !isError
-      ? html`<upload-zone onfile-selected="${handleFile}"></upload-zone>`
-      : html``}
-    ${isParsing ? parsingInline(host) : html``} ${isSetup ? setupInline(host, cancelFn) : html``}
-    ${isError ? errorInline(host, cancelFn) : html``}
-  `;
+  return heroContent(host, cancelFn);
 }
 
 /** @param {object} host */
