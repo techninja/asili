@@ -1,0 +1,79 @@
+/* DNA helix — vertical animated dot pairs for scoring screen */
+.ss__helix {
+  position: absolute;
+  left: 10%;
+  top: 0;
+  bottom: 0;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 12px;
+  opacity: 0.15;
+  pointer-events: none;
+}
+
+.ss__dot-pair {
+  display: flex;
+  justify-content: center;
+  width: 60px;
+  animation: ss-helix 2s ease-in-out infinite;
+}
+
+.ss__dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+}
+
+.ss__dot--a {
+  background: var(--color-primary);
+  animation: ss-a 2s ease-in-out infinite;
+}
+
+.ss__dot--b {
+  background: var(--color-accent);
+  animation: ss-b 2s ease-in-out infinite;
+}
+
+@keyframes ss-helix {
+  0%,
+  100% {
+    gap: 4px;
+  }
+
+  50% {
+    gap: 40px;
+  }
+}
+
+@keyframes ss-a {
+  0%,
+  100% {
+    transform: translateX(-8px);
+    opacity: 1;
+  }
+
+  50% {
+    transform: translateX(8px);
+    opacity: 0.4;
+  }
+}
+
+@keyframes ss-b {
+  0%,
+  100% {
+    transform: translateX(8px);
+    opacity: 0.4;
+  }
+
+  50% {
+    transform: translateX(-8px);
+    opacity: 1;
+  }
+}
+
+@media (width <= 480px) {
+  .ss__helix {
+    left: 5%;
+  }
+}

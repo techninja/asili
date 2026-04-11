@@ -23,18 +23,37 @@
 
 .trait-detail__title {
   font-size: var(--text-2xl);
-  margin: var(--space-md) 0;
+  margin: var(--space-md) 0 var(--space-xs);
+}
+
+.trait-detail__desc {
+  color: var(--color-text-muted);
+  margin: 0 0 var(--space-md);
+  font-size: var(--text-sm);
+}
+
+.trait-detail__grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--space-lg);
+}
+
+.trait-detail__grid--wide {
+  grid-column: 1 / -1;
 }
 
 .trait-detail__section {
-  margin: var(--space-xl) 0;
   display: flex;
   flex-direction: column;
   gap: var(--space-sm);
+  padding: var(--space-md);
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
 }
 
 .trait-detail__section h2 {
-  font-size: var(--text-lg);
+  font-size: var(--text-base);
   margin: 0;
   color: var(--color-text-muted);
 }
@@ -53,12 +72,6 @@
 .trait-detail__empty {
   color: var(--color-text-muted);
   font-style: italic;
-}
-
-.trait-detail__desc {
-  color: var(--color-text-muted);
-  margin: 0;
-  font-size: var(--text-sm);
 }
 
 .trait-detail__balance-bar {
@@ -97,4 +110,10 @@
 .trait-detail__nodata {
   color: var(--color-text-muted);
   margin: 0;
+}
+
+@media (width <= 640px) {
+  .trait-detail__grid {
+    grid-template-columns: 1fr;
+  }
 }

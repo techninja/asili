@@ -9,6 +9,7 @@ import '#molecules/individual-list/individual-list.js';
 import * as idb from '/packages/core/src/data-layer/idb.js';
 import { getScoringSettings, saveScoringSettings } from '#utils/queue-settings.js';
 import { resetQueue } from '#utils/scoring-queue.js';
+import { clearFamilyCache } from '#organisms/trait-grid/render-card.js';
 import { storageSection, scoringSection, dangerSection } from './settings-sections.js';
 
 export default define({
@@ -136,7 +137,8 @@ async function handleUpgrade(host, e) {
 
 /** @param {object & HTMLElement} host */
 async function doClearAll(host) {
-  resetQueue();
+  await resetQueue();
+  clearFamilyCache();
   await idb.openDB();
   for (const store of ['individuals', 'variants', 'results', 'settings']) {
     await idb.clear(store);

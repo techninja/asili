@@ -10,6 +10,9 @@ import * as ddb from './adapter.js';
 /** @type {string[]} */
 let chrFiles = [];
 
+/** Table names start with _ (from loadGenotypedDNA), file names get quoted */
+const ref = (name) => name.startsWith('_') ? name : `'${name}'`;
+
 /**
  * Set the chromosome parquet files for unified scoring.
  * @param {string[]} files - Virtual filenames of registered chromosome parquets
@@ -40,24 +43,33 @@ export async function scoreUnifiedChrPacks(traitChrFiles, onChr) {
     const chrNum = dnaChr.replace(/[^0-9]/g, '');
     const traitChr = traitChrFiles.get(chrNum);
     if (!traitChr) continue;
+    const dnaRef = ref(dnaChr);
+    // Oriented dosage: genotype_dosage is alt-allele count. If effect_allele
+    // is the ref (LEAST), flip to 2-dosage. CTE computes contribution once.
     const rows = await ddb.query(`
-      SELECT t.pgs_id,
-        SUM(t.effect_weight * d.genotype_dosage
-          * CASE WHEN d.imputed AND d.imputation_quality IS NOT NULL
-                 THEN SQRT(d.imputation_quality) ELSE 1.0 END) AS raw_score,
+      WITH m AS (
+        SELECT t.pgs_id, t.effect_weight, d.imputed, d.imputation_quality,
+          t.effect_weight
+            * CASE WHEN t.effect_allele = GREATEST(
+                     SPLIT_PART(t.variant_id,':',3), SPLIT_PART(t.variant_id,':',4))
+                   THEN d.genotype_dosage ELSE 2.0 - d.genotype_dosage END
+            * CASE WHEN d.imputed AND d.imputation_quality IS NOT NULL
+                   THEN SQRT(d.imputation_quality) ELSE 1.0 END
+            AS contribution
+        FROM '${traitChr}' t
+        INNER JOIN ${dnaRef} d ON t.pos=d.pos AND t.allele_key=d.allele_key
+      )
+      SELECT pgs_id,
+        SUM(contribution) AS raw_score,
         COUNT(*) AS matched_variants,
-        SUM(CASE WHEN d.imputed THEN 1 ELSE 0 END) AS imputed_variants,
-        SUM(CASE WHEN NOT d.imputed THEN 1 ELSE 0 END) AS genotyped_variants,
-        SUM(CASE WHEN t.effect_weight*d.genotype_dosage>0 THEN 1 ELSE 0 END) AS pos_count,
-        SUM(CASE WHEN t.effect_weight*d.genotype_dosage>0
-              THEN t.effect_weight*d.genotype_dosage ELSE 0 END) AS pos_sum,
-        SUM(CASE WHEN t.effect_weight*d.genotype_dosage<0 THEN 1 ELSE 0 END) AS neg_count,
-        SUM(CASE WHEN t.effect_weight*d.genotype_dosage<0
-              THEN t.effect_weight*d.genotype_dosage ELSE 0 END) AS neg_sum,
-        SUM(t.effect_weight * t.effect_weight) AS wsq
-      FROM '${traitChr}' t
-      INNER JOIN '${dnaChr}' d ON t.pos=d.pos AND t.allele_key=d.allele_key
-      GROUP BY t.pgs_id
+        SUM(CASE WHEN imputed THEN 1 ELSE 0 END) AS imputed_variants,
+        SUM(CASE WHEN NOT imputed THEN 1 ELSE 0 END) AS genotyped_variants,
+        SUM(CASE WHEN contribution>0 THEN 1 ELSE 0 END) AS pos_count,
+        SUM(CASE WHEN contribution>0 THEN contribution ELSE 0 END) AS pos_sum,
+        SUM(CASE WHEN contribution<0 THEN 1 ELSE 0 END) AS neg_count,
+        SUM(CASE WHEN contribution<0 THEN contribution ELSE 0 END) AS neg_sum,
+        SUM(effect_weight * effect_weight) AS wsq
+      FROM m GROUP BY pgs_id
     `);
     for (const r of rows) {
       accumulate(pgsAgg, r);
@@ -66,7 +78,7 @@ export async function scoreUnifiedChrPacks(traitChrFiles, onChr) {
     const cov = await ddb.query(`
       SELECT t.pgs_id, '${chrNum}' as chr, COUNT(*) AS cnt
       FROM '${traitChr}' t
-      INNER JOIN '${dnaChr}' d ON t.pos=d.pos AND t.allele_key=d.allele_key
+      INNER JOIN ${dnaRef} d ON t.pos=d.pos AND t.allele_key=d.allele_key
       GROUP BY t.pgs_id
     `);
     chrCov.push(...cov);

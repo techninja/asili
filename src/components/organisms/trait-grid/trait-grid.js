@@ -10,7 +10,7 @@ import { results } from '#pages/beta/results-store.js';
 // @ts-ignore
 import '#molecules/trait-card/trait-card.js';
 import { groupByCategory, filterTraits, getCategories } from './helpers.js';
-import { renderCard } from './render-card.js';
+import { renderCard, loadFamilyCache } from './render-card.js';
 
 const PAGE_SIZE = 20;
 
@@ -28,7 +28,12 @@ export default define({
       });
     },
   },
-  resultCount: 0,
+  resultCount: {
+    value: 0,
+    observe(host, value) {
+      if (value > 0) loadFamilyCache();
+    },
+  },
   scoring: false,
   search: '',
   sortBy: 'name',

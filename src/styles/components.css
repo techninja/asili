@@ -37,3 +37,5 @@
 @import '../pages/settings/settings-view.css';
 @import '../pages/beta/beta-hero.css';
 @import '../pages/beta/beta-hero-sections.css';
+@import '../components/atoms/mini-curve/mini-curve.css';
+@import '../components/atoms/chr-coverage/chr-coverage.css';

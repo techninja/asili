@@ -11,8 +11,9 @@ import { S, markAllError } from './queue-state.js';
  * Load DNA for an individual into a worker session.
  * @param {object} session
  * @param {string} individualId
+ * @param {Function} [onProgress] - callback({ phase, done, total })
  */
-export async function loadIndividualDNA(session, individualId) {
+export async function loadIndividualDNA(session, individualId, onProgress) {
   const isImputed = S.individualMeta.get(individualId);
   if (isImputed) {
     const file = S.imputedFiles.get(individualId);
@@ -27,6 +28,6 @@ export async function loadIndividualDNA(session, individualId) {
       markAllError(individualId, 'No variant data');
       throw new Error('No variant data');
     }
-    await loadDNA(session, stored.variants);
+    await loadDNA(session, stored.variants, undefined, onProgress);
   }
 }

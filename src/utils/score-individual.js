@@ -29,7 +29,13 @@ export async function scoreIndividual(individualId) {
     if (session.loadedDnaId !== individualId) {
       S.currentTraitName = 'Loading DNA…';
       notifyNow();
-      await loadIndividualDNA(session, individualId);
+      await loadIndividualDNA(session, individualId, ({ phase, done, total }) => {
+        if (phase === 'insert') {
+          S.currentTraitName = `Loading DNA… ${((done / total) * 100) | 0}%`;
+        } else {
+          S.currentTraitName = `Indexing chr ${done}/${total}…`;
+        }
+      });
       session.loadedDnaId = individualId;
     }
   } catch (err) {

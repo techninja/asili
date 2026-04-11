@@ -98,9 +98,12 @@ export async function resume() {
   await start();
 }
 
-/** Clear queue state. */
-export function resetQueue() {
+/** Stop scoring and clear queue state. */
+export async function resetQueue() {
   release();
+  stopHeartbeat();
+  const { resetRunner } = await import('./queue-runner.js');
+  await resetRunner();
   S.pendingByIndividual = new Map();
   S.doneByIndividual = new Map();
   S.errorByIndividual = new Map();
@@ -122,7 +125,6 @@ export function resetQueue() {
   });
   S.activeScoringIds.clear();
   notifyNow();
-  import('./queue-runner.js').then((r) => r.resetRunner());
 }
 
 // Re-export settings

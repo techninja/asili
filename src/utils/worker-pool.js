@@ -1,6 +1,10 @@
 /**
  * Worker pool — manages DuckDB scoring sessions on the main thread.
  * DuckDB's AsyncDuckDB creates its own worker internally — no nesting.
+ *
+ * Both genotyped (raw) and unified (imputed) DNA are loaded into DuckDB
+ * and scored via the same SQL JOIN path (scoreUnifiedChrPacks).
+ *
  * @module utils/worker-pool
  * @typedef {object} WorkerSession
  * @property {boolean} ready
@@ -11,13 +15,12 @@
  */
 
 import { initDuckDB, registerBuffer, closeDuckDB } from '/packages/core/src/duckdb/adapter.js';
-import { buildPosMap } from '/packages/core/src/duckdb/genotyped-source.js';
+import { loadGenotypedDNA, dropGenotypedDNA } from '/packages/core/src/duckdb/genotyped-source.js';
 import { loadUnifiedDNA, resetUnifiedDNA } from '/packages/core/src/duckdb/unified-source.js';
-import { scoreGenotypedTrait, scoreUnifiedTrait, parseTar } from './score-trait.js';
+import { scoreUnifiedTrait, parseTar } from './score-trait.js';
 
 /** @type {boolean} */ let dbReady = false;
-/** @type {Map<string, object>|null} */ let posMap = null;
-/** @type {boolean} */ let unifiedMode = false;
+/** @type {string[]|null} */ let genotypedTables = null;
 /** @type {WorkerSession[]} */ let pool = [];
 
 /** @returns {WorkerSession} */
@@ -35,10 +38,24 @@ export async function initSession(s) {
   s.dead = false;
 }
 
-/** @param {WorkerSession} s @param {Array|null} variants @param {File} [file] */
-export async function loadDNA(s, variants, file) {
+/**
+ * Load DNA into DuckDB for scoring.
+ * - Raw genotyped: variants array → per-chr DuckDB tables → unified chrFiles
+ * - Imputed .asili: tar → per-chr parquet buffers registered in DuckDB
+ * Both paths feed scoreUnifiedChrPacks via loadUnifiedDNA(chrFiles).
+ * @param {WorkerSession} s @param {Array|null} variants @param {File} [file]
+ * @param {Function} [onProgress] - callback({ phase, done, total })
+ */
+export async function loadDNA(s, variants, file, onProgress) {
+  // Clean up previous genotyped tables if any
+  if (genotypedTables) {
+    await dropGenotypedDNA(genotypedTables);
+    genotypedTables = null;
+  }
+  resetUnifiedDNA();
+
   if (file) {
-    resetUnifiedDNA();
+    // Imputed .asili — register per-chr parquets as buffers
     const entries = await parseTar(file);
     for (const e of entries) {
       if (!e.name.endsWith('.parquet')) continue;
@@ -49,13 +66,12 @@ export async function loadDNA(s, variants, file) {
       await registerBuffer(e.name, buf);
     }
     await loadUnifiedDNA(entries.filter((e) => e.name.endsWith('.parquet')).map((e) => e.name));
-    // Let DuckDB's worker fully process all registered buffers
     await new Promise((r) => setTimeout(r, 100));
-    unifiedMode = true;
-    posMap = null;
   } else {
-    posMap = buildPosMap(variants);
-    unifiedMode = false;
+    // Raw genotyped — load into DuckDB tables, register as chrFiles
+    genotypedTables = await loadGenotypedDNA(variants, onProgress);
+    await loadUnifiedDNA(genotypedTables);
+    await new Promise((r) => setTimeout(r, 100));
   }
 }
 
@@ -69,13 +85,10 @@ export async function scoreAll(s, traits, path, cb = {}) {
       if (s.aborted) break;
       const t = traits[i];
       if (cb.onProgress) cb.onProgress({ traitName: t.name, chrDone: 0, chrTotal: 0 });
-      // Yield to event loop so UI can update between traits
       await new Promise((r) => setTimeout(r, 0));
       try {
         const url = `${base}/${t.file_path}`;
-        const result = unifiedMode
-          ? await scoreUnifiedTrait(url, t, cb.onProgress)
-          : await scoreGenotypedTrait(url, t, posMap);
+        const result = await scoreUnifiedTrait(url, t, cb.onProgress);
         result.calculatedAt = new Date().toISOString();
         if (cb.onTraitScored) await cb.onTraitScored({ traitId: t.trait_id, result });
       } catch (err) {
@@ -119,6 +132,10 @@ export function getAllSessions() {
 export async function destroyPool() {
   for (const s of pool) s.aborted = true;
   pool = [];
+  if (genotypedTables) {
+    await dropGenotypedDNA(genotypedTables);
+    genotypedTables = null;
+  }
   if (dbReady) {
     await closeDuckDB();
     dbReady = false;

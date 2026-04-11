@@ -100,3 +100,17 @@ export function coverageIndicator(r) {
     </section>
   `;
 }
+
+/** Chromosome coverage chart for the best PGS. */
+export function chrCoverageSection(r) {
+  const bestPgs = r.bestPGS;
+  const bd = bestPgs && r.pgsBreakdown?.[bestPgs];
+  if (!bd?.chromosomeCoverage) return html``;
+  const data = JSON.stringify({ matched: bd.chromosomeCoverage });
+  return html`
+    <section class="trait-detail__section">
+      <h2>Chromosome Coverage</h2>
+      <chr-coverage data="${data}"></chr-coverage>
+    </section>
+  `;
+}

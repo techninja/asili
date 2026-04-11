@@ -1,14 +1,12 @@
-/**
- * Trait detail view — full result for one trait + one individual.
- * Includes individual switcher to compare across people.
- * @module pages/trait-detail
- */
+/** @module pages/trait-detail */
 
 import { html, define, router } from 'hybrids';
 // @ts-ignore
 import '#atoms/percentile-bar/percentile-bar.js';
 // @ts-ignore
 import '#atoms/confidence-badge/confidence-badge.js';
+// @ts-ignore
+import '#atoms/chr-coverage/chr-coverage.js';
 // @ts-ignore
 import '#molecules/pgs-table/pgs-table.js';
 // @ts-ignore
@@ -18,11 +16,13 @@ import '#molecules/individual-switcher/individual-switcher.js';
 import { results, getActiveId, loadResults } from '#pages/beta/results-store.js';
 import { getTraitList } from '#utils/manifest.js';
 import { formatTraitValue } from '/packages/core/src/formatter.js';
+import { fmtCoverage } from '#utils/formatDate.js';
 import {
   buildPgsEntries,
   loadFamily,
   riskBalance,
   coverageIndicator,
+  chrCoverageSection,
 } from './trait-detail-helpers.js';
 
 const NULL_CONF = ['none', 'insufficient', ''];
@@ -70,16 +70,8 @@ export default define({
             ? html`<p class="trait-detail__desc">${trait.description}</p>`
             : html``}
           ${r
-            ? scoredContent(r, trait)
+            ? scoredContent(r, trait, familyData)
             : html`<p class="trait-detail__empty">No result for this individual yet.</p>`}
-          ${familyData.length > 0
-            ? html`
-                <section class="trait-detail__section">
-                  <h2>Family Comparison</h2>
-                  <family-compare individuals="${JSON.stringify(familyData)}"></family-compare>
-                </section>
-              `
-            : html``}
         </div>
       `;
     },
@@ -88,32 +80,42 @@ export default define({
 });
 
 /** @param {object} r @param {object|null} trait */
-function scoredContent(r, trait) {
+function scoredContent(r, trait, familyData) {
   if (NULL_CONF.includes(r.confidence || '')) return insufficientContent(r);
   const fmt =
     r.value !== null && r.value !== undefined ? formatTraitValue(r.value, trait?.unit) : null;
   const pgsEntries = r.pgsDetails ? buildPgsEntries(r) : [];
+  const bestBd = r.bestPGS && r.pgsBreakdown?.[r.bestPGS];
   return html`
-    <section class="trait-detail__section">
-      <h2>Score</h2>
-      <percentile-bar value="${r.percentile || 0}"></percentile-bar>
-      <confidence-badge level="${r.confidence || 'none'}"></confidence-badge>
-      ${fmt ? html`<p class="trait-detail__value">Predicted: ${fmt.display}</p>` : html``}
-    </section>
-    ${riskBalance(r)} ${coverageIndicator(r)}
-    <section class="trait-detail__section">
-      <h2>Best PGS</h2>
-      <p>${r.bestPGS || '—'} · Quality: ${(r.bestPGSQualityScore || 0).toFixed(1)}</p>
-      <p class="trait-detail__meta">${(r.totalMatches || 0).toLocaleString()} variants matched</p>
-    </section>
-    ${pgsEntries.length > 0
-      ? html`
-          <section class="trait-detail__section">
+    <div class="trait-detail__grid">
+      <section class="trait-detail__section">
+        <h2>Score</h2>
+        <percentile-bar value="${r.percentile || 0}"></percentile-bar>
+        <confidence-badge level="${r.confidence || 'none'}"></confidence-badge>
+        ${fmt ? html`<p class="trait-detail__value">Predicted: ${fmt.display}</p>` : html``}
+      </section>
+      <section class="trait-detail__section">
+        <h2>Best PGS</h2>
+        <p>${r.bestPGS || '—'} · Quality: ${(r.bestPGSQualityScore || 0).toFixed(1)}</p>
+        <p class="trait-detail__meta">
+          ${fmtCoverage(r.pgsDetails?.[r.bestPGS]?.matchedVariants || 0, 0)} matched across
+          ${Object.keys(r.pgsDetails || {}).length} PGS
+        </p>
+      </section>
+      ${riskBalance(r)} ${coverageIndicator(r)} ${chrCoverageSection(r)}
+      ${familyData?.length > 0
+        ? html`<section class="trait-detail__section">
+            <h2>Family Comparison</h2>
+            <family-compare individuals="${JSON.stringify(familyData)}"></family-compare>
+          </section>`
+        : html``}
+      ${pgsEntries.length > 0
+        ? html`<section class="trait-detail__section trait-detail__grid--wide">
             <h2>PGS Comparison</h2>
             <pgs-table pgsData="${JSON.stringify(pgsEntries)}"></pgs-table>
-          </section>
-        `
-      : html``}
+          </section>`
+        : html``}
+    </div>
   `;
 }
 
@@ -132,6 +134,7 @@ function insufficientContent(r) {
   `;
 }
 
+/** @param {object & HTMLElement} host @param {CustomEvent} e */
 /** @param {object & HTMLElement} host @param {CustomEvent} e */
 async function handleSwitch(host, e) {
   const id = e.detail;

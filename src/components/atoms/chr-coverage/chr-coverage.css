@@ -1,0 +1,16 @@
+.chr-coverage {
+  width: 100%;
+}
+
+.chr-coverage__svg {
+  width: 100%;
+  height: auto;
+  display: block;
+}
+
+.chr-coverage__legend {
+  font-size: var(--text-xs);
+  color: var(--color-text-muted);
+  text-align: center;
+  padding: var(--space-xs) 0;
+}

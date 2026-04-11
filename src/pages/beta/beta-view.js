@@ -12,6 +12,8 @@ import '#molecules/upload-zone/upload-zone.js';
 import '#molecules/individual-setup/individual-setup.js';
 // @ts-ignore
 import '#organisms/trait-grid/trait-grid.js';
+// @ts-ignore
+import '#organisms/scoring-screen/scoring-screen.js';
 import { individualSelector, appContent, uploadContent, uploadPanel } from './beta-render.js';
 import { loadResults } from './results-store.js';
 import { initQueue, switchIndividual } from './scoring-controller.js';
@@ -38,6 +40,8 @@ export default define({
   scoringChrTotal: { value: 0, connect: () => {} },
   scoringIndividualCount: { value: 0, connect: () => {} },
   scoringCurrentId: { value: '', connect: () => {} },
+  _scoringRate: { value: 0, connect: () => {} },
+  _scoringEta: { value: 0, connect: () => {} },
   scoringTick: {
     value: 0,
     connect: (host) => {
@@ -47,6 +51,7 @@ export default define({
       return () => clearInterval(iv);
     },
   },
+  scoringScreen: { value: false, connect: () => {} },
   showUpload: { value: false, connect: () => {} },
   _variants: { value: [], connect: () => {} },
   _manifest: { value: '', connect: () => {} },
@@ -83,6 +88,16 @@ export default define({
           <main class="beta-view__main">
             ${hasData ? appContent(host) : uploadContent(host, cancelSetup)}
           </main>
+          <scoring-screen
+            visible="${host.scoringScreen}"
+            traitName="${host.scoringTrait}"
+            done="${host.scoringCurrent}"
+            total="${host.scoringTotal}"
+            chrDone="${host.scoringChrDone}"
+            chrTotal="${host.scoringChrTotal}"
+            rate="${host._scoringRate}"
+            eta="${host._scoringEta}"
+          ></scoring-screen>
         </div>
       `;
     },

@@ -25,11 +25,7 @@ function ensureSubscribed(host) {
   unsubscribe = queue.subscribe((state) => syncHostState(host, state));
 }
 
-/**
- * Initialize the queue — scan IDB, subscribe to state changes, start scoring.
- * Called once on app init.
- * @param {object} host
- */
+/** Initialize queue — scan IDB, subscribe, start scoring. @param {object} host */
 export async function initQueue(host) {
   ensureSubscribed(host);
 
@@ -46,12 +42,7 @@ export async function initQueue(host) {
   }
 }
 
-/**
- * Called when switching active individual.
- * Boosts their priority and reloads results into memory.
- * @param {object} host
- * @param {string} individualId
- */
+/** Switch active individual — boost priority, reload results. */
 export async function switchIndividual(host, individualId) {
   queue.setActiveIndividual(individualId);
   host.activeId = individualId;
@@ -60,12 +51,7 @@ export async function switchIndividual(host, individualId) {
   host.resultCount = count;
 }
 
-/**
- * Called after a new individual is created.
- * Registers imputed file if applicable, rescans queue, starts scoring.
- * @param {object} host
- * @param {string} individualId
- */
+/** New individual created — register file, rescan, start. */
 export async function onNewIndividual(host, individualId) {
   ensureSubscribed(host);
 
@@ -133,6 +119,14 @@ function syncHostState(host, state) {
   host.scoringTotal = state.total;
   host.scoringIndividualCount = state.individualCount;
   host.scoringCurrentId = state.currentScoringId;
+  host._scoringRate = state.rate || 0;
+  host._scoringEta = state.etaSeconds || 0;
+
+  // Auto-dismiss scoring screen when done
+  if (host.scoringScreen && !state.running && !state.paused) {
+    host.scoringScreen = false;
+    if (document.fullscreenElement) document.exitFullscreen().catch(() => {});
+  }
 
   if (state.activeIndividualId === host.activeId) {
     const ind = state.byIndividual[host.activeId];

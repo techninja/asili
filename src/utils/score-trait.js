@@ -1,50 +1,46 @@
 /**
- * Score a single trait — genotyped or unified (imputed) with .asili chr packs.
+ * Score a single trait from .asili chr packs via unified SQL JOIN.
+ * Both genotyped and imputed DNA use the same path — genotyped data
+ * is loaded into DuckDB tables by loadGenotypedDNA, imputed data is
+ * registered as parquet buffers. scoreUnifiedChrPacks handles both.
  * @module utils/score-trait
  */
 
 import { registerBuffer, dropFile } from '/packages/core/src/duckdb/adapter.js';
-import { matchGenotyped } from '/packages/core/src/duckdb/genotyped-source.js';
 import { scoreUnifiedChrPacks, buildScoredMaps } from '/packages/core/src/duckdb/unified-source.js';
-import { scoreFromMatches, finalize } from '/packages/core/src/scorer.js';
-
-/** @param {string} url @param {object} t @param {Map} posMap */
-export async function scoreGenotypedTrait(url, t, posMap) {
-  if (!posMap) throw new Error('DNA not loaded');
-  const scored = await scoreFromMatches(matchGenotyped(url, posMap), new Map());
-  return finalize(
-    scored,
-    {},
-    {
-      traitType: t.trait_type,
-      phenotypeMean: t.phenotype_mean,
-      phenotypeSd: t.phenotype_sd,
-    },
-  );
-}
+import { finalize } from '/packages/core/src/scorer.js';
 
 /**
- * Score a unified trait from an .asili tar URL.
- * Fetches tar, registers per-chr parquets, scores chr-to-chr, cleans up.
- * @param {string} url @param {object} t @param {Function} [onProgress]
+ * Fetch .asili tar, register chr parquets, return map + cleanup fn.
+ * @param {string} url @param {string} traitId
+ * @returns {Promise<{chrMap: Map<string, string>, cleanup: Function}>}
  */
-export async function scoreUnifiedTrait(url, t, onProgress) {
+async function loadTraitPack(url, traitId) {
   const resp = await fetch(url);
   if (!resp.ok) throw new Error(`Failed to fetch ${url}: ${resp.status}`);
   const tarBuf = await resp.arrayBuffer();
   const entries = parseTarBuffer(tarBuf);
   const chrMap = new Map();
-  const regNames = [];
-  const prefix = `t_${t.trait_id}_`;
+  const names = [];
+  const prefix = `t_${traitId}_`;
   for (const e of entries) {
-    if (!e.name.endsWith('.parquet')) continue;
-    if (e.size < 100) continue; // skip empty/tiny chr parquets
+    if (!e.name.endsWith('.parquet') || e.size < 100) continue;
     const chrNum = e.name.replace(/[^0-9]/g, '');
     const regName = `${prefix}${e.name}`;
     await registerBuffer(regName, tarBuf.slice(e.offset, e.offset + e.size));
     chrMap.set(chrNum, regName);
-    regNames.push(regName);
+    names.push(regName);
   }
+  const cleanup = async () => {
+    for (const n of names) await dropFile(n);
+    await new Promise((r) => setTimeout(r, 10));
+  };
+  return { chrMap, cleanup };
+}
+
+/** @param {string} url @param {object} t @param {Function} [onProgress] */
+export async function scoreUnifiedTrait(url, t, onProgress) {
+  const { chrMap, cleanup } = await loadTraitPack(url, t.trait_id);
   const onChr = onProgress
     ? (done, total, matched) =>
         onProgress({ traitName: t.name, chrDone: done, chrTotal: total, variantsSoFar: matched })
@@ -61,8 +57,7 @@ export async function scoreUnifiedTrait(url, t, onProgress) {
       },
     );
   } finally {
-    for (const name of regNames) await dropFile(name);
-    await new Promise((r) => setTimeout(r, 10));
+    await cleanup();
   }
 }
 

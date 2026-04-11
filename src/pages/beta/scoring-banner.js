@@ -25,6 +25,12 @@ const fmtT = (s) => {
 };
 
 /** @param {object} host */
+function openScoringScreen(host) {
+  host.scoringScreen = true;
+  document.documentElement.requestFullscreen?.().catch(() => {});
+}
+
+/** @param {object} host */
 export function scoringBanner(host) {
   if (host.scoringStatus === 'scoring') {
     void host.scoringTick;
@@ -65,6 +71,7 @@ export function scoringBanner(host) {
             ? html` · ~${fmtT(state.etaSeconds)}`
             : html``}
           <button class="btn btn-ghost btn-sm" onclick="${() => handlePause()}">⏸ Pause</button>
+          <button class="btn btn-ghost btn-sm" onclick="${openScoringScreen}">🖥 Focus</button>
         </p>
       </div>
     `;
