@@ -33,7 +33,7 @@ export async function scoreIndividual(individualId) {
         if (phase === 'insert') {
           S.currentTraitName = `Loading DNA… ${((done / total) * 100) | 0}%`;
         } else {
-          S.currentTraitName = `Indexing chr ${done}/${total}…`;
+          S.currentTraitName = `Liftover chr ${done}/${total}…`;
         }
       });
       session.loadedDnaId = individualId;

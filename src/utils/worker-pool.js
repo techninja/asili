@@ -1,10 +1,6 @@
 /**
  * Worker pool — manages DuckDB scoring sessions on the main thread.
- * DuckDB's AsyncDuckDB creates its own worker internally — no nesting.
- *
- * Both genotyped (raw) and unified (imputed) DNA are loaded into DuckDB
- * and scored via the same SQL JOIN path (scoreUnifiedChrPacks).
- *
+ * Both genotyped (raw) and unified (imputed) DNA use the same SQL JOIN path.
  * @module utils/worker-pool
  * @typedef {object} WorkerSession
  * @property {boolean} ready
@@ -18,6 +14,7 @@ import { initDuckDB, registerBuffer, closeDuckDB } from '/packages/core/src/duck
 import { loadGenotypedDNA, dropGenotypedDNA } from '/packages/core/src/duckdb/genotyped-source.js';
 import { loadUnifiedDNA, resetUnifiedDNA } from '/packages/core/src/duckdb/unified-source.js';
 import { scoreUnifiedTrait, parseTar } from './score-trait.js';
+import { loadLiftover, dropLiftover } from './liftover.js';
 
 /** @type {boolean} */ let dbReady = false;
 /** @type {string[]|null} */ let genotypedTables = null;
@@ -40,14 +37,10 @@ export async function initSession(s) {
 
 /**
  * Load DNA into DuckDB for scoring.
- * - Raw genotyped: variants array → per-chr DuckDB tables → unified chrFiles
- * - Imputed .asili: tar → per-chr parquet buffers registered in DuckDB
- * Both paths feed scoreUnifiedChrPacks via loadUnifiedDNA(chrFiles).
  * @param {WorkerSession} s @param {Array|null} variants @param {File} [file]
  * @param {Function} [onProgress] - callback({ phase, done, total })
  */
 export async function loadDNA(s, variants, file, onProgress) {
-  // Clean up previous genotyped tables if any
   if (genotypedTables) {
     await dropGenotypedDNA(genotypedTables);
     genotypedTables = null;
@@ -55,7 +48,6 @@ export async function loadDNA(s, variants, file, onProgress) {
   resetUnifiedDNA();
 
   if (file) {
-    // Imputed .asili — register per-chr parquets as buffers
     const entries = await parseTar(file);
     for (const e of entries) {
       if (!e.name.endsWith('.parquet')) continue;
@@ -68,8 +60,8 @@ export async function loadDNA(s, variants, file, onProgress) {
     await loadUnifiedDNA(entries.filter((e) => e.name.endsWith('.parquet')).map((e) => e.name));
     await new Promise((r) => setTimeout(r, 100));
   } else {
-    // Raw genotyped — load into DuckDB tables, register as chrFiles
-    genotypedTables = await loadGenotypedDNA(variants, onProgress);
+    const liftoverFiles = await loadLiftover();
+    genotypedTables = await loadGenotypedDNA(variants, onProgress, liftoverFiles);
     await loadUnifiedDNA(genotypedTables);
     await new Promise((r) => setTimeout(r, 100));
   }
@@ -136,6 +128,7 @@ export async function destroyPool() {
     await dropGenotypedDNA(genotypedTables);
     genotypedTables = null;
   }
+  await dropLiftover();
   if (dbReady) {
     await closeDuckDB();
     dbReady = false;

@@ -14,15 +14,15 @@ import '#molecules/family-compare/family-compare.js';
 // @ts-ignore
 import '#molecules/individual-switcher/individual-switcher.js';
 import { results, getActiveId, loadResults } from '#pages/beta/results-store.js';
-import { getTraitList } from '#utils/manifest.js';
+import { getTraitList, getPgsMeta } from '#utils/manifest.js';
 import { formatTraitValue } from '/packages/core/src/formatter.js';
-import { fmtCoverage } from '#utils/formatDate.js';
 import {
   buildPgsEntries,
   loadFamily,
   riskBalance,
   coverageIndicator,
   chrCoverageSection,
+  insufficientContent,
 } from './trait-detail-helpers.js';
 
 const NULL_CONF = ['none', 'insufficient', ''];
@@ -43,6 +43,17 @@ export default define({
       });
     },
   },
+  pgsMeta: {
+    value: /** @type {object|null} */ (null),
+    connect: (host, _key, invalidate) => {
+      const r = results[host.traitId];
+      if (r?.bestPGS)
+        getPgsMeta(r.bestPGS).then((m) => {
+          host.pgsMeta = m;
+          invalidate();
+        });
+    },
+  },
   familyData: {
     value: /** @type {Array<object>} */ ([]),
     connect: (host, _key, invalidate) => {
@@ -50,7 +61,7 @@ export default define({
     },
   },
   render: {
-    value: ({ traitId, trait, activeId, resultVersion, familyData }) => {
+    value: ({ traitId, trait, activeId, resultVersion, familyData, pgsMeta }) => {
       void resultVersion;
       const r = results[traitId];
       const name = trait?.name || traitId;
@@ -70,7 +81,7 @@ export default define({
             ? html`<p class="trait-detail__desc">${trait.description}</p>`
             : html``}
           ${r
-            ? scoredContent(r, trait, familyData)
+            ? scoredContent(r, trait, familyData, pgsMeta)
             : html`<p class="trait-detail__empty">No result for this individual yet.</p>`}
         </div>
       `;
@@ -80,12 +91,12 @@ export default define({
 });
 
 /** @param {object} r @param {object|null} trait */
-function scoredContent(r, trait, familyData) {
+function scoredContent(r, trait, familyData, pgsMeta) {
   if (NULL_CONF.includes(r.confidence || '')) return insufficientContent(r);
   const fmt =
     r.value !== null && r.value !== undefined ? formatTraitValue(r.value, trait?.unit) : null;
   const pgsEntries = r.pgsDetails ? buildPgsEntries(r) : [];
-  const bestBd = r.bestPGS && r.pgsBreakdown?.[r.bestPGS];
+  const det = r.bestPGS && r.pgsDetails?.[r.bestPGS];
   return html`
     <div class="trait-detail__grid">
       <section class="trait-detail__section">
@@ -96,10 +107,12 @@ function scoredContent(r, trait, familyData) {
       </section>
       <section class="trait-detail__section">
         <h2>Best PGS</h2>
-        <p>${r.bestPGS || '—'} · Quality: ${(r.bestPGSQualityScore || 0).toFixed(1)}</p>
+        <p>${r.bestPGS || '—'}${pgsMeta?.method ? ` — ${pgsMeta.method}` : ''}</p>
         <p class="trait-detail__meta">
-          ${fmtCoverage(r.pgsDetails?.[r.bestPGS]?.matchedVariants || 0, 0)} matched across
-          ${Object.keys(r.pgsDetails || {}).length} PGS
+          Quality: ${(r.bestPGSQualityScore || 0).toFixed(1)} ·
+          ${(det?.matchedVariants || 0).toLocaleString()} /
+          ${(pgsMeta?.variantsNumber || 0).toLocaleString()} variants
+          (${Math.round((det?.coverage || 0) * 100)}%)
         </p>
       </section>
       ${riskBalance(r)} ${coverageIndicator(r)} ${chrCoverageSection(r)}
@@ -120,20 +133,6 @@ function scoredContent(r, trait, familyData) {
 }
 
 /** @param {object} r */
-function insufficientContent(r) {
-  return html`
-    <section class="trait-detail__section">
-      <h2>Score</h2>
-      <p class="trait-detail__nodata">No variant matches for this trait with your current data.</p>
-      <p class="trait-detail__upsell">
-        Imputation typically unlocks 60–80% variant coverage, turning empty results into meaningful
-        scores.
-      </p>
-    </section>
-    ${coverageIndicator(r)}
-  `;
-}
-
 /** @param {object & HTMLElement} host @param {CustomEvent} e */
 /** @param {object & HTMLElement} host @param {CustomEvent} e */
 async function handleSwitch(host, e) {

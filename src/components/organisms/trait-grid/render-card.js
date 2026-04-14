@@ -27,6 +27,7 @@ export function renderCard(t, rc, scoring) {
     r?.value !== null && r?.value !== undefined ? formatTraitValue(r.value, t.unit) : null;
   const markers = familyCache[t.trait_id];
   const markersJson = markers?.length ? JSON.stringify(markers) : '';
+  const cov = r?.pgsDetails?.[r?.bestPGS]?.coverage ?? 0;
   return html`
     <a href="${router.url(TraitDetailView, { traitId: t.trait_id })}" class="trait-grid__link">
       <trait-card
@@ -42,6 +43,7 @@ export function renderCard(t, rc, scoring) {
         hasIndividual="${rc > 0 || scoring}"
         indEmoji="${activeEmoji}"
         markers="${markersJson}"
+        coverage="${Math.round(cov * 100)}"
       ></trait-card>
     </a>
   `.key(`${t.trait_id}:${r ? rc : 0}`);

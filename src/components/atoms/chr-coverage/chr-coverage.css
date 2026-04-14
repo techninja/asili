@@ -6,6 +6,7 @@
   width: 100%;
   height: auto;
   display: block;
+  overflow: visible;
 }
 
 .chr-coverage__legend {

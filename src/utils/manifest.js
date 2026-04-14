@@ -36,6 +36,16 @@ export async function getTraitList() {
   return Object.values(m.traits).sort((a, b) => a.name.localeCompare(b.name));
 }
 
+/**
+ * Get PGS metadata by ID from cached manifest.
+ * @param {string} pgsId
+ * @returns {Promise<object|null>}
+ */
+export async function getPgsMeta(pgsId) {
+  const m = await loadManifest();
+  return m.pgs?.[pgsId] || null;
+}
+
 /** Reset cache (for testing). */
 export function resetManifest() {
   cache = null;

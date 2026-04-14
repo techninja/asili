@@ -41,6 +41,7 @@ export default define({
   hasIndividual: false,
   indEmoji: '👤',
   markers: '',
+  coverage: 0,
   render: {
     value: ({
       emoji,
@@ -54,6 +55,7 @@ export default define({
       hasIndividual,
       indEmoji,
       markers,
+      coverage,
     }) => {
       const hasResult = scored && !NULL_CONF.includes(confidence);
       return html`
@@ -63,7 +65,7 @@ export default define({
             <span class="trait-card__name">${name}</span>
           </div>
           ${hasResult
-            ? scoredBody(percentile, confidence, value, unit, markers, indEmoji)
+            ? scoredBody(percentile, confidence, value, unit, markers, indEmoji, coverage)
             : emptyBody(scored, scoring, hasIndividual, confidence)}
         </div>
       `;
@@ -73,7 +75,8 @@ export default define({
 });
 
 /** @param {number} pct @param {string} conf @param {string} val @param {string} u @param {string} m @param {string} ie */
-function scoredBody(pct, conf, val, u, m, ie) {
+function scoredBody(pct, conf, val, u, m, ie, cov) {
+  const lowCov = cov > 0 && cov < 50;
   return html`
     <mini-curve value="${pct}" indEmoji="${ie}" markers="${m}"></mini-curve>
     <div class="trait-card__score">
@@ -81,6 +84,9 @@ function scoredBody(pct, conf, val, u, m, ie) {
       <span class="trait-card__pct-label">percentile</span>
       ${val ? html`<span class="trait-card__value">${val} ${u}</span>` : html``}
     </div>
+    ${lowCov
+      ? html`<span class="trait-card__coverage">${Math.round(cov)}% coverage</span>`
+      : html``}
     <confidence-badge level="${conf}"></confidence-badge>
   `;
 }

@@ -1,6 +1,6 @@
 /**
- * Chromosome coverage chart — rainbow bars + donut pie.
- * Shows matched variants per chromosome for the best PGS.
+ * Chromosome coverage chart — outline bars with fill + donut pie.
+ * Shows matched vs total variants per chromosome for the best PGS.
  * @module components/atoms/chr-coverage
  */
 
@@ -83,8 +83,8 @@ function buildSvg(d) {
   const maxT = Math.max(...rows.map((r) => r.t), 1);
   const pct = totalT > 0 ? Math.round((totalM / totalT) * 100) : 0;
 
-  const W = 320;
-  const barH = 80;
+  const W = 320,
+    barH = 80;
   const gap = W / CHRS.length;
   const bw = Math.max(4, gap - 3);
 
@@ -94,37 +94,42 @@ function buildSvg(d) {
     const x = Math.round(i * gap + (gap - bw) / 2);
     const th = Math.max(2, (r.t / maxT) * barH);
     const mh = r.t > 0 ? (r.m / r.t) * th : 0;
-    const ty = barH - th;
-    const my = barH - mh;
-    const title = `Chr ${r.chr}: ${r.m.toLocaleString()}${hasTotals ? ` / ${r.t.toLocaleString()}` : ''} variants`;
-    if (hasTotals) {
-      bars += `<rect x="${x}" y="${ty}" width="${bw}" height="${th}" fill="none" stroke="${r.col}" stroke-opacity="0.3" stroke-width="1" rx="2"><title>${title}</title></rect>`;
+    const ty = barH - th,
+      my = barH - mh;
+    const tip =
+      `Chr ${r.chr}: ${r.m.toLocaleString()}` +
+      (hasTotals ? ` / ${r.t.toLocaleString()}` : '') +
+      ' variants';
+    // Outline bar (total)
+    bars += `<rect x="${x}" y="${ty}" width="${bw}" height="${th}" fill="${r.col}" fill-opacity="0.12" stroke="${r.col}" stroke-opacity="0.3" stroke-width="1" rx="2"><title>${tip}</title></rect>`;
+    // Filled bar (matched)
+    if (mh > 0) {
+      bars += `<rect x="${x}" y="${my}" width="${bw}" height="${mh}" fill="${r.col}" rx="2"><title>${tip}</title></rect>`;
     }
-    bars += `<rect x="${x}" y="${my}" width="${bw}" height="${mh}" fill="${r.col}" rx="2"><title>${title}</title></rect>`;
     bars += `<text x="${Math.round(i * gap + gap / 2)}" y="97" text-anchor="middle" font-size="9" fill="var(--color-text-muted)">${r.chr}</text>`;
   }
 
-  // Donut pie
-  const pr = 22;
-  const ps = 14;
-  const px = W - pr - 4;
-  const py = pr - 10;
-  const pc = 2 * Math.PI * pr;
+  // Donut pie in top-right
+  const pr = 22,
+    ps = 14;
+  const px = W - pr - 4,
+    py = pr - 10;
+  const circ = 2 * Math.PI * pr;
   const covFrac = pct / 100;
+  let pie = `<circle cx="${px}" cy="${py}" r="${pr}" fill="none" stroke="var(--color-border)" stroke-width="${ps}"/>`;
   let cum = 0;
-  let arcs = '';
-  const activeRows = rows.filter((r) => r.m > 0);
-  for (const r of activeRows) {
+  const active = rows.filter((r) => r.m > 0);
+  for (const r of active) {
     const frac = r.m / totalM;
-    const dash = frac * pc * covFrac;
-    const off = pc / 4 - cum;
+    const dash = frac * circ * covFrac;
+    const off = circ / 4 - cum;
     cum += dash;
-    arcs += `<circle cx="${px}" cy="${py}" r="${pr}" fill="none" stroke="${r.col}" stroke-width="${ps}" stroke-linecap="butt" stroke-dasharray="${dash} ${pc - dash}" stroke-dashoffset="${off}"/>`;
+    pie += `<circle cx="${px}" cy="${py}" r="${pr}" fill="none" stroke="${r.col}" stroke-width="${ps}" stroke-linecap="butt" stroke-dasharray="${dash} ${circ - dash}" stroke-dashoffset="${off}"/>`;
   }
+  pie += `<text x="${px}" y="${py + 4}" text-anchor="middle" font-size="12" font-weight="bold" fill="var(--color-text)">${pct}%</text>`;
 
-  const pie = hasTotals
-    ? `<circle cx="${px}" cy="${py}" r="${pr}" fill="none" stroke="var(--color-border)" stroke-width="${ps}"/>${arcs}<text x="${px}" y="${py + 4}" text-anchor="middle" font-size="12" font-weight="bold" fill="var(--color-text)">${pct}%</text>`
-    : '';
-
-  return `<svg viewBox="0 0 ${W} 100" class="chr-coverage__svg">${bars}${pie}</svg><div class="chr-coverage__legend">${totalM.toLocaleString()} variants matched${hasTotals ? ` of ${totalT.toLocaleString()}` : ''}</div>`;
+  const legend =
+    `${totalM.toLocaleString()} variants matched` +
+    (hasTotals ? ` of ~${totalT.toLocaleString()}` : '');
+  return `<svg viewBox="0 0 ${W} 100" class="chr-coverage__svg">${bars}${pie}</svg><div class="chr-coverage__legend">${legend}</div>`;
 }

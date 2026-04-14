@@ -7,8 +7,30 @@
  */
 
 import { registerBuffer, dropFile } from '/packages/core/src/duckdb/adapter.js';
-import { scoreUnifiedChrPacks, buildScoredMaps } from '/packages/core/src/duckdb/unified-source.js';
+import { scoreUnifiedChrPacks } from '/packages/core/src/duckdb/unified-source.js';
+import { buildScoredMaps } from '/packages/core/src/duckdb/scored-maps.js';
 import { finalize } from '/packages/core/src/scorer.js';
+
+/** @type {Record<string, {norm_mean: number, norm_sd: number, variants_number: number}>|null} */
+let normCache = null;
+
+/** Fetch PGS normalization params (mean/SD from TOPMed reference). Cached. */
+async function getNormParams() {
+  if (normCache) return normCache;
+  try {
+    const resp = await fetch(`${window.location.origin}/data/pgs_norm_params.json`);
+    if (!resp.ok) throw new Error(`${resp.status}`);
+    const raw = await resp.json();
+    normCache = {};
+    for (const [id, v] of Object.entries(raw)) {
+      normCache[id] = { norm_mean: v.m, norm_sd: v.s, variants_number: v.n };
+    }
+  } catch (e) {
+    console.warn('No pgs_norm_params.json — using theoretical SD', e.message);
+    normCache = {};
+  }
+  return normCache;
+}
 
 /**
  * Fetch .asili tar, register chr parquets, return map + cleanup fn.
@@ -46,16 +68,13 @@ export async function scoreUnifiedTrait(url, t, onProgress) {
         onProgress({ traitName: t.name, chrDone: done, chrTotal: total, variantsSoFar: matched })
     : undefined;
   try {
-    const { pgsAggregates, chrCoverage } = await scoreUnifiedChrPacks(chrMap, onChr);
-    return finalize(
-      buildScoredMaps(pgsAggregates, chrCoverage),
-      {},
-      {
-        traitType: t.trait_type,
-        phenotypeMean: t.phenotype_mean,
-        phenotypeSd: t.phenotype_sd,
-      },
-    );
+    const { pgsAggregates, chrCoverage, chrTotals } = await scoreUnifiedChrPacks(chrMap, onChr);
+    const normParams = await getNormParams();
+    return finalize(buildScoredMaps(pgsAggregates, chrCoverage, chrTotals), normParams, {
+      traitType: t.trait_type,
+      phenotypeMean: t.phenotype_mean,
+      phenotypeSd: t.phenotype_sd,
+    });
   } finally {
     await cleanup();
   }

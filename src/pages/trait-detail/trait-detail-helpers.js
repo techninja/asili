@@ -75,11 +75,11 @@ export function riskBalance(r) {
 
 /** @param {object} r */
 export function coverageIndicator(r) {
-  const matched = r.totalMatches || 0;
-  const expected = r.totalExpected || 0;
-  if (!expected) return html``;
-  const pct = Math.round((matched / expected) * 100);
-  const low = pct < 20;
+  const best = r.bestPGS && r.pgsDetails?.[r.bestPGS];
+  if (!best) return html``;
+  const pct = Math.round((best.coverage || 0) * 100);
+  const matched = best.matchedVariants || 0;
+  const low = pct < 50;
   return html`
     <section class="trait-detail__section">
       <h2>Coverage</h2>
@@ -89,12 +89,12 @@ export function coverageIndicator(r) {
           style="${{ width: `${Math.min(pct, 100)}%` }}"
         ></div>
       </div>
-      <p class="trait-detail__meta">
-        ${matched.toLocaleString()} / ${expected.toLocaleString()} variants matched (${pct}%)
-      </p>
+      <p class="trait-detail__meta">${matched.toLocaleString()} variants matched (${pct}%)</p>
       ${low
         ? html`<p class="trait-detail__upsell">
-            Low coverage — imputation could unlock 60–80% coverage
+            ⚠️ Low coverage —
+            <a href="https://asili.dev/diy" target="_blank" rel="noopener">imputation</a>
+            typically unlocks 80–95% coverage for more accurate scores.
           </p>`
         : html``}
     </section>
@@ -105,12 +105,38 @@ export function coverageIndicator(r) {
 export function chrCoverageSection(r) {
   const bestPgs = r.bestPGS;
   const bd = bestPgs && r.pgsBreakdown?.[bestPgs];
+  const det = bestPgs && r.pgsDetails?.[bestPgs];
   if (!bd?.chromosomeCoverage) return html``;
-  const data = JSON.stringify({ matched: bd.chromosomeCoverage });
+  const cov = det?.coverage || 0;
+  const totals = bd.chromosomeTotals || {};
+  // Fall back to estimate if totals weren't collected (old results)
+  const hasTotals = Object.keys(totals).length > 0;
+  const finalTotals = hasTotals ? totals : {};
+  if (!hasTotals && cov > 0 && cov < 1) {
+    for (const [chr, matched] of Object.entries(bd.chromosomeCoverage)) {
+      finalTotals[chr] = Math.round(matched / cov);
+    }
+  }
+  const data = JSON.stringify({ matched: bd.chromosomeCoverage, totals: finalTotals });
   return html`
     <section class="trait-detail__section">
       <h2>Chromosome Coverage</h2>
       <chr-coverage data="${data}"></chr-coverage>
     </section>
+  `;
+}
+
+/** @param {object} r */
+export function insufficientContent(r) {
+  return html`
+    <section class="trait-detail__section">
+      <h2>Score</h2>
+      <p class="trait-detail__nodata">No variant matches for this trait with your current data.</p>
+      <p class="trait-detail__upsell">
+        Imputation typically unlocks 60–80% variant coverage, turning empty results into meaningful
+        scores.
+      </p>
+    </section>
+    ${coverageIndicator(r)}
   `;
 }
