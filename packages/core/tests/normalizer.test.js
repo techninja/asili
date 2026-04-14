@@ -19,18 +19,22 @@ function makePGS(overrides = {}) {
 }
 
 describe('normalizePGS', () => {
-  it('uses unscaled empirical stats (the critical fix)', () => {
+  it('scales empirical stats by coverage', () => {
     const { details, breakdown } = makePGS({
       score: 0.08, matchedVariants: 150, genotypedVariants: 100,
     });
     breakdown.total = 150;
     const np = { norm_mean: 0.5, norm_sd: 0.2, variants_number: 1000 };
-
+    // coverage = 150/1000 = 0.15
+    // scaled_mean = 0.5 * 0.15 = 0.075, scaled_sd = 0.2 * sqrt(0.15)
     normalizePGS(details, breakdown, np);
 
-    assert.equal(details.normMean, 0.5);
-    assert.equal(details.normSd, 0.2);
-    assert.ok(Math.abs(details.zScore - (-2.1)) < 0.1);
+    const cov = 0.15;
+    assert.equal(details.normMean, 0.5 * cov);
+    const expectedSd = 0.2 * Math.sqrt(cov);
+    assert.ok(Math.abs(details.normSd - expectedSd) < 1e-6);
+    const expectedZ = (0.08 - 0.5 * cov) / expectedSd;
+    assert.ok(Math.abs(details.zScore - expectedZ) < 0.01);
   });
 
   it('falls back to theoretical when no empirical data', () => {

@@ -49,9 +49,14 @@ Formula: `min(R² / 0.44, 1) × 15` (only when R² > 0.05 default)
 
 ### 3. Data Reliability — 15% weight
 
-Proportion of matched variants that are directly genotyped (not imputed).
+Proportion of matched variants that are directly genotyped (not imputed),
+scaled by coverage. Genotyped data is more reliable per-variant, but this
+advantage only matters when coverage is sufficient to produce a meaningful
+score. Without the coverage scaling, a raw genotyped file at 14% coverage
+would outscore an imputed file at 94% coverage — despite the imputed result
+being far more predictive.
 
-Formula: `genotypedVariants / matchedVariants × 15`
+Formula: `genotypedVariants / matchedVariants × coverage × 15`
 
 ### 4. Coverage — 10% weight
 

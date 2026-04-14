@@ -37,6 +37,15 @@ export function normalizePGS(
   const sufficientCoverage = coverage >= MIN_COVERAGE;
   let useEmpirical = hasEmpirical && sufficientCoverage;
 
+  // Scale empirical norm params by coverage: the reference mean/SD assume
+  // 100% of variants are scored. At partial coverage, the expected score
+  // is proportionally smaller (mean × coverage) and the variance scales
+  // with the number of matched variants (SD × sqrt(coverage)).
+  if (useEmpirical && coverage < 1.0 && mean !== undefined) {
+    mean = mean * coverage;
+    sd = sd * Math.sqrt(coverage);
+  }
+
   if (useEmpirical && coverage < 0.8 && mean !== undefined && mean !== 0) {
     const naiveZ = Math.abs((details.score - mean) / sd);
     if (naiveZ > 20) useEmpirical = false;

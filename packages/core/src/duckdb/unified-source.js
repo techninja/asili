@@ -28,12 +28,13 @@ const n = (v) => Number(v);
  * Score a trait by JOINing per-chromosome trait packs against DNA chromosomes.
  * @param {Map<string, string>} traitChrFiles - chr number → registered trait file name
  * @param {Function} [onChr] - callback(chrDone, chrTotal, matchedSoFar)
- * @returns {Promise<{pgsAggregates: Array, chrCoverage: Array}>}
+ * @returns {Promise<{pgsAggregates: Array, chrCoverage: Array, chrTotals: Array}>}
  */
 export async function scoreUnifiedChrPacks(traitChrFiles, onChr) {
   if (!chrFiles.length) throw new Error('Unified DNA not loaded');
   const pgsAgg = new Map();
   const chrCov = [];
+  const chrTot = [];
   let matchedSoFar = 0;
   const total = chrFiles.length;
 
@@ -82,23 +83,24 @@ export async function scoreUnifiedChrPacks(traitChrFiles, onChr) {
       GROUP BY t.pgs_id
     `);
     chrCov.push(...cov);
+    // Total variants per PGS per chr (no DNA join — just trait pack counts)
+    const tot = await ddb.query(`
+      SELECT pgs_id, '${chrNum}' as chr, COUNT(*) AS cnt
+      FROM '${traitChr}' GROUP BY pgs_id
+    `);
+    chrTot.push(...tot);
   }
-  return { pgsAggregates: [...pgsAgg.values()], chrCoverage: chrCov };
+  return { pgsAggregates: [...pgsAgg.values()], chrCoverage: chrCov, chrTotals: chrTot };
 }
 
 /** @param {Map} map @param {object} r */
 function accumulate(map, r) {
-  const pid = r.pgs_id;
-  const e = map.get(pid);
+  const pid = r.pgs_id, e = map.get(pid);
   if (e) {
-    e.raw_score += n(r.raw_score);
-    e.matched_variants += n(r.matched_variants);
-    e.imputed_variants += n(r.imputed_variants);
-    e.genotyped_variants += n(r.genotyped_variants);
-    e.positive_count += n(r.pos_count);
-    e.positive_sum += n(r.pos_sum);
-    e.negative_count += n(r.neg_count);
-    e.negative_sum += n(r.neg_sum);
+    e.raw_score += n(r.raw_score); e.matched_variants += n(r.matched_variants);
+    e.imputed_variants += n(r.imputed_variants); e.genotyped_variants += n(r.genotyped_variants);
+    e.positive_count += n(r.pos_count); e.positive_sum += n(r.pos_sum);
+    e.negative_count += n(r.neg_count); e.negative_sum += n(r.neg_sum);
     e.weight_sum_squared += n(r.wsq);
   } else {
     map.set(pid, {
@@ -112,37 +114,6 @@ function accumulate(map, r) {
   }
 }
 
-/**
- * Build finalize-compatible Maps from aggregate results.
- * @param {Array} pgsAggregates
- * @param {Array} chrCoverage
- * @returns {{pgsDetails: Map, pgsBreakdown: Map, totalMatches: number}}
- */
-export function buildScoredMaps(pgsAggregates, chrCoverage) {
-  const pgsDetails = new Map();
-  const pgsBreakdown = new Map();
-  let totalMatches = 0;
-  for (const r of pgsAggregates) {
-    const mv = n(r.matched_variants);
-    pgsDetails.set(r.pgs_id, {
-      score: n(r.raw_score), matchedVariants: mv,
-      genotypedVariants: n(r.genotyped_variants), imputedVariants: n(r.imputed_variants),
-      zScore: null, percentile: null, qualityScore: 0, topVariants: [], _topMinAbs: 0,
-    });
-    pgsBreakdown.set(r.pgs_id, {
-      positive: n(r.positive_count), negative: n(r.negative_count),
-      positiveSum: n(r.positive_sum), negativeSum: n(r.negative_sum),
-      total: mv, weightSumSquared: n(r.weight_sum_squared), chromosomeCoverage: {},
-      genotypedVariants: n(r.genotyped_variants), imputedVariants: n(r.imputed_variants),
-    });
-    totalMatches += mv;
-  }
-  for (const r of chrCoverage) {
-    const bd = pgsBreakdown.get(r.pgs_id);
-    if (bd) bd.chromosomeCoverage[r.chr] = Number(r.cnt);
-  }
-  return { pgsDetails, pgsBreakdown, totalMatches };
-}
 
 /** Reset chromosome files (for switching individuals). */
 export function resetUnifiedDNA() { chrFiles = []; }

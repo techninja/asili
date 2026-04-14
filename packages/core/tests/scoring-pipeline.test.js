@@ -3,7 +3,7 @@
  */
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
-import { buildScoredMaps } from '../src/duckdb/unified-source.js';
+import { buildScoredMaps } from '../src/duckdb/scored-maps.js';
 import { finalize } from '../src/scorer.js';
 
 const r = (v, d = 6) => Math.round(v * 10 ** d) / 10 ** d;
@@ -79,9 +79,10 @@ describe('end-to-end scoring pipeline', () => {
     assert.equal(r(result.zScore, 4), r(expectedZ, 4));
   });
 
-  it('high coverage → empirical normalization', () => {
-    // 80/100=80% → uses empirical norm_mean=0.5, norm_sd=0.8
-    // z = (1.5-0.5)/0.8 = 1.25 → ~89.44%
+  it('high coverage → scaled empirical normalization', () => {
+    // 80/100=80% → uses empirical, scaled by coverage
+    // scaled_mean = 0.5 * 0.8 = 0.4, scaled_sd = 0.8 * sqrt(0.8) ≈ 0.7155
+    // z = (1.5 - 0.4) / 0.7155 ≈ 1.5366
     const scored = buildScoredMaps([{
       pgs_id: 'E', raw_score: 1.5, matched_variants: 80,
       imputed_variants: 0, genotyped_variants: 80,
@@ -90,16 +91,30 @@ describe('end-to-end scoring pipeline', () => {
     }], []);
     const result = finalize(scored,
       { E: { norm_mean: 0.5, norm_sd: 0.8, variants_number: 100 } });
+    const sMean = 0.5 * 0.8;
+    const sSd = 0.8 * Math.sqrt(0.8);
+    assert.equal(r(result.zScore, 3), r((1.5 - sMean) / sSd, 3));
+  });
+
+  it('full coverage → unscaled empirical normalization', () => {
+    // 100/100=100% → empirical, no scaling (coverage=1.0 skips scaling)
+    // z = (1.5 - 0.5) / 0.8 = 1.25
+    const scored = buildScoredMaps([{
+      pgs_id: 'F', raw_score: 1.5, matched_variants: 100,
+      imputed_variants: 0, genotyped_variants: 100,
+      positive_count: 60, positive_sum: 2.0,
+      negative_count: 40, negative_sum: -0.5, weight_sum_squared: 0.98,
+    }], []);
+    const result = finalize(scored,
+      { F: { norm_mean: 0.5, norm_sd: 0.8, variants_number: 100 } });
     assert.equal(r(result.zScore, 4), 1.25);
-    assert.ok(Math.abs(result.percentile - 89.44) < 1);
   });
 
   it('quantitative trait → phenotype value', () => {
-    // z=2.0, phenotypeMean=170, phenotypeSd=10, r2=0.25
-    // value = 170 + 2.0 * sqrt(0.25) * 10 = 180
+    // 100% coverage → no scaling. z=2.0, value = 170 + 2.0 * sqrt(0.25) * 10 = 180
     const scored = buildScoredMaps([{
-      pgs_id: 'H', raw_score: 2.0, matched_variants: 50,
-      imputed_variants: 0, genotyped_variants: 50,
+      pgs_id: 'H', raw_score: 2.0, matched_variants: 100,
+      imputed_variants: 0, genotyped_variants: 100,
       positive_count: 40, positive_sum: 2.5,
       negative_count: 10, negative_sum: -0.5, weight_sum_squared: 0.5,
     }], []);
@@ -142,14 +157,15 @@ describe('end-to-end scoring pipeline', () => {
         imputed_variants: 0, genotyped_variants: 50,
         positive_count: 30, positive_sum: 0.8,
         negative_count: 20, negative_sum: -0.3, weight_sum_squared: 0.5 },
-      { pgs_id: 'B', raw_score: 0.3, matched_variants: 200,
-        imputed_variants: 0, genotyped_variants: 200,
-        positive_count: 120, positive_sum: 0.5,
-        negative_count: 80, negative_sum: -0.2, weight_sum_squared: 0.3 },
+      { pgs_id: 'B', raw_score: 0.3, matched_variants: 800,
+        imputed_variants: 0, genotyped_variants: 800,
+        positive_count: 500, positive_sum: 0.5,
+        negative_count: 300, negative_sum: -0.2, weight_sum_squared: 0.3 },
     ], []);
+    // B: 800/1000=80% coverage vs A: 50/100=50% → B wins on coverage + sample
     const result = finalize(scored, {
       A: { norm_mean: 0, norm_sd: 1, variants_number: 100 },
-      B: { norm_mean: 0, norm_sd: 1, variants_number: 500 },
+      B: { norm_mean: 0, norm_sd: 1, variants_number: 1000 },
     });
     assert.equal(result.bestPGS, 'B');
   });

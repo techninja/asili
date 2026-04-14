@@ -84,7 +84,7 @@ export function calculateQualityScore(
 
   const performance = r2 * 35 * coveragePenalty;
   const validation = hasValidatedR2 ? Math.min(r2 / 0.44, 1) * 15 : 0;
-  const reliability = genotypedRatio * 15;
+  const reliability = genotypedRatio * coverage * 15;
   const coverageScore = coverage * 10;
   const sampleRatio = Math.max(matched / MIN_VARIANT_THRESHOLD, 1);
   const sample = Math.min(Math.log10(sampleRatio) / 3.1, 1) * 10;
