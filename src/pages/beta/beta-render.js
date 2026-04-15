@@ -39,16 +39,6 @@ export function individualSelector(host, list, switchFn) {
           </button>
         `;
       })}
-      <button
-        class="beta-view__ind-btn beta-view__ind-btn--add ${host.showUpload || host.parseStatus
-          ? 'beta-view__ind-btn--add-active'
-          : ''}"
-        onclick="${(h) => {
-          h.showUpload = !h.showUpload;
-        }}"
-      >
-        + Add
-      </button>
     </div>
   `;
 }

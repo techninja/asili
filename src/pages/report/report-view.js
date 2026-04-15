@@ -6,18 +6,25 @@
 
 import { html, define, router } from 'hybrids';
 // @ts-ignore
+import '#atoms/app-icon/app-icon.js';
+// @ts-ignore
 import '#organisms/radar-chart/radar-chart.js';
 // @ts-ignore
 import '#atoms/confidence-badge/confidence-badge.js';
-import { results, getActiveId } from '#pages/beta/results-store.js';
+// @ts-ignore
+import '#molecules/individual-switcher/individual-switcher.js';
+import { results, getActiveId, loadResults } from '#pages/beta/results-store.js';
 import { buildCategorySummary } from '#utils/categories.js';
 import { getTraitList } from '#utils/manifest.js';
-import { formatTraitValue } from '/packages/core/src/formatter.js';
+import { appHeader } from '#molecules/app-header/app-header.js';
+import { appFooter } from '#molecules/app-footer/app-footer.js';
+import { traitTable } from './report-helpers.js';
 import * as idb from '/packages/core/src/data-layer/idb.js';
 
 export default define({
   tag: 'report-view',
   [router.connect]: { url: '/report' },
+  activeId: { value: '', connect: () => {} },
   traits: {
     value: /** @type {Array<object>} */ ([]),
     connect(host, _key, invalidate) {
@@ -34,7 +41,7 @@ export default define({
     },
   },
   render: {
-    value: ({ traits, individual }) => {
+    value: ({ traits, individual, activeId }) => {
       const cats = buildCategorySummary(results, traits);
       const scored = traits.filter((t) => results[t.trait_id]);
       const sorted = scored
@@ -52,49 +59,62 @@ export default define({
 
       return html`
         <div class="report">
-          <header class="report__header">
-            <a href="${router.backUrl()}" class="report__back no-print">← Back</a>
-            <h1>${name} — Genomic Report</h1>
-            <p class="report__date">Generated ${new Date().toLocaleDateString()}</p>
-            <p class="report__disclaimer">
-              This is not a medical diagnosis. Consult a healthcare professional.
-            </p>
-          </header>
+          ${appHeader({
+            badge: 'beta',
+            settingsUrl: '/beta/settings',
+            center: html`<individual-switcher
+              activeId="${activeId}"
+              onswitch-individual="${handleSwitch}"
+            ></individual-switcher>`,
+          })}
+          <div class="report__content">
+            <header class="report__header">
+              <a href="/beta" class="report__back no-print"
+                ><app-icon name="arrow-left"></app-icon> Back</a
+              >
+              <h1>${name} — Genomic Report</h1>
+              <p class="report__date">Generated ${new Date().toLocaleDateString()}</p>
+              <p class="report__disclaimer">
+                This is not a medical diagnosis. Consult a healthcare professional.
+              </p>
+            </header>
 
-          <section class="report__section">
-            <h2>Category Overview</h2>
-            <radar-chart categories="${JSON.stringify(cats)}"></radar-chart>
-            <p class="report__meta">${scored.length} traits scored</p>
-          </section>
+            <section class="report__section">
+              <h2>Category Overview</h2>
+              <radar-chart categories="${JSON.stringify(cats)}"></radar-chart>
+              <p class="report__meta">${scored.length} traits scored</p>
+            </section>
 
-          ${elevated.length > 0
-            ? html`
-                <section class="report__section">
-                  <h2>Top Elevated Traits</h2>
-                  ${traitTable(elevated)}
-                </section>
-              `
-            : html``}
-          ${low.length > 0
-            ? html`
-                <section class="report__section">
-                  <h2>Below Average Traits</h2>
-                  ${traitTable(low)}
-                </section>
-              `
-            : html``}
+            ${elevated.length > 0
+              ? html`
+                  <section class="report__section">
+                    <h2>Top Elevated Traits</h2>
+                    ${traitTable(elevated)}
+                  </section>
+                `
+              : html``}
+            ${low.length > 0
+              ? html`
+                  <section class="report__section">
+                    <h2>Below Average Traits</h2>
+                    ${traitTable(low)}
+                  </section>
+                `
+              : html``}
 
-          <section class="report__section">
-            <h2>Data Quality</h2>
-            <p>Report generated locally. Your data never left this device.</p>
-            <p class="report__meta">
-              ${individual?.variantCount?.toLocaleString() || '—'} variants loaded
-            </p>
-          </section>
+            <section class="report__section">
+              <h2>Data Quality</h2>
+              <p>Report generated locally. Your data never left this device.</p>
+              <p class="report__meta">
+                ${individual?.variantCount?.toLocaleString() || '—'} variants loaded
+              </p>
+            </section>
 
-          <button class="btn btn-primary no-print" onclick="${() => window.print()}">
-            Print / Save as PDF
-          </button>
+            <button class="btn btn-primary no-print" onclick="${() => window.print()}">
+              Print / Save as PDF
+            </button>
+          </div>
+          ${appFooter()}
         </div>
       `;
     },
@@ -102,44 +122,23 @@ export default define({
   },
 });
 
-/** @param {Array<object>} traits */
-function traitTable(traits) {
-  return html`
-    <table class="report__table">
-      <thead>
-        <tr>
-          <th>Trait</th>
-          <th>Percentile</th>
-          <th>Value</th>
-          <th>Confidence</th>
-        </tr>
-      </thead>
-      <tbody>
-        ${traits.map((t) => {
-          const r = results[t.trait_id];
-          const fmt =
-            r?.value !== null && r?.value !== undefined ? formatTraitValue(r.value, t.unit) : null;
-          return html`<tr>
-            <td>${t.emoji || '🧬'} ${t.name}</td>
-            <td>${Math.round(r?.percentile || 0)}th</td>
-            <td>${fmt?.display || '—'}</td>
-            <td><confidence-badge level="${r?.confidence || 'none'}"></confidence-badge></td>
-          </tr>`;
-        })}
-      </tbody>
-    </table>
-  `;
-}
-
 /** @param {object} host */
 async function loadIndividual(host) {
   try {
     const id = getActiveId();
     if (!id) return;
+    host.activeId = id;
     await idb.openDB();
     host.individual = await idb.get('individuals', id);
   } catch (e) {
     console.error(e);
-    /* no individual */
   }
+}
+
+/** @param {object & HTMLElement} host @param {CustomEvent} e */
+async function handleSwitch(host, e) {
+  const id = e.detail;
+  host.activeId = id;
+  await loadResults(id);
+  await loadIndividual(host);
 }

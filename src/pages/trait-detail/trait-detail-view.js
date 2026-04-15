@@ -2,6 +2,8 @@
 
 import { html, define, router } from 'hybrids';
 // @ts-ignore
+import '#atoms/app-icon/app-icon.js';
+// @ts-ignore
 import '#atoms/percentile-bar/percentile-bar.js';
 // @ts-ignore
 import '#atoms/confidence-badge/confidence-badge.js';
@@ -15,74 +17,89 @@ import '#molecules/family-compare/family-compare.js';
 import '#molecules/individual-switcher/individual-switcher.js';
 import { results, getActiveId, loadResults } from '#pages/beta/results-store.js';
 import { getTraitList, getPgsMeta } from '#utils/manifest.js';
-import { formatTraitValue } from '/packages/core/src/formatter.js';
-import {
-  buildPgsEntries,
-  loadFamily,
-  riskBalance,
-  coverageIndicator,
-  chrCoverageSection,
-  insufficientContent,
-} from './trait-detail-helpers.js';
+import { appHeader } from '#molecules/app-header/app-header.js';
+import { appFooter } from '#molecules/app-footer/app-footer.js';
+import { loadFamily } from './trait-detail-helpers.js';
+import { scoredContent } from './trait-detail-sections.js';
+import { scoreHero } from './trait-detail-hero.js';
 
-const NULL_CONF = ['none', 'insufficient', ''];
-
-export default define({
+const TraitDetail = define({
   tag: 'trait-detail-view',
   [router.connect]: { url: '/trait/:traitId' },
-  traitId: '',
+  traitId: {
+    value: '',
+    observe: (host, val, last) => {
+      if (val && val !== last) initView(host);
+    },
+  },
   activeId: { value: '', connect: () => {} },
-  resultVersion: { value: 0, connect: () => {} },
-  trait: {
-    value: /** @type {object} */ ({}),
-    connect: (host, _key, invalidate) => {
-      host.activeId = getActiveId();
-      getTraitList().then((list) => {
-        host.trait = list.find((t) => t.trait_id === host.traitId) || null;
-        invalidate();
-      });
-    },
-  },
-  pgsMeta: {
-    value: /** @type {object|null} */ (null),
-    connect: (host, _key, invalidate) => {
-      const r = results[host.traitId];
-      if (r?.bestPGS)
-        getPgsMeta(r.bestPGS).then((m) => {
-          host.pgsMeta = m;
-          invalidate();
-        });
-    },
-  },
-  familyData: {
-    value: /** @type {Array<object>} */ ([]),
-    connect: (host, _key, invalidate) => {
-      loadFamily(host).then(invalidate);
+  trait: { value: /** @type {object} */ ({}) },
+  pgsMeta: { value: /** @type {object} */ ({}) },
+  familyData: { value: /** @type {Array<object>} */ ([]) },
+  _init: {
+    value: false,
+    connect: (host) => {
+      initView(host);
     },
   },
   render: {
-    value: ({ traitId, trait, activeId, resultVersion, familyData, pgsMeta }) => {
-      void resultVersion;
+    value: (host) => {
+      const { traitId, trait, familyData, pgsMeta } = host;
       const r = results[traitId];
       const name = trait?.name || traitId;
       const emoji = trait?.emoji || '🧬';
 
       return html`
         <div class="trait-detail">
-          <div class="trait-detail__nav">
-            <a href="/beta" class="trait-detail__back">← Back</a>
-            <individual-switcher
-              activeId="${activeId}"
+          ${appHeader({
+            badge: 'beta',
+            settingsUrl: '/beta/settings',
+            center: html`<individual-switcher
+              activeId="${host.activeId}"
               onswitch-individual="${handleSwitch}"
-            ></individual-switcher>
+            ></individual-switcher>`,
+            trailing:
+              trait?._prev || trait?._next
+                ? html`<div class="trait-detail__pager">
+                    ${trait._prev
+                      ? html`<a
+                          href="${router.url(TraitDetail, { traitId: trait._prev })}"
+                          class="trait-detail__pager-btn"
+                          title="Previous trait"
+                          ><app-icon name="step-back"></app-icon
+                        ></a>`
+                      : html``}
+                    ${trait._next
+                      ? html`<a
+                          href="${router.url(TraitDetail, { traitId: trait._next })}"
+                          class="trait-detail__pager-btn"
+                          title="Next trait"
+                          ><app-icon name="step-forward"></app-icon
+                        ></a>`
+                      : html``}
+                  </div>`
+                : html``,
+          })}
+          <div class="trait-detail__sub-nav">
+            <a href="/beta" class="trait-detail__back"
+              ><app-icon name="arrow-left"></app-icon> Back</a
+            >
           </div>
-          <h1 class="trait-detail__title">${emoji} ${name}</h1>
-          ${trait?.description
-            ? html`<p class="trait-detail__desc">${trait.description}</p>`
-            : html``}
-          ${r
-            ? scoredContent(r, trait, familyData, pgsMeta)
-            : html`<p class="trait-detail__empty">No result for this individual yet.</p>`}
+          <main class="trait-detail__main">
+            <div class="trait-detail__hero">
+              <div class="trait-detail__identity">
+                <h1 class="trait-detail__title">${emoji} ${name}</h1>
+                ${trait?.description
+                  ? html`<p class="trait-detail__desc">${trait.description}</p>`
+                  : html``}
+              </div>
+              ${r
+                ? scoreHero(r, trait, familyData)
+                : html`<p class="trait-detail__empty">No result yet.</p>`}
+            </div>
+            ${r ? scoredContent(r, trait, familyData, pgsMeta) : html``}
+          </main>
+          ${appFooter()}
         </div>
       `;
     },
@@ -90,56 +107,31 @@ export default define({
   },
 });
 
-/** @param {object} r @param {object|null} trait */
-function scoredContent(r, trait, familyData, pgsMeta) {
-  if (NULL_CONF.includes(r.confidence || '')) return insufficientContent(r);
-  const fmt =
-    r.value !== null && r.value !== undefined ? formatTraitValue(r.value, trait?.unit) : null;
-  const pgsEntries = r.pgsDetails ? buildPgsEntries(r) : [];
-  const det = r.bestPGS && r.pgsDetails?.[r.bestPGS];
-  return html`
-    <div class="trait-detail__grid">
-      <section class="trait-detail__section">
-        <h2>Score</h2>
-        <percentile-bar value="${r.percentile || 0}"></percentile-bar>
-        <confidence-badge level="${r.confidence || 'none'}"></confidence-badge>
-        ${fmt ? html`<p class="trait-detail__value">Predicted: ${fmt.display}</p>` : html``}
-      </section>
-      <section class="trait-detail__section">
-        <h2>Best PGS</h2>
-        <p>${r.bestPGS || '—'}${pgsMeta?.method ? ` — ${pgsMeta.method}` : ''}</p>
-        <p class="trait-detail__meta">
-          Quality: ${(r.bestPGSQualityScore || 0).toFixed(1)} ·
-          ${(det?.matchedVariants || 0).toLocaleString()} /
-          ${(pgsMeta?.variantsNumber || 0).toLocaleString()} variants
-          (${Math.round((det?.coverage || 0) * 100)}%)
-        </p>
-      </section>
-      ${riskBalance(r)} ${coverageIndicator(r)} ${chrCoverageSection(r)}
-      ${familyData?.length > 0
-        ? html`<section class="trait-detail__section">
-            <h2>Family Comparison</h2>
-            <family-compare individuals="${JSON.stringify(familyData)}"></family-compare>
-          </section>`
-        : html``}
-      ${pgsEntries.length > 0
-        ? html`<section class="trait-detail__section trait-detail__grid--wide">
-            <h2>PGS Comparison</h2>
-            <pgs-table pgsData="${JSON.stringify(pgsEntries)}"></pgs-table>
-          </section>`
-        : html``}
-    </div>
-  `;
+/** Load all data for the current traitId. */
+async function initView(host) {
+  const id = getActiveId();
+  host.activeId = id;
+  if (id && !Object.keys(results).length) await loadResults(id);
+
+  const list = await getTraitList();
+  const idx = list.findIndex((t) => t.trait_id === host.traitId);
+  const t = idx >= 0 ? { ...list[idx] } : {};
+  t._prev = idx > 0 ? list[idx - 1].trait_id : '';
+  t._next = idx < list.length - 1 ? list[idx + 1].trait_id : '';
+  host.trait = t;
+
+  const r = results[host.traitId];
+  host.pgsMeta = r?.bestPGS ? (await getPgsMeta(r.bestPGS)) || {} : {};
+
+  await loadFamily(host);
 }
 
-/** @param {object} r */
-/** @param {object & HTMLElement} host @param {CustomEvent} e */
 /** @param {object & HTMLElement} host @param {CustomEvent} e */
 async function handleSwitch(host, e) {
   const id = e.detail;
   host.activeId = id;
-  host.resultVersion = 0;
   await loadResults(id);
-  host.resultVersion = 1;
-  loadFamily(host);
+  await initView(host);
 }
+
+export default TraitDetail;

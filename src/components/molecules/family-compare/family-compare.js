@@ -12,7 +12,17 @@ export default define({
   individuals: '',
   render: {
     value: ({ individuals }) => {
-      const list = individuals ? JSON.parse(individuals) : [];
+      let list = [];
+      try {
+        const raw = Array.isArray(individuals)
+          ? individuals
+          : individuals
+            ? JSON.parse(individuals)
+            : [];
+        if (Array.isArray(raw)) list = raw;
+      } catch {
+        /* bad JSON */
+      }
       if (list.length === 0) {
         return html`<p class="family-compare__empty">No family data</p>`;
       }

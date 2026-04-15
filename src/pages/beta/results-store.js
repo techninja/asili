@@ -15,7 +15,7 @@ export function getResult(traitId) {
 }
 
 /** @type {string} */
-let activeId = '';
+let activeId = localStorage.getItem('asili_activeId') || '';
 
 /** @type {number} Bumped on every write — lets consumers detect changes. */
 export let version = 0;
@@ -32,6 +32,7 @@ export function getActiveId() {
  */
 export async function loadResults(individualId) {
   activeId = individualId;
+  localStorage.setItem('asili_activeId', individualId);
   clearMemory();
   const dl = await ensureDataLayer();
   const all = await dl.getAllResults(individualId);

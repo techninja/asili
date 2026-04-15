@@ -1,79 +1,53 @@
 /**
- * Trait grid helpers — sorting, filtering, grouping.
+ * Trait grid helpers — sorting, filtering (flat, no grouping).
  * @module components/organisms/trait-grid/helpers
  */
 
 import { results } from '#pages/beta/results-store.js';
 import { CATEGORY_ORDER, CATEGORY_MAP } from '#utils/categories.js';
 
-const CONFIDENCE_RANK = { high: 0, medium: 1, low: 2, none: 3, '': 3 };
+/** @param {object} t @returns {string} */
+export function traitCategory(t) {
+  const raw = t.categories?.[0] || 'Other';
+  return CATEGORY_MAP[raw] || raw;
+}
 
-/** @param {object} a @param {object} b @param {string} sortBy */
-function sortTraits(a, b, sortBy) {
-  const ra = results[a.trait_id];
-  const rb = results[b.trait_id];
-  if (sortBy === 'percentile') return (rb?.percentile || 0) - (ra?.percentile || 0);
-  if (sortBy === 'confidence')
-    return (CONFIDENCE_RANK[ra?.confidence] ?? 3) - (CONFIDENCE_RANK[rb?.confidence] ?? 3);
-  return a.name.localeCompare(b.name);
+/** @param {Array<object>} traits @returns {string[]} */
+export function getCategories(traits) {
+  const cats = new Set();
+  for (const t of traits) cats.add(traitCategory(t));
+  return CATEGORY_ORDER.filter((c) => cats.has(c));
 }
 
 /**
  * @param {Array<object>} traits
- * @param {boolean} sortScored
- * @param {string} sortBy
- * @returns {Array<[string, Array<object>]>}
+ * @param {object} opts
+ * @returns {{ visible: Array<object>, totalScored: number }}
  */
-export function groupByCategory(traits, sortScored, sortBy) {
-  const groups = {};
-  for (const t of traits) {
-    const raw = t.categories?.[0] || 'Other';
-    const cat = CATEGORY_MAP[raw] || raw;
-    (groups[cat] ||= []).push(t);
-  }
-  return CATEGORY_ORDER.filter((c) => groups[c]?.length).map((c) => [
-    c,
-    groups[c].sort((a, b) => {
-      if (sortScored) {
-        const as = results[a.trait_id] ? 0 : 1;
-        const bs = results[b.trait_id] ? 0 : 1;
-        if (as !== bs) return as - bs;
-      }
-      return sortTraits(a, b, sortBy);
-    }),
-  ]);
-}
-
-/**
- * @param {Array<object>} traits
- * @param {string} search
- * @param {string} filterCategory
- * @returns {Array<object>}
- */
-export function filterTraits(traits, search, filterCategory) {
+export function filterAndSort(traits, opts) {
+  const { search, categories, sortBy, sortDir, scoredOnly } = opts;
   let out = traits;
   if (search) {
     const q = search.toLowerCase();
     out = out.filter((t) => t.name.toLowerCase().includes(q));
   }
-  if (filterCategory) {
-    out = out.filter((t) => {
-      const cat = CATEGORY_MAP[t.categories?.[0]] || t.categories?.[0] || 'Other';
-      return cat === filterCategory;
-    });
+  if (categories.size > 0) {
+    out = out.filter((t) => categories.has(traitCategory(t)));
   }
-  return out;
-}
-
-/**
- * @param {Array<object>} traits
- * @returns {string[]}
- */
-export function getCategories(traits) {
-  const cats = new Set();
-  for (const t of traits) {
-    const raw = t.categories?.[0] || 'Other';
-    cats.add(CATEGORY_MAP[raw] || raw);
-  }
-  return CATEGORY_ORDER.filter((c) => cats.has(c));
+  const totalScored = out.filter((t) => results[t.trait_id]).length;
+  if (scoredOnly) out = out.filter((t) => results[t.trait_id]);
+  out = [...out].sort((a, b) => {
+    const ra = results[a.trait_id],
+      rb = results[b.trait_id];
+    let cmp = 0;
+    if (sortBy === 'percentile') cmp = (ra?.percentile || 0) - (rb?.percentile || 0);
+    else if (sortBy === 'zscore') cmp = Math.abs(ra?.zScore || 0) - Math.abs(rb?.zScore || 0);
+    else if (sortBy === 'scored') {
+      const ta = ra?.calculatedAt || '',
+        tb = rb?.calculatedAt || '';
+      cmp = ta < tb ? -1 : ta > tb ? 1 : 0;
+    } else cmp = a.name.localeCompare(b.name);
+    return sortDir === 'asc' ? cmp : -cmp;
+  });
+  return { visible: out, totalScored };
 }

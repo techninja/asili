@@ -1,7 +1,6 @@
 /**
  * Upload zone molecule — drag & drop or file picker for DNA files.
- * Dispatches 'file-selected' with the File object.
- * The file input overlays the zone so real user clicks open the dialog.
+ * Uses File System Access API when available for persistent handles.
  * @module components/molecules/upload-zone
  */
 
@@ -18,12 +17,39 @@ async function handleDrop(host, e) {
   if (item?.getAsFileSystemHandle) {
     try {
       handle = await item.getAsFileSystemHandle();
-    } catch (e) {
-      console.error(e);
+    } catch {
       /* unsupported */
     }
   }
   dispatch(host, 'file-selected', { detail: { file, handle }, bubbles: true });
+}
+
+/** @param {object & HTMLElement} host */
+async function handleClick(host) {
+  if (host.disabled) return;
+  // Prefer File System Access API — returns a persistent handle
+  // @ts-ignore — showOpenFilePicker is Chrome-only
+  if (window.showOpenFilePicker) {
+    try {
+      // @ts-ignore
+      const [fh] = await window.showOpenFilePicker({
+        types: [
+          {
+            description: 'DNA files',
+            accept: { '*/*': ['.txt', '.csv', '.tsv', '.vcf', '.asili'] },
+          },
+        ],
+      });
+      const file = await fh.getFile();
+      dispatch(host, 'file-selected', { detail: { file, handle: fh }, bubbles: true });
+      return;
+    } catch {
+      /* user cancelled — fall through */
+    }
+    return;
+  }
+  // Fallback: trigger hidden file input
+  host.querySelector('.upload-zone__input')?.click();
 }
 
 /** @param {object & HTMLElement} host */
@@ -32,6 +58,9 @@ function handleInput(host, e) {
   if (file) dispatch(host, 'file-selected', { detail: { file, handle: null }, bubbles: true });
   e.target.value = '';
 }
+
+/** @type {boolean} */
+const HAS_PICKER = 'showOpenFilePicker' in window;
 
 export default define({
   tag: 'upload-zone',
@@ -51,6 +80,7 @@ export default define({
           host.dragover = false;
         }}"
         ondrop="${handleDrop}"
+        onclick="${handleClick}"
       >
         <div class="upload-zone__content">
           <span class="upload-zone__icon">📁</span>
@@ -66,7 +96,8 @@ export default define({
           accept=".txt,.csv,.tsv,.vcf,.zip,.parquet,.asili"
           class="upload-zone__input"
           onchange="${handleInput}"
-          disabled="${disabled}"
+          disabled="${disabled || HAS_PICKER}"
+          style="${{ pointerEvents: HAS_PICKER ? 'none' : '' }}"
         />
       </div>
     `,

@@ -139,6 +139,7 @@ async function handleUpgrade(host, e) {
 async function doClearAll(host) {
   await resetQueue();
   clearFamilyCache();
+  localStorage.removeItem('asili_activeId');
   await idb.openDB();
   for (const store of ['individuals', 'variants', 'results', 'settings']) {
     await idb.clear(store);

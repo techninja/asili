@@ -1,0 +1,9 @@
+.speedometer {
+  display: flex;
+  justify-content: center;
+}
+
+.speedometer__svg {
+  width: 140px;
+  height: auto;
+}

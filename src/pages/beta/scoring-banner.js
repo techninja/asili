@@ -10,6 +10,7 @@ import {
   handleResumePermission,
   getQueueState,
 } from './scoring-controller.js';
+import { getImputedNeedingReupload } from '#utils/scoring-queue.js';
 
 /** @param {number} n */
 const fmtN = (n) =>
@@ -93,12 +94,12 @@ export function scoringBanner(host) {
       ✅ ${host.resultCount} traits scored
     </p>`;
   if (host.scoringStatus === 'blocked') {
-    const state = getQueueState();
-    const need = state.individualCount;
+    const need = getImputedNeedingReupload().length;
     return html`<p class="beta-view__scoring">
-      ⏸ ${need > 1 ? `${need} imputed individuals` : 'Imputed individual'}
-      need${need > 1 ? '' : 's'} permission to resume
-      <button class="btn btn-ghost btn-sm" onclick="${handleResumePermission}">▶ Resume</button>
+      ⏸ ${need} imputed file${need !== 1 ? 's' : ''} needed to continue
+      <button class="btn btn-ghost btn-sm" onclick="${handleResumePermission}">
+        ▶ Select file${need !== 1 ? 's' : ''}
+      </button>
     </p>`;
   }
   return html``;

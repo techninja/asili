@@ -1,0 +1,116 @@
+/* Trait detail helper section styles — bars, upsell, nodata */
+.trait-detail__balance-bar {
+  height: 12px;
+  background: var(--color-success);
+  border-radius: var(--radius-md);
+  overflow: hidden;
+}
+
+.trait-detail__balance-risk {
+  height: 100%;
+  background: var(--color-danger);
+  transition: width 0.3s ease;
+}
+
+.trait-detail__coverage-bar {
+  height: 12px;
+  background: var(--color-surface-alt);
+  border-radius: var(--radius-md);
+  overflow: hidden;
+}
+
+.trait-detail__coverage-fill {
+  height: 100%;
+  background: var(--color-info);
+  transition: width 0.3s ease;
+}
+
+.trait-detail__grid--wide {
+  grid-column: 1 / -1;
+}
+
+.trait-detail__score-hero {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-sm);
+  padding: var(--space-lg);
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+}
+
+.trait-detail__score-hero .mini-curve-wrap {
+  width: 100%;
+  max-width: 320px;
+}
+
+.trait-detail__score-stats {
+  display: flex;
+  align-items: baseline;
+  gap: var(--space-sm);
+  flex-wrap: wrap;
+  justify-content: center;
+}
+
+.trait-detail__percentile {
+  font-size: var(--text-3xl);
+  font-weight: 800;
+  line-height: 1;
+}
+
+.trait-detail__pct-label {
+  font-size: var(--text-sm);
+  color: var(--color-text-muted);
+}
+
+.trait-detail__pred {
+  font-size: var(--text-sm);
+  color: var(--color-text-muted);
+}
+
+.trait-detail__hero {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--space-lg);
+  align-items: center;
+  margin-bottom: var(--space-lg);
+
+  @media (width <= 640px) {
+    grid-template-columns: 1fr;
+  }
+}
+
+.trait-detail__identity {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-sm);
+}
+
+.trait-detail__title {
+  font-size: var(--text-2xl);
+  margin: var(--space-md) 0 var(--space-xs);
+}
+
+.trait-detail__desc {
+  color: var(--color-text-muted);
+  margin: 0;
+  font-size: var(--text-sm);
+}
+
+.trait-detail__empty {
+  color: var(--color-text-muted);
+  font-style: italic;
+}
+
+.trait-detail__nodata {
+  color: var(--color-text-muted);
+  margin: 0;
+}
+
+.trait-detail__upsell {
+  font-size: var(--text-sm);
+  color: var(--color-warning);
+  margin: 0;
+  font-style: italic;
+}

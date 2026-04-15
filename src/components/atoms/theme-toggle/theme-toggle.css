@@ -1,10 +1,11 @@
 theme-toggle {
-  display: inline-block;
-  margin-left: auto;
+  display: inline-flex;
 
   & .theme-toggle-btn {
-    font-size: var(--text-lg);
-    padding: var(--space-xs) var(--space-sm);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: var(--space-xs);
     line-height: 1;
   }
 }

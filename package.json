@@ -27,10 +27,10 @@
     "node": ">=22",
     "pnpm": ">=9"
   },
-  "packageManager": "pnpm@9.15.4",
+  "packageManager": "pnpm@10.33.0+sha512.10568bb4a6afb58c9eb3630da90cc9516417abebd3fabbe6739f0ae795728da1491e9db5a544c76ad8eb7570f5c4bb3d6c637b2cb41bfdcdb47fa823c8649319",
   "devDependencies": {
     "@open-wc/testing": "^4.0.0",
-    "@techninja/clearstack": "^0.3.19",
+    "@techninja/clearstack": "^0.3.25",
     "@types/node": "^22.0.0",
     "@web/test-runner": "^0.20.0",
     "@web/test-runner-playwright": "^0.11.0",

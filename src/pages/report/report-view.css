@@ -1,7 +1,15 @@
 .report {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+.report__content {
   max-width: var(--max-width);
   margin: 0 auto;
   padding: var(--space-lg);
+  flex: 1;
+  width: 100%;
 }
 
 .report__header {
@@ -14,9 +22,16 @@
 }
 
 .report__back {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-xs);
   color: var(--color-text-muted);
   text-decoration: none;
   font-size: var(--text-sm);
+
+  &:hover {
+    color: var(--color-primary);
+  }
 }
 
 .report__date {

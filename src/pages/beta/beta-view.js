@@ -17,6 +17,8 @@ import '#organisms/scoring-screen/scoring-screen.js';
 import { individualSelector, appContent, uploadContent, uploadPanel } from './beta-render.js';
 import { loadResults } from './results-store.js';
 import { initQueue, switchIndividual } from './scoring-controller.js';
+import { appHeader } from '#molecules/app-header/app-header.js';
+import { appFooter } from '#molecules/app-footer/app-footer.js';
 import TraitDetailView from '#pages/trait-detail/trait-detail-view.js';
 import ReportView from '#pages/report/report-view.js';
 import SettingsView from '#pages/settings/settings-view.js';
@@ -74,20 +76,27 @@ export default define({
       const showPanel = hasData && (host.showUpload || host.parseStatus);
       return html`
         <div class="beta-view">
-          <header class="beta-view__header">
-            <div class="beta-view__header-top">
-              <a href="/" class="beta-view__logo">
-                <img src="/logo.svg" alt="" class="beta-view__logo-img" /><span>asili</span>
-              </a>
-              <span class="beta-view__tag">beta</span>
-              ${hasData ? individualSelector(host, list, handleSwitch) : html``}
-              <a href="${router.url(SettingsView)}" class="beta-view__settings">⚙️</a>
-            </div>
-          </header>
+          ${appHeader({
+            badge: 'beta',
+            settingsUrl: `${router.url(SettingsView)}`,
+            center: hasData ? individualSelector(host, list, handleSwitch) : html``,
+            trailing: hasData
+              ? html`<button
+                  class="app-header__link"
+                  onclick="${(h) => {
+                    h.showUpload = !h.showUpload;
+                  }}"
+                  title="Add individual"
+                >
+                  <app-icon name="user-plus"></app-icon>
+                </button>`
+              : html``,
+          })}
           ${showPanel ? uploadPanel(host, cancelSetup) : html``}
           <main class="beta-view__main">
             ${hasData ? appContent(host) : uploadContent(host, cancelSetup)}
           </main>
+          ${appFooter()}
           <scoring-screen
             visible="${host.scoringScreen}"
             traitName="${host.scoringTrait}"

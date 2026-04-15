@@ -10,24 +10,34 @@ import { registerBuffer, dropFile } from '/packages/core/src/duckdb/adapter.js';
 import { scoreUnifiedChrPacks } from '/packages/core/src/duckdb/unified-source.js';
 import { buildScoredMaps } from '/packages/core/src/duckdb/scored-maps.js';
 import { finalize } from '/packages/core/src/scorer.js';
+import { loadManifest } from '#utils/manifest.js';
 
-/** @type {Record<string, {norm_mean: number, norm_sd: number, variants_number: number}>|null} */
+/** @type {Record<string, object>|null} */
 let normCache = null;
 
-/** Fetch PGS normalization params (mean/SD from TOPMed reference). Cached. */
+/** Fetch PGS normalization params + R² from manifest metadata. Cached. */
 async function getNormParams() {
   if (normCache) return normCache;
+  normCache = {};
   try {
     const resp = await fetch(`${window.location.origin}/data/pgs_norm_params.json`);
     if (!resp.ok) throw new Error(`${resp.status}`);
     const raw = await resp.json();
-    normCache = {};
     for (const [id, v] of Object.entries(raw)) {
       normCache[id] = { norm_mean: v.m, norm_sd: v.s, variants_number: v.n };
     }
   } catch (e) {
     console.warn('No pgs_norm_params.json — using theoretical SD', e.message);
-    normCache = {};
+  }
+  // Merge R² from manifest PGS metadata
+  try {
+    const manifest = await loadManifest();
+    for (const [id, meta] of Object.entries(manifest.pgs || {})) {
+      if (!normCache[id]) normCache[id] = {};
+      if (meta.r2) normCache[id].performance_weight = meta.r2;
+    }
+  } catch {
+    /* manifest may not have pgs */
   }
   return normCache;
 }

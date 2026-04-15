@@ -36,7 +36,14 @@ const loading = fetch('/icons.json')
 /** @type {import('hybrids').Component<AppIconHost>} */
 export default define({
   tag: 'app-icon',
-  name: '',
+  name: {
+    value: '',
+    observe(host) {
+      loading.then(() => {
+        host.svgContent = iconCache?.[host.name] || '';
+      });
+    },
+  },
   size: 'md',
   svgContent: {
     value: '',

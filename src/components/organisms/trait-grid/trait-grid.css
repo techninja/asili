@@ -1,14 +1,14 @@
 .trait-grid {
   display: flex;
   flex-direction: column;
-  gap: var(--space-lg);
+  gap: var(--space-md);
   width: 100%;
 }
 
 .trait-grid__controls {
   display: flex;
   gap: var(--space-sm);
-  align-items: center;
+  align-items: stretch;
   flex-wrap: wrap;
 }
 
@@ -23,7 +23,6 @@
   font-size: var(--text-base);
 }
 
-.trait-grid__filter,
 .trait-grid__sort {
   padding: var(--space-sm) var(--space-md);
   border: 1px solid var(--color-border);
@@ -34,47 +33,56 @@
   cursor: pointer;
 }
 
-.trait-grid__count {
-  font-size: var(--text-sm);
-  color: var(--color-text-muted);
-  margin-left: auto;
-}
-
-.trait-grid__group {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-md);
-}
-
-.trait-grid__group-title {
-  font-size: var(--text-lg);
-  margin: 0;
-  padding-bottom: var(--space-xs);
-  border-bottom: 1px solid var(--color-border);
+.trait-grid__dir {
   display: flex;
   align-items: center;
-  gap: var(--space-sm);
+  justify-content: center;
+  padding: 0 var(--space-sm);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: var(--color-surface);
+  color: var(--color-text);
   cursor: pointer;
-  user-select: none;
 }
 
-.trait-grid__group-title:hover {
-  color: var(--color-primary);
+.trait-grid__filters {
+  display: flex;
+  gap: var(--space-xs);
+  flex-wrap: wrap;
 }
 
-.trait-grid__chevron {
-  transition: transform 0.2s;
+.trait-grid__cat {
+  padding: 2px 10px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-xl);
+  background: none;
+  color: var(--color-text-muted);
   font-size: var(--text-sm);
+  cursor: pointer;
+  transition: all 0.15s;
+
+  &:hover {
+    border-color: var(--color-primary);
+    color: var(--color-primary);
+  }
 }
 
-.trait-grid__chevron--closed {
-  transform: rotate(-90deg);
+.trait-grid__cat--on {
+  background: var(--color-primary);
+  border-color: var(--color-primary);
+  color: var(--color-text-inverse);
 }
 
-.trait-grid__group-count {
+.trait-grid__cat--clear {
+  display: flex;
+  align-items: center;
+  border-style: dashed;
+}
+
+.trait-grid__status {
   font-size: var(--text-sm);
   color: var(--color-text-muted);
-  font-weight: 400;
+  margin: 0;
 }
 
 .trait-grid__cards {
@@ -89,20 +97,8 @@
   display: contents;
 }
 
-.trait-grid__more {
-  grid-column: 1 / -1;
-  padding: var(--space-sm) var(--space-md);
-  background: var(--color-surface-alt);
-  border: 2px dashed var(--color-border);
-  border-radius: var(--radius-md);
-  color: var(--color-text-muted);
-  font: inherit;
-  font-size: var(--text-sm);
-  cursor: pointer;
-  transition: border-color 0.15s;
-}
-
-.trait-grid__more:hover {
-  border-color: var(--color-primary);
-  color: var(--color-primary);
+@media (width <= 640px) {
+  .trait-grid__search {
+    flex-basis: 100%;
+  }
 }

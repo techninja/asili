@@ -62,7 +62,7 @@ export function riskBalance(r) {
   const negN = (best.negative_variants || 0).toLocaleString();
   return html`
     <section class="trait-detail__section">
-      <h2>Risk vs Protective</h2>
+      <h2><app-icon name="scale"></app-icon> Risk vs Protective</h2>
       <div class="trait-detail__balance-bar">
         <div class="trait-detail__balance-risk" style="${{ width: `${pct}%` }}"></div>
       </div>
@@ -82,7 +82,7 @@ export function coverageIndicator(r) {
   const low = pct < 50;
   return html`
     <section class="trait-detail__section">
-      <h2>Coverage</h2>
+      <h2><app-icon name="target"></app-icon> Coverage</h2>
       <div class="trait-detail__coverage-bar">
         <div
           class="trait-detail__coverage-fill"
@@ -120,23 +120,8 @@ export function chrCoverageSection(r) {
   const data = JSON.stringify({ matched: bd.chromosomeCoverage, totals: finalTotals });
   return html`
     <section class="trait-detail__section">
-      <h2>Chromosome Coverage</h2>
+      <h2><app-icon name="dna"></app-icon> Chromosome Coverage</h2>
       <chr-coverage data="${data}"></chr-coverage>
     </section>
-  `;
-}
-
-/** @param {object} r */
-export function insufficientContent(r) {
-  return html`
-    <section class="trait-detail__section">
-      <h2>Score</h2>
-      <p class="trait-detail__nodata">No variant matches for this trait with your current data.</p>
-      <p class="trait-detail__upsell">
-        Imputation typically unlocks 60–80% variant coverage, turning empty results into meaningful
-        scores.
-      </p>
-    </section>
-    ${coverageIndicator(r)}
   `;
 }

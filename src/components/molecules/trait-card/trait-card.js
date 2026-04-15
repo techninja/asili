@@ -42,6 +42,7 @@ export default define({
   indEmoji: '👤',
   markers: '',
   coverage: 0,
+  category: '',
   render: {
     value: ({
       emoji,
@@ -56,6 +57,7 @@ export default define({
       indEmoji,
       markers,
       coverage,
+      category,
     }) => {
       const hasResult = scored && !NULL_CONF.includes(confidence);
       return html`
@@ -67,6 +69,7 @@ export default define({
           ${hasResult
             ? scoredBody(percentile, confidence, value, unit, markers, indEmoji, coverage)
             : emptyBody(scored, scoring, hasIndividual, confidence)}
+          ${category ? html`<span class="trait-card__category">${category}</span>` : html``}
         </div>
       `;
     },

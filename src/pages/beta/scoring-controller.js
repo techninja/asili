@@ -13,6 +13,14 @@ import {
 } from './beta-sections.js';
 import { storeHandle, restoreAll } from '#utils/file-handle.js';
 
+// Re-export action handlers from split module
+export {
+  handlePause,
+  handleResume,
+  handleResumePermission,
+  getQueueState,
+} from './scoring-actions.js';
+
 /** @type {Function|null} */
 let unsubscribe = null;
 
@@ -71,31 +79,6 @@ export async function onNewIndividual(host, individualId) {
   if (!state.running && state.pending > 0) {
     await queue.start();
   }
-}
-
-/** Pause the global queue. */
-export async function handlePause() {
-  await queue.pause();
-}
-
-/** Resume the global queue. */
-export async function handleResume() {
-  await queue.resume();
-}
-
-/** Request file permissions (requires user gesture) and restart scoring. */
-export async function handleResumePermission() {
-  const restored = await restoreAll(true);
-  for (const [id, file] of restored) queue.registerImputedFile(id, file);
-  if (restored.size > 0) {
-    await queue.scanAndQueue();
-    await queue.start();
-  }
-}
-
-/** Get current queue state. */
-export function getQueueState() {
-  return queue.getState();
 }
 
 /** @type {ReturnType<typeof setTimeout>|null} */ let loadTimer = null;
