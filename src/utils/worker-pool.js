@@ -45,7 +45,7 @@ export async function loadDNA(s, variants, file, onProgress) {
     await dropGenotypedDNA(genotypedTables);
     genotypedTables = null;
   }
-  resetUnifiedDNA();
+  await resetUnifiedDNA();
 
   if (file) {
     const entries = await parseTar(file);
@@ -58,7 +58,7 @@ export async function loadDNA(s, variants, file, onProgress) {
       await registerBuffer(e.name, buf);
     }
     await loadUnifiedDNA(entries.filter((e) => e.name.endsWith('.parquet')).map((e) => e.name));
-    await new Promise((r) => setTimeout(r, 100));
+    await new Promise((r) => setTimeout(r, 200));
   } else {
     const liftoverFiles = await loadLiftover();
     genotypedTables = await loadGenotypedDNA(variants, onProgress, liftoverFiles);

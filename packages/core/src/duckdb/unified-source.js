@@ -115,5 +115,10 @@ function accumulate(map, r) {
 }
 
 
-/** Reset chromosome files (for switching individuals). */
-export function resetUnifiedDNA() { chrFiles = []; }
+/** Reset chromosome files and drop them from DuckDB. */
+export async function resetUnifiedDNA() {
+  for (const f of chrFiles) {
+    try { await ddb.dropFile(f); } catch { /* may not exist */ }
+  }
+  chrFiles = [];
+}
