@@ -45,7 +45,8 @@ export async function initQueue(host) {
   await queue.scanAndQueue();
 
   const settings = await queue.getScoringSettings();
-  if (settings.autoScore) {
+  const wasPaused = localStorage.getItem('asili_paused') === '1';
+  if (settings.autoScore && !wasPaused) {
     await queue.start();
   }
 }

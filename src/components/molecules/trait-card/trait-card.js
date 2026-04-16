@@ -96,11 +96,21 @@ function scoredBody(pct, conf, val, u, m, ie, cov) {
 
 /** @param {boolean} scored @param {boolean} scoring @param {boolean} hasInd @param {string} conf */
 function emptyBody(scored, scoring, hasInd, conf) {
-  if (scoring) return html`<p class="trait-card__empty">Scoring…</p>`;
-  if (scored && NULL_CONF.includes(conf))
-    return html`<p class="trait-card__empty trait-card__empty--nodata">
-      No variant matches<br /><span class="trait-card__hint">Imputation recommended</span>
-    </p>`;
-  if (hasInd) return html`<p class="trait-card__empty">Not yet scored</p>`;
-  return html`<p class="trait-card__empty">Upload DNA to see your score</p>`;
+  const msg = scoring
+    ? 'Scoring…'
+    : scored && NULL_CONF.includes(conf)
+      ? 'No variant matches'
+      : hasInd
+        ? 'Not yet scored'
+        : 'Upload DNA';
+  return html`
+    <div class="trait-card__placeholder">
+      <mini-curve value="50" indEmoji="" markers=""></mini-curve>
+      <div class="trait-card__score">
+        <span class="trait-card__percentile trait-card__percentile--empty">—</span>
+        <span class="trait-card__pct-label">percentile</span>
+      </div>
+    </div>
+    <p class="trait-card__empty">${msg}</p>
+  `;
 }

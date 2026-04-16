@@ -18,6 +18,7 @@ import { buildCategorySummary } from '#utils/categories.js';
 import { getTraitList } from '#utils/manifest.js';
 import { appHeader } from '#molecules/app-header/app-header.js';
 import { appFooter } from '#molecules/app-footer/app-footer.js';
+import { toggleSettings } from '#utils/settings-toggle.js';
 import { traitTable } from './report-helpers.js';
 import * as idb from '/packages/core/src/data-layer/idb.js';
 
@@ -61,7 +62,7 @@ export default define({
         <div class="report">
           ${appHeader({
             badge: 'beta',
-            settingsUrl: '/beta/settings',
+            onSettings: () => toggleSettings(),
             center: html`<individual-switcher
               activeId="${activeId}"
               onswitch-individual="${handleSwitch}"

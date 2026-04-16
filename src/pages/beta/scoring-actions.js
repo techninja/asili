@@ -8,11 +8,13 @@ import { storeHandle, restoreAll } from '#utils/file-handle.js';
 
 /** Pause the global queue. */
 export async function handlePause() {
+  localStorage.setItem('asili_paused', '1');
   await queue.pause();
 }
 
 /** Resume the global queue. */
 export async function handleResume() {
+  localStorage.removeItem('asili_paused');
   await queue.resume();
 }
 
@@ -21,6 +23,7 @@ export async function handleResumePermission() {
   const restored = await restoreAll(true);
   for (const [id, file] of restored) queue.registerImputedFile(id, file);
   if (restored.size > 0) {
+    localStorage.removeItem('asili_paused');
     await queue.scanAndQueue();
     await queue.start();
     return;
@@ -39,6 +42,7 @@ export async function handleResumePermission() {
       queue.registerImputedFile(needIds[i], file);
       storeHandle(needIds[i], handles[i]);
     }
+    localStorage.removeItem('asili_paused');
     await queue.scanAndQueue();
     await queue.start();
   } catch {

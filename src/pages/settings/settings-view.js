@@ -140,11 +140,10 @@ async function doClearAll(host) {
   await resetQueue();
   clearFamilyCache();
   localStorage.removeItem('asili_activeId');
+  localStorage.removeItem('asili_gridPrefs');
   await idb.openDB();
   for (const store of ['individuals', 'variants', 'results', 'settings']) {
     await idb.clear(store);
   }
-  host.individuals = [];
-  host.confirmClear = false;
-  host.storageInfo = '0 MB used';
+  window.location.href = '/';
 }

@@ -19,6 +19,7 @@ import { results, getActiveId, loadResults } from '#pages/beta/results-store.js'
 import { getTraitList, getPgsMeta } from '#utils/manifest.js';
 import { appHeader } from '#molecules/app-header/app-header.js';
 import { appFooter } from '#molecules/app-footer/app-footer.js';
+import { toggleSettings } from '#utils/settings-toggle.js';
 import { loadFamily } from './trait-detail-helpers.js';
 import { scoredContent } from './trait-detail-sections.js';
 import { scoreHero } from './trait-detail-hero.js';
@@ -53,7 +54,7 @@ const TraitDetail = define({
         <div class="trait-detail">
           ${appHeader({
             badge: 'beta',
-            settingsUrl: '/beta/settings',
+            onSettings: () => toggleSettings(),
             center: html`<individual-switcher
               activeId="${host.activeId}"
               onswitch-individual="${handleSwitch}"

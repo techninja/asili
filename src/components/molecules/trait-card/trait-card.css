@@ -20,6 +20,15 @@
   opacity: 0.65;
 }
 
+.trait-card__placeholder {
+  opacity: 0.25;
+  pointer-events: none;
+}
+
+.trait-card__percentile--empty {
+  color: var(--color-text-muted);
+}
+
 .trait-card__header {
   display: flex;
   align-items: center;
@@ -68,9 +77,7 @@
   color: var(--color-text-muted);
   margin: 0;
   font-style: italic;
-  min-height: 3rem;
-  display: flex;
-  align-items: center;
+  text-align: center;
 }
 
 .trait-card__empty--nodata {

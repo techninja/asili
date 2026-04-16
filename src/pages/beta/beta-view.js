@@ -19,13 +19,15 @@ import { loadResults } from './results-store.js';
 import { initQueue, switchIndividual } from './scoring-controller.js';
 import { appHeader } from '#molecules/app-header/app-header.js';
 import { appFooter } from '#molecules/app-footer/app-footer.js';
+import { toggleSettings } from '#utils/settings-toggle.js';
 import TraitDetailView from '#pages/trait-detail/trait-detail-view.js';
 import ReportView from '#pages/report/report-view.js';
-import SettingsView from '#pages/settings/settings-view.js';
+// @ts-ignore
+import '#organisms/settings-drawer/settings-drawer.js';
 
 export default define({
   tag: 'beta-view',
-  [router.connect]: { url: '/beta', stack: [TraitDetailView, ReportView, SettingsView] },
+  [router.connect]: { url: '/beta', stack: [TraitDetailView, ReportView] },
   individuals: { value: [], connect: () => {} },
   activeId: '',
   resultCount: 0,
@@ -78,7 +80,9 @@ export default define({
         <div class="beta-view">
           ${appHeader({
             badge: 'beta',
-            settingsUrl: `${router.url(SettingsView)}`,
+            onSettings: (h) => {
+              toggleSettings();
+            },
             center: hasData ? individualSelector(host, list, handleSwitch) : html``,
             trailing: hasData
               ? html`<button
