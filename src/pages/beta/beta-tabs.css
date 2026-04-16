@@ -1,0 +1,40 @@
+/* Tab bar for beta view — sticky below header */
+.beta-view__tabs {
+  display: flex;
+  gap: 0;
+  padding-top: var(--space-sm);
+  border-bottom: 2px solid var(--color-border);
+  position: sticky;
+  top: 3.25rem;
+  z-index: 90;
+  background: color-mix(in srgb, var(--color-bg) 90%, transparent);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  box-shadow: 0 4px 8px -2px rgb(0 0 0 / 15%);
+}
+
+.beta-view__tab {
+  display: flex;
+  align-items: center;
+  gap: var(--space-xs);
+  padding: var(--space-sm) var(--space-md);
+  background: none;
+  border: none;
+  border-bottom: 2px solid transparent;
+  margin-bottom: -2px;
+  color: var(--color-text-muted);
+  font-size: var(--text-sm);
+  cursor: pointer;
+  transition:
+    color 0.15s,
+    border-color 0.15s;
+
+  &:hover {
+    color: var(--color-text);
+  }
+}
+
+.beta-view__tab--active {
+  color: var(--color-primary);
+  border-bottom-color: var(--color-primary);
+}

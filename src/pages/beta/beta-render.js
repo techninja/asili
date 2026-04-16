@@ -1,44 +1,37 @@
 /**
- * Beta view render sections — individual selector, content areas, upload panel.
+ * Beta view render sections — individual selector, tabs, content areas.
  * @module pages/beta/beta-render
  */
 
-import { html, router } from 'hybrids';
+import { html } from 'hybrids';
 import { handleFile, handleSetup } from './beta-sections.js';
 import { scoringBanner } from './scoring-banner.js';
-import { getQueueState } from './scoring-controller.js';
 import { heroContent } from './beta-hero.js';
-import ReportView from '#pages/report/report-view.js';
+import { reportContent } from './beta-report.js';
+// @ts-ignore
+import '#atoms/app-icon/app-icon.js';
+// @ts-ignore
+import '#organisms/data-table/data-table.js';
 
 /** @param {object} host @param {Array<object>} list @param {Function} switchFn */
 export function individualSelector(host, list, switchFn) {
-  const state = getQueueState();
   return html`
     <div class="beta-view__selector">
-      ${list.map((ind) => {
-        const progress = state.byIndividual[ind.id];
-        const fraction = progress ? `${progress.done}/${progress.total}` : '';
-        const isScoring = state.currentScoringId === ind.id;
-        return html`
+      ${list.map(
+        (ind) => html`
           <button
             class="beta-view__ind-btn ${ind.id === host.activeId
               ? 'beta-view__ind-btn--active'
-              : ''} ${isScoring ? 'beta-view__ind-btn--scoring' : ''}"
+              : ''}"
             onclick="${(h) => {
               h.showUpload = false;
               switchFn(h, ind.id);
             }}"
-            title="${fraction}"
           >
             ${ind.hasImputed ? '⭐' : ''} ${ind.emoji} ${ind.name}
-            ${progress && progress.done < progress.total
-              ? html`<span class="beta-view__ind-progress"
-                  >${progress.done}/${progress.total}</span
-                >`
-              : html``}
           </button>
-        `;
-      })}
+        `,
+      )}
     </div>
   `;
 }
@@ -59,13 +52,44 @@ export function uploadPanel(host, cancelFn) {
   `;
 }
 
+const TABS = [
+  { id: 'traits', label: 'Traits', icon: 'grid' },
+  { id: 'table', label: 'Table', icon: 'list' },
+  { id: 'report', label: 'Report', icon: 'chart-pie' },
+];
+
 /** @param {object} host */
 export function appContent(host) {
   return html`
     ${scoringBanner(host)}
-    <div class="beta-view__actions">
-      <a href="${router.url(ReportView)}" class="btn btn-ghost">📄 Report</a>
+    <div class="beta-view__tabs">
+      ${TABS.map(
+        (t) => html`
+          <button
+            class="beta-view__tab ${host.activeTab === t.id ? 'beta-view__tab--active' : ''}"
+            onclick="${(h) => {
+              h.activeTab = t.id;
+            }}"
+          >
+            <app-icon name="${t.icon}"></app-icon> ${t.label}
+          </button>
+        `,
+      )}
     </div>
+    ${host.activeTab === 'traits' ? traitsTab(host) : html``}
+    ${host.activeTab === 'table' ? tableTab(host) : html``}
+    ${host.activeTab === 'report' ? reportContent(host) : html``}
+  `;
+}
+
+/** @param {object} host @param {Function} cancelFn */
+export function uploadContent(host, cancelFn) {
+  return heroContent(host, cancelFn);
+}
+
+/** @param {object} host */
+function traitsTab(host) {
+  return html`
     <trait-grid
       resultCount="${host.resultCount}"
       scoring="${host.scoringStatus === 'scoring'}"
@@ -73,9 +97,9 @@ export function appContent(host) {
   `;
 }
 
-/** @param {object} host @param {Function} cancelFn */
-export function uploadContent(host, cancelFn) {
-  return heroContent(host, cancelFn);
+/** @param {object} host */
+function tableTab(host) {
+  return html` <data-table resultCount="${host.resultCount}"></data-table> `;
 }
 
 /** @param {object} host */

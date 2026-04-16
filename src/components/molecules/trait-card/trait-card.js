@@ -11,6 +11,14 @@ import '#atoms/confidence-badge/confidence-badge.js';
 
 const NULL_CONF = ['none', 'insufficient', ''];
 
+/** @param {number} cov Coverage 0-100 @returns {string} CSS class */
+function qualityTier(cov) {
+  if (cov >= 80) return 'trait-card--tier-high';
+  if (cov >= 50) return 'trait-card--tier-mid';
+  if (cov >= 20) return 'trait-card--tier-low';
+  return 'trait-card--tier-min';
+}
+
 /** @param {number} p @returns {string} */
 function fmtPct(p) {
   const r = Math.round(p);
@@ -60,16 +68,22 @@ export default define({
       category,
     }) => {
       const hasResult = scored && !NULL_CONF.includes(confidence);
+      const tier = hasResult ? qualityTier(coverage) : '';
       return html`
-        <div class="trait-card ${hasResult ? 'trait-card--scored' : 'trait-card--empty'}">
+        <div class="trait-card ${hasResult ? 'trait-card--scored' : 'trait-card--empty'} ${tier}">
           <div class="trait-card__header">
             <span class="trait-card__emoji">${emoji}</span>
             <span class="trait-card__name">${name}</span>
           </div>
           ${hasResult
-            ? scoredBody(percentile, confidence, value, unit, markers, indEmoji, coverage)
+            ? scoredBody(percentile, confidence, value, unit, markers, indEmoji)
             : emptyBody(scored, scoring, hasIndividual, confidence)}
-          ${category ? html`<span class="trait-card__category">${category}</span>` : html``}
+          <div class="trait-card__footer">
+            ${category ? html`<span class="trait-card__category">${category}</span>` : html``}
+            ${hasResult && coverage > 0 && coverage < 50
+              ? html`<span class="trait-card__coverage">${Math.round(coverage)}%</span>`
+              : html``}
+          </div>
         </div>
       `;
     },
@@ -78,19 +92,17 @@ export default define({
 });
 
 /** @param {number} pct @param {string} conf @param {string} val @param {string} u @param {string} m @param {string} ie */
-function scoredBody(pct, conf, val, u, m, ie, cov) {
-  const lowCov = cov > 0 && cov < 50;
+function scoredBody(pct, conf, val, u, m, ie) {
   return html`
     <mini-curve value="${pct}" indEmoji="${ie}" markers="${m}"></mini-curve>
     <div class="trait-card__score">
       <span class="trait-card__percentile">${fmtPct(pct)}</span>
       <span class="trait-card__pct-label">percentile</span>
-      ${val ? html`<span class="trait-card__value">${val} ${u}</span>` : html``}
+      ${val ? html`<span class="trait-card__value">${val}</span>` : html``}
     </div>
-    ${lowCov
-      ? html`<span class="trait-card__coverage">${Math.round(cov)}% coverage</span>`
+    ${conf && conf !== 'high'
+      ? html`<confidence-badge level="${conf}"></confidence-badge>`
       : html``}
-    <confidence-badge level="${conf}"></confidence-badge>
   `;
 }
 

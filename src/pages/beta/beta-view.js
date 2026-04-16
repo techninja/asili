@@ -21,13 +21,12 @@ import { appHeader } from '#molecules/app-header/app-header.js';
 import { appFooter } from '#molecules/app-footer/app-footer.js';
 import { toggleSettings } from '#utils/settings-toggle.js';
 import TraitDetailView from '#pages/trait-detail/trait-detail-view.js';
-import ReportView from '#pages/report/report-view.js';
 // @ts-ignore
 import '#organisms/settings-drawer/settings-drawer.js';
 
 export default define({
   tag: 'beta-view',
-  [router.connect]: { url: '/beta', stack: [TraitDetailView, ReportView] },
+  [router.connect]: { url: '/beta', stack: [TraitDetailView] },
   individuals: { value: [], connect: () => {} },
   activeId: '',
   resultCount: 0,
@@ -57,6 +56,7 @@ export default define({
   },
   scoringScreen: { value: false, connect: () => {} },
   showUpload: { value: false, connect: () => {} },
+  activeTab: 'traits',
   _variants: { value: [], connect: () => {} },
   _manifest: { value: '', connect: () => {} },
   _init: {

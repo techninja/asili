@@ -17,6 +17,7 @@ import '#molecules/family-compare/family-compare.js';
 import '#molecules/individual-switcher/individual-switcher.js';
 import { results, getActiveId, loadResults } from '#pages/beta/results-store.js';
 import { getTraitList, getPgsMeta } from '#utils/manifest.js';
+import * as idb from '/packages/core/src/data-layer/idb.js';
 import { appHeader } from '#molecules/app-header/app-header.js';
 import { appFooter } from '#molecules/app-footer/app-footer.js';
 import { toggleSettings } from '#utils/settings-toggle.js';
@@ -37,6 +38,7 @@ const TraitDetail = define({
   trait: { value: /** @type {object} */ ({}) },
   pgsMeta: { value: /** @type {object} */ ({}) },
   familyData: { value: /** @type {Array<object>} */ ([]) },
+  indEmoji: '🧬',
   _init: {
     value: false,
     connect: (host) => {
@@ -81,10 +83,10 @@ const TraitDetail = define({
                   </div>`
                 : html``,
           })}
-          <div class="trait-detail__sub-nav">
-            <a href="/beta" class="trait-detail__back"
-              ><app-icon name="arrow-left"></app-icon> Back</a
-            >
+          <div class="beta-view__tabs">
+            <a href="/beta" class="beta-view__tab beta-view__tab--active">
+              <app-icon name="arrow-left"></app-icon> Traits
+            </a>
           </div>
           <main class="trait-detail__main">
             <div class="trait-detail__hero">
@@ -95,7 +97,7 @@ const TraitDetail = define({
                   : html``}
               </div>
               ${r
-                ? scoreHero(r, trait, familyData)
+                ? scoreHero(r, trait, familyData, host.indEmoji)
                 : html`<p class="trait-detail__empty">No result yet.</p>`}
             </div>
             ${r ? scoredContent(r, trait, familyData, pgsMeta) : html``}
@@ -113,6 +115,15 @@ async function initView(host) {
   const id = getActiveId();
   host.activeId = id;
   if (id && !Object.keys(results).length) await loadResults(id);
+
+  // Load individual emoji
+  try {
+    await idb.openDB();
+    const ind = await idb.get('individuals', id);
+    host.indEmoji = ind?.emoji || '🧬';
+  } catch {
+    host.indEmoji = '🧬';
+  }
 
   const list = await getTraitList();
   const idx = list.findIndex((t) => t.trait_id === host.traitId);

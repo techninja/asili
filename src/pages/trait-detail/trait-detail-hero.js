@@ -11,14 +11,14 @@ import '#atoms/mini-curve/mini-curve.js';
 import '#atoms/confidence-badge/confidence-badge.js';
 
 /** Score hero — large bell curve with family markers for the top-right. */
-export function scoreHero(r, t, fd) {
+export function scoreHero(r, t, fd, indEmoji) {
   const fmt = r.value !== null && r.value !== undefined ? formatTraitValue(r.value, t?.unit) : null;
   const markers = (fd || []).map((f) => ({ e: f.emoji || '👤', p: Math.round(f.percentile || 0) }));
   return html`
     <section class="trait-detail__score-hero">
       <mini-curve
         value="${r.percentile || 50}"
-        indEmoji="🧬"
+        indEmoji="${indEmoji || '🧬'}"
         markers="${markers.length ? JSON.stringify(markers) : ''}"
       ></mini-curve>
       <div class="trait-detail__score-stats">
