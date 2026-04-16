@@ -1,0 +1,67 @@
+/* View Transitions — push animations between pages */
+
+/* Default: instant (covers initial load, replace, etc.) */
+::view-transition-old(root),
+::view-transition-new(root) {
+  animation: none;
+}
+
+/* Forward — new pushes old out to the left */
+[router-transition='forward']::view-transition-old(root) {
+  animation: vt-push-out-left 0.3s cubic-bezier(0.4, 0, 0.2, 1) both;
+}
+
+[router-transition='forward']::view-transition-new(root) {
+  animation: vt-push-in-right 0.3s cubic-bezier(0.4, 0, 0.2, 1) both;
+}
+
+/* Backward — new pushes old out to the right */
+[router-transition='backward']::view-transition-old(root) {
+  animation: vt-push-out-right 0.3s cubic-bezier(0.4, 0, 0.2, 1) both;
+}
+
+[router-transition='backward']::view-transition-new(root) {
+  animation: vt-push-in-left 0.3s cubic-bezier(0.4, 0, 0.2, 1) both;
+}
+
+/* Header stays fixed during transition */
+.app-header {
+  view-transition-name: header;
+}
+
+::view-transition-old(header),
+::view-transition-new(header) {
+  animation: none;
+}
+
+/* Overlap pages slightly to eliminate gap */
+@keyframes vt-push-in-right {
+  from {
+    transform: translateX(calc(100vw - 15px));
+  }
+}
+
+@keyframes vt-push-out-left {
+  to {
+    transform: translateX(calc(-100vw + 15px));
+  }
+}
+
+@keyframes vt-push-in-left {
+  from {
+    transform: translateX(calc(-100vw + 15px));
+  }
+}
+
+@keyframes vt-push-out-right {
+  to {
+    transform: translateX(calc(100vw - 15px));
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  [router-transition]::view-transition-old(root),
+  [router-transition]::view-transition-new(root) {
+    animation: none;
+  }
+}
