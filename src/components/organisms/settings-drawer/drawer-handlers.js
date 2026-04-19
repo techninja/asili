@@ -24,10 +24,14 @@ export async function loadData(host) {
   const indCount = host.individuals.length;
   const resultCount = resultKeys.length;
 
-  const est = await navigator.storage?.estimate?.();
-  const idbMB = est ? (est.usage / 1024 / 1024).toFixed(1) : '?';
-  const quota = est ? (est.quota / 1024 / 1024 / 1024).toFixed(1) : '?';
-  host.storageInfo = `${idbMB} MB IndexedDB (${indCount} individuals, ${resultCount} results) · ${quota} GB available`;
+  // Manual size measurement — navigator.storage.estimate() reports 0 when not persisted
+  let totalBytes = 0;
+  for (const store of ['individuals', 'variants', 'results', 'settings']) {
+    const all = await idb.getAll(store);
+    totalBytes += new Blob([JSON.stringify(all)]).size;
+  }
+  const mb = (totalBytes / 1024 / 1024).toFixed(1);
+  host.storageInfo = `${mb} MB stored (${indCount} individuals, ${resultCount} results)`;
 
   const prefs = await getScoringSettings();
   host.autoScore = prefs.autoScore;

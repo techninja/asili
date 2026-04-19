@@ -1,6 +1,6 @@
 /**
  * AQS breakdown — Asili Quality Score visualization with speedometer
- * and component bar breakdown.
+ * and component bar breakdown with explanations.
  * @module components/atoms/aqs-breakdown
  */
 
@@ -26,7 +26,7 @@ export default define({
           <div class="aqs__bars">
             ${bars.map(
               (b) => html`
-                <div class="aqs__row">
+                <div class="aqs__row" title="${b.desc}">
                   <span class="aqs__label">${b.label}</span>
                   <div class="aqs__bar">
                     <div
@@ -62,12 +62,47 @@ function computeBars(d) {
     signal = az > 5 ? 0 : Math.min(az / 3, 1) * 10;
   }
   return [
-    { label: 'R² accuracy', score: r2 * 35 * cp, max: 35 },
-    { label: 'Validation', score: hasR2 ? Math.min(r2 / 0.44, 1) * 15 : 0, max: 15 },
-    { label: 'Reliability', score: gRatio * coverage * 15, max: 15 },
-    { label: 'Coverage', score: coverage * 10, max: 10 },
-    { label: 'Sample size', score: Math.min(Math.log10(ratio) / 3.1, 1) * 10, max: 10 },
-    { label: 'Normalization', score: d.hasNorm ? 5 : 2.5, max: 5 },
-    { label: 'Signal', score: signal, max: 10 },
+    {
+      label: 'R² accuracy',
+      max: 35,
+      score: r2 * 35 * cp,
+      desc: 'How well this PGS predicts the trait in published studies (R² × 35)',
+    },
+    {
+      label: 'Validation',
+      max: 15,
+      score: hasR2 ? Math.min(r2 / 0.44, 1) * 15 : 0,
+      desc: 'Whether the PGS has a validated R² above the default threshold',
+    },
+    {
+      label: 'Reliability',
+      max: 15,
+      score: gRatio * coverage * 15,
+      desc: 'Proportion of directly genotyped variants × coverage',
+    },
+    {
+      label: 'Coverage',
+      max: 10,
+      score: coverage * 10,
+      desc: 'Percentage of PGS variants found in your DNA data',
+    },
+    {
+      label: 'Sample size',
+      max: 10,
+      score: Math.min(Math.log10(ratio) / 3.1, 1) * 10,
+      desc: 'How many variants were matched (log scale, more = better)',
+    },
+    {
+      label: 'Normalization',
+      max: 5,
+      score: d.hasNorm ? 5 : 2.5,
+      desc: 'Whether population-level statistics are available for z-score calculation',
+    },
+    {
+      label: 'Signal',
+      max: 10,
+      score: signal,
+      desc: 'Strength of the genetic signal — higher z-scores indicate clearer results',
+    },
   ];
 }

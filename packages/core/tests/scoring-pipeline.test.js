@@ -104,10 +104,25 @@ describe('end-to-end scoring pipeline', () => {
     assert.equal(r(result.zScore, 4), r(expectedZ, 4));
   });
 
-  it('high coverage → scaled empirical normalization', () => {
-    // 80/100=80% → uses empirical, scaled by coverage
-    // scaled_mean = 0.5 * 0.8 = 0.4, scaled_sd = 0.8 * sqrt(0.8) ≈ 0.7155
-    // z = (1.5 - 0.4) / 0.7155 ≈ 1.5366
+  it('moderate coverage → scaled empirical normalization', () => {
+    // 50/100=50% → uses empirical, scaled by coverage
+    // scaled_mean = 0.5 * 0.5 = 0.25, scaled_sd = 0.8 * sqrt(0.5) ≈ 0.5657
+    const scored = buildScoredMaps([{
+      pgs_id: 'M50', raw_score: 0.8, matched_variants: 50,
+      imputed_variants: 0, genotyped_variants: 50,
+      positive_count: 30, positive_sum: 1.0,
+      negative_count: 20, negative_sum: -0.2, weight_sum_squared: 0.5,
+    }], []);
+    const result = finalize(scored,
+      { M50: { norm_mean: 0.5, norm_sd: 0.8, variants_number: 100 } });
+    const sMean = 0.5 * 0.5;
+    const sSd = 0.8 * Math.sqrt(0.5);
+    assert.equal(r(result.zScore, 3), r((0.8 - sMean) / sSd, 3));
+  });
+
+  it('high coverage → unscaled empirical normalization', () => {
+    // 80/100=80% → uses empirical, NO scaling (coverage >= 0.8)
+    // z = (1.5 - 0.5) / 0.8 = 1.25
     const scored = buildScoredMaps([{
       pgs_id: 'E', raw_score: 1.5, matched_variants: 80,
       imputed_variants: 0, genotyped_variants: 80,
@@ -116,9 +131,7 @@ describe('end-to-end scoring pipeline', () => {
     }], []);
     const result = finalize(scored,
       { E: { norm_mean: 0.5, norm_sd: 0.8, variants_number: 100 } });
-    const sMean = 0.5 * 0.8;
-    const sSd = 0.8 * Math.sqrt(0.8);
-    assert.equal(r(result.zScore, 3), r((1.5 - sMean) / sSd, 3));
+    assert.equal(r(result.zScore, 4), 1.25);
   });
 
   it('full coverage → unscaled empirical normalization', () => {
