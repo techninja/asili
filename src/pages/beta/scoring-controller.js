@@ -56,9 +56,9 @@ export async function initQueue(host) {
 export async function switchIndividual(host, individualId) {
   queue.setActiveIndividual(individualId);
   host.activeId = individualId;
-  host.resultCount = 0;
   const count = await loadResults(individualId);
   host.resultCount = count;
+  host._switchEpoch = Date.now();
 }
 
 /** New individual created — register file, rescan, start. */

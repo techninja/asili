@@ -31,6 +31,7 @@ export default define({
     },
   },
   scoring: false,
+  switchEpoch: 0,
   search: '',
   sortBy: 'name',
   sortDir: 'asc',
@@ -44,6 +45,9 @@ export default define({
   },
   render: {
     value: (host) => {
+      void host.resultCount;
+      void host.scoring;
+      void host.switchEpoch;
       const cats = getCategories(host.traits);
       const { visible, totalScored } = filterAndSort(host.traits, {
         search: host.search,

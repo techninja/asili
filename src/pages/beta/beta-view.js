@@ -30,6 +30,7 @@ export default define({
   individuals: { value: [], connect: () => {} },
   activeId: '',
   resultCount: 0,
+  _switchEpoch: 0,
   parseStatus: { value: '', connect: () => {} },
   parsedCount: { value: 0, connect: () => {} },
   parsedFormat: { value: '', connect: () => {} },

@@ -92,6 +92,7 @@ function traitsTab(host) {
   return html`
     <trait-grid
       resultCount="${host.resultCount}"
+      switchEpoch="${host._switchEpoch}"
       scoring="${host.scoringStatus === 'scoring'}"
     ></trait-grid>
   `;
@@ -99,7 +100,9 @@ function traitsTab(host) {
 
 /** @param {object} host */
 function tableTab(host) {
-  return html` <data-table resultCount="${host.resultCount}"></data-table> `;
+  return html`
+    <data-table resultCount="${host.resultCount}" switchEpoch="${host._switchEpoch}"></data-table>
+  `;
 }
 
 /** @param {object} host */

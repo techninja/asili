@@ -16,6 +16,7 @@ const meta = (id) => COL_MAP.get(id) || {};
 export default define({
   tag: 'data-table',
   resultCount: 0,
+  switchEpoch: 0,
   showAll: false,
   sorts: { value: /** @type {Array} */ ([]), connect: () => {} },
   columns: {
@@ -53,6 +54,7 @@ export default define({
   render: {
     value: (host) => {
       void host.resultCount;
+      void host.switchEpoch;
       const active = host.columns.filter((c) => c.on);
       const src = host.showAll ? host.allResults : [{ id: getActiveId(), results }];
       const sorted = applySort(buildRows(host.traits, src), host.sorts);
