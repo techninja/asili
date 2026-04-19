@@ -3,12 +3,12 @@
  * @module components/organisms/trait-grid/grid-prefs
  */
 
-const KEY = 'asili_gridPrefs';
+import { get, set } from '#utils/storage.js';
 
 /** @param {object} host */
 export function loadPrefs(host) {
   try {
-    const s = JSON.parse(localStorage.getItem(KEY) || '{}');
+    const s = JSON.parse(get('gridPrefs') || '{}');
     if (s.sortBy) host.sortBy = s.sortBy;
     if (s.sortDir) host.sortDir = s.sortDir;
     if (s.scoredOnly) host.scoredOnly = s.scoredOnly;
@@ -20,8 +20,8 @@ export function loadPrefs(host) {
 
 /** @param {object} host */
 export function savePrefs(host) {
-  localStorage.setItem(
-    KEY,
+  set(
+    'gridPrefs',
     JSON.stringify({
       sortBy: host.sortBy,
       sortDir: host.sortDir,

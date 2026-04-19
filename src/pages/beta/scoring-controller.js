@@ -5,6 +5,7 @@
  */
 
 import * as queue from '#utils/scoring-queue.js';
+import { get } from '#utils/storage.js';
 import { loadResults } from './results-store.js';
 import {
   getPendingImputedFile,
@@ -45,7 +46,7 @@ export async function initQueue(host) {
   await queue.scanAndQueue();
 
   const settings = await queue.getScoringSettings();
-  const wasPaused = localStorage.getItem('asili_paused') === '1';
+  const wasPaused = get('paused') === '1';
   if (settings.autoScore && !wasPaused) {
     await queue.start();
   }

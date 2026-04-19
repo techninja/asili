@@ -1,0 +1,100 @@
+/* Top variants — table with waterfall background */
+.trait-detail__variants {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.trait-detail__variants-title {
+  margin: 0;
+  padding-bottom: var(--space-sm);
+}
+
+.trait-detail__variants-scroll {
+  max-height: 12rem;
+  overflow-y: auto;
+}
+
+/* Waterfall layer — sits behind tbody rows */
+.trait-detail__variants-body {
+  position: relative;
+}
+
+.trait-detail__var-wf-layer {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  display: flex;
+  flex-direction: column;
+}
+
+.trait-detail__var-wf-zero {
+  position: absolute;
+  left: 50%;
+  top: 0;
+  bottom: 0;
+  width: 1px;
+  background: var(--color-border);
+  opacity: 0.3;
+}
+
+.trait-detail__var-wf-row {
+  flex: 1;
+  position: relative;
+}
+
+.trait-detail__var-wf-bar {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  border-radius: 2px;
+  opacity: 0.25;
+}
+
+/* Table sits on top of waterfall */
+.trait-detail__var-table {
+  position: relative;
+  z-index: 1;
+  width: 100%;
+  border-collapse: collapse;
+  font-size: var(--text-sm);
+}
+
+.trait-detail__var-table thead {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+}
+
+.trait-detail__var-table th {
+  text-align: left;
+  padding: var(--space-xs) var(--space-sm);
+  border-bottom: 2px solid var(--color-border);
+  color: var(--color-text-muted);
+  font-weight: 600;
+  white-space: nowrap;
+  background: var(--color-surface);
+}
+
+.trait-detail__var-table td {
+  padding: var(--space-xs) var(--space-sm);
+  border-bottom: 1px solid var(--color-border);
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  background: transparent;
+}
+
+.trait-detail__var-link {
+  color: var(--color-primary);
+  text-decoration: none;
+
+  &:hover {
+    text-decoration: underline;
+  }
+}
+
+.trait-detail__var-geno {
+  font-weight: 600;
+  color: var(--color-accent);
+}

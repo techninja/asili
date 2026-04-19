@@ -36,6 +36,31 @@ describe('buildScoredMaps', () => {
     assert.equal(b.chromosomeCoverage['2'], 1);
   });
 
+  it('stores chromosome contribution and imputed counts', () => {
+    const agg = [{
+      pgs_id: 'PGS001', raw_score: 1.5, matched_variants: 3,
+      imputed_variants: 1, genotyped_variants: 2,
+      positive_count: 2, positive_sum: 1.8,
+      negative_count: 1, negative_sum: -0.3, weight_sum_squared: 0.98,
+    }];
+    const cov = [
+      { pgs_id: 'PGS001', chr: '1', cnt: 2, chr_contribution: 1.2, chr_imputed: 0 },
+      { pgs_id: 'PGS001', chr: '2', cnt: 1, chr_contribution: 0.3, chr_imputed: 1 },
+    ];
+    const tot = [
+      { pgs_id: 'PGS001', chr: '1', cnt: 5 },
+      { pgs_id: 'PGS001', chr: '2', cnt: 3 },
+    ];
+    const result = buildScoredMaps(agg, cov, tot);
+    const b = result.pgsBreakdown.get('PGS001');
+    assert.equal(b.chromosomeContribution['1'], 1.2);
+    assert.equal(b.chromosomeContribution['2'], 0.3);
+    assert.equal(b.chromosomeImputed['1'], 0);
+    assert.equal(b.chromosomeImputed['2'], 1);
+    assert.equal(b.chromosomeTotals['1'], 5);
+    assert.equal(b.chromosomeTotals['2'], 3);
+  });
+
   it('accumulates across chromosomes', () => {
     const agg = [
       { pgs_id: 'P', raw_score: 0.5, matched_variants: 2,

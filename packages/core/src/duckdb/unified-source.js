@@ -77,7 +77,15 @@ export async function scoreUnifiedChrPacks(traitChrFiles, onChr) {
       matchedSoFar += Number(r.matched_variants) || 0;
     }
     const cov = await ddb.query(`
-      SELECT t.pgs_id, '${chrNum}' as chr, COUNT(*) AS cnt
+      SELECT t.pgs_id, '${chrNum}' as chr, COUNT(*) AS cnt,
+        SUM(t.effect_weight
+          * CASE WHEN t.effect_allele = GREATEST(
+                   SPLIT_PART(t.variant_id,':',3), SPLIT_PART(t.variant_id,':',4))
+                 THEN d.genotype_dosage ELSE 2.0 - d.genotype_dosage END
+          * CASE WHEN d.imputed AND d.imputation_quality IS NOT NULL
+                 THEN SQRT(d.imputation_quality) ELSE 1.0 END
+        ) AS chr_contribution,
+        SUM(CASE WHEN d.imputed THEN 1 ELSE 0 END) AS chr_imputed
       FROM '${traitChr}' t
       INNER JOIN ${dnaRef} d ON t.pos=d.pos AND t.allele_key=d.allele_key
       GROUP BY t.pgs_id
@@ -114,6 +122,9 @@ function accumulate(map, r) {
   }
 }
 
+
+/** @returns {string[]} Current chromosome files. */
+export function getChrFiles() { return chrFiles; }
 
 /** Reset chromosome files and drop them from DuckDB. */
 export async function resetUnifiedDNA() {

@@ -10,6 +10,7 @@ import * as idb from '/packages/core/src/data-layer/idb.js';
 import { getScoringSettings, saveScoringSettings } from '#utils/queue-settings.js';
 import { resetQueue } from '#utils/scoring-queue.js';
 import { clearFamilyCache } from '#organisms/trait-grid/render-card.js';
+import { clearLocalStorage, IDB_STORES } from '#utils/storage.js';
 import { storageSection, scoringSection, dangerSection } from './settings-sections.js';
 
 export default define({
@@ -139,10 +140,9 @@ async function handleUpgrade(host, e) {
 async function doClearAll(host) {
   await resetQueue();
   clearFamilyCache();
-  localStorage.removeItem('asili_activeId');
-  localStorage.removeItem('asili_gridPrefs');
+  clearLocalStorage();
   await idb.openDB();
-  for (const store of ['individuals', 'variants', 'results', 'settings']) {
+  for (const store of IDB_STORES) {
     await idb.clear(store);
   }
   window.location.href = '/';

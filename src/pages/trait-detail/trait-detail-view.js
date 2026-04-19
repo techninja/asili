@@ -100,7 +100,7 @@ const TraitDetail = define({
                 ? scoreHero(r, trait, familyData, host.indEmoji)
                 : html`<p class="trait-detail__empty">No result yet.</p>`}
             </div>
-            ${r ? scoredContent(r, trait, familyData, pgsMeta) : html``}
+            ${r ? scoredContent(r, trait, familyData, pgsMeta, host.indEmoji) : html``}
           </main>
           ${appFooter()}
         </div>

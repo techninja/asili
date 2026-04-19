@@ -1,0 +1,23 @@
+/* Chromosome contribution diverging bar chart */
+.chr-contrib {
+  width: 100%;
+}
+
+.chr-contrib__svg {
+  width: 100%;
+  height: auto;
+  display: block;
+  overflow: visible;
+}
+
+.chr-contrib__svg rect:hover {
+  filter: brightness(1.3);
+}
+
+.chr-contrib__total {
+  font-size: 0.7rem;
+  color: var(--color-text-muted);
+  text-align: center;
+  padding-top: var(--space-xs);
+  font-family: var(--font-mono);
+}

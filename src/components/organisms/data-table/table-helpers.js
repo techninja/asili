@@ -17,16 +17,27 @@ export function buildRows(traits, indResults) {
       const det = r.bestPGS && r.pgsDetails?.[r.bestPGS];
       const fmt =
         r.value !== null && r.value !== undefined ? formatTraitValue(r.value, t.unit) : null;
+      const pgsCount = r.pgsDetails ? Object.keys(r.pgsDetails).length : 0;
       rows.push({
         _ind: `${ind.emoji || ''} ${ind.name || ''}`.trim(),
         name: `${t.emoji || '🧬'} ${t.name}`,
+        _sortName: t.name,
+        _traitId: t.trait_id,
+        category: t.category || '',
         percentile: r.percentile !== null ? Math.round(r.percentile) : null,
         zScore: r.zScore !== null ? +r.zScore.toFixed(2) : null,
         value: fmt?.display || '—',
+        aqs: det?.qualityScore ? Math.round(det.qualityScore) : null,
         confidence: r.confidence || '',
-        coverage: det?.coverage !== null ? Math.round((det?.coverage || 0) * 100) : null,
+        coverage: det?.coverage !== undefined ? Math.round((det.coverage || 0) * 100) : null,
+        r2: det?.performanceMetric ? +(det.performanceMetric * 100).toFixed(1) : null,
+        genotyped: det?.genotypedVariants || null,
+        imputed: det?.imputedVariants || null,
         bestPGS: r.bestPGS || '',
-        matches: r.totalMatches || 0,
+        pgsMatches: det?.matchedVariants || null,
+        traitMatches: r.totalMatches || null,
+        pgsCount: pgsCount || null,
+        rawScore: det?.score !== null && det?.score !== undefined ? +det.score.toFixed(4) : null,
       });
     }
   }
@@ -44,11 +55,10 @@ export function toggleSort(host, colId) {
   host.sorts = next;
 }
 
-/** @param {Array} sorts @param {string} colId */
-export function sortIcon(sorts, colId) {
+/** @param {Array} sorts @param {string} colId @returns {'asc'|'desc'|null} */
+export function sortDir(sorts, colId) {
   const s = sorts.find((x) => x.id === colId);
-  if (!s) return '';
-  return s.dir === 'asc' ? ' ↑' : ' ↓';
+  return s?.dir || null;
 }
 
 /** @param {Array} rows @param {Array} sorts */
@@ -56,8 +66,9 @@ export function applySort(rows, sorts) {
   if (!sorts.length) return rows;
   return [...rows].sort((a, b) => {
     for (const s of sorts) {
-      const av = a[s.id] ?? '',
-        bv = b[s.id] ?? '';
+      const sortKey = s.id === 'name' ? '_sortName' : s.id;
+      const av = a[sortKey] ?? '',
+        bv = b[sortKey] ?? '';
       const cmp = typeof av === 'number' ? av - bv : String(av).localeCompare(String(bv));
       if (cmp !== 0) return s.dir === 'asc' ? cmp : -cmp;
     }

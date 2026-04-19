@@ -7,16 +7,18 @@
  */
 
 import { registerBuffer, dropFile } from '/packages/core/src/duckdb/adapter.js';
-import { scoreUnifiedChrPacks } from '/packages/core/src/duckdb/unified-source.js';
+import { scoreUnifiedChrPacks, getChrFiles } from '/packages/core/src/duckdb/unified-source.js';
 import { buildScoredMaps } from '/packages/core/src/duckdb/scored-maps.js';
+import { fetchTopVariants } from '/packages/core/src/duckdb/top-variants.js';
 import { finalize } from '/packages/core/src/scorer.js';
 import { loadManifest } from '#utils/manifest.js';
+import { get as storageGet } from '#utils/storage.js';
 
 /** @type {Record<string, object>|null} */
 let normCache = null;
 
 /** Fetch PGS normalization params + R² from manifest metadata. Cached. */
-async function getNormParams() {
+export async function getNormParams() {
   if (normCache) return normCache;
   normCache = {};
   try {
@@ -25,6 +27,8 @@ async function getNormParams() {
     const raw = await resp.json();
     for (const [id, v] of Object.entries(raw)) {
       normCache[id] = { norm_mean: v.m, norm_sd: v.s, variants_number: v.n };
+      if (v.d) normCache[id].distribution = v.d;
+      if (v.ancestry) normCache[id].ancestry = v.ancestry;
     }
   } catch (e) {
     console.warn('No pgs_norm_params.json — using theoretical SD', e.message);
@@ -38,6 +42,17 @@ async function getNormParams() {
     }
   } catch {
     /* manifest may not have pgs */
+  }
+  // Apply ancestry-specific norms if user has selected one
+  const ancestry = storageGet('ancestry');
+  if (ancestry) {
+    for (const [id, entry] of Object.entries(normCache)) {
+      const pop = entry.ancestry?.[ancestry];
+      if (pop) {
+        entry.norm_mean = pop.m;
+        entry.norm_sd = pop.s;
+      }
+    }
   }
   return normCache;
 }
@@ -80,11 +95,23 @@ export async function scoreUnifiedTrait(url, t, onProgress) {
   try {
     const { pgsAggregates, chrCoverage, chrTotals } = await scoreUnifiedChrPacks(chrMap, onChr);
     const normParams = await getNormParams();
-    return finalize(buildScoredMaps(pgsAggregates, chrCoverage, chrTotals), normParams, {
+    const result = finalize(buildScoredMaps(pgsAggregates, chrCoverage, chrTotals), normParams, {
       traitType: t.trait_type,
       phenotypeMean: t.phenotype_mean,
       phenotypeSd: t.phenotype_sd,
     });
+    // Fetch top variants for the best PGS while trait files are still loaded
+    if (result.bestPGS) {
+      try {
+        const tv = await fetchTopVariants(getChrFiles(), chrMap, result.bestPGS);
+        if (result.pgsDetails[result.bestPGS]) {
+          result.pgsDetails[result.bestPGS].topVariants = tv;
+        }
+      } catch (e) {
+        console.warn('topVariants:', e.message);
+      }
+    }
+    return result;
   } finally {
     await cleanup();
   }

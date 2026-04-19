@@ -74,33 +74,6 @@ export function riskBalance(r) {
 }
 
 /** @param {object} r */
-export function coverageIndicator(r) {
-  const best = r.bestPGS && r.pgsDetails?.[r.bestPGS];
-  if (!best) return html``;
-  const pct = Math.round((best.coverage || 0) * 100);
-  const matched = best.matchedVariants || 0;
-  const low = pct < 50;
-  return html`
-    <section class="trait-detail__section">
-      <h2><app-icon name="target"></app-icon> Coverage</h2>
-      <div class="trait-detail__coverage-bar">
-        <div
-          class="trait-detail__coverage-fill"
-          style="${{ width: `${Math.min(pct, 100)}%` }}"
-        ></div>
-      </div>
-      <p class="trait-detail__meta">${matched.toLocaleString()} variants matched (${pct}%)</p>
-      ${low
-        ? html`<p class="trait-detail__upsell">
-            ⚠️ Low coverage —
-            <a href="https://asili.dev/diy" target="_blank" rel="noopener">imputation</a>
-            typically unlocks 80–95% coverage for more accurate scores.
-          </p>`
-        : html``}
-    </section>
-  `;
-}
-
 /** Chromosome coverage chart for the best PGS. */
 export function chrCoverageSection(r) {
   const bestPgs = r.bestPGS;

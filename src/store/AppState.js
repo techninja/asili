@@ -4,6 +4,7 @@
  */
 
 import { store } from 'hybrids';
+import { get, set } from '#utils/storage.js';
 
 /**
  * @typedef {object} AppState
@@ -31,11 +32,11 @@ const AppState = {
   queueTotal: 0,
   [store.connect]: {
     get: () => {
-      const raw = localStorage.getItem('appState');
+      const raw = get('appState');
       return raw ? JSON.parse(raw) : {};
     },
     set: (_id, values) => {
-      localStorage.setItem('appState', JSON.stringify(values));
+      set('appState', JSON.stringify(values));
       return values;
     },
   },

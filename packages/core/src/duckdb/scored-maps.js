@@ -29,13 +29,22 @@ export function buildScoredMaps(pgsAggregates, chrCoverage, chrTotals = []) {
       positiveSum: n(r.positive_sum), negativeSum: n(r.negative_sum),
       total: mv, weightSumSquared: n(r.weight_sum_squared),
       chromosomeCoverage: {}, chromosomeTotals: {},
+      chromosomeContribution: {}, chromosomeImputed: {},
       genotypedVariants: n(r.genotyped_variants), imputedVariants: n(r.imputed_variants),
     });
     totalMatches += mv;
   }
   for (const r of chrCoverage) {
     const bd = pgsBreakdown.get(r.pgs_id);
-    if (bd) bd.chromosomeCoverage[r.chr] = Number(r.cnt);
+    if (bd) {
+      bd.chromosomeCoverage[r.chr] = Number(r.cnt);
+      if (r.chr_contribution !== undefined) {
+        bd.chromosomeContribution[r.chr] = Number(r.chr_contribution);
+      }
+      if (r.chr_imputed !== undefined) {
+        bd.chromosomeImputed[r.chr] = Number(r.chr_imputed);
+      }
+    }
   }
   for (const r of chrTotals) {
     const bd = pgsBreakdown.get(r.pgs_id);

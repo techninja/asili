@@ -6,17 +6,17 @@
 import { html } from 'hybrids';
 // @ts-ignore
 import '#atoms/aqs-breakdown/aqs-breakdown.js';
-import {
-  buildPgsEntries,
-  riskBalance,
-  coverageIndicator,
-  chrCoverageSection,
-} from './trait-detail-helpers.js';
+// @ts-ignore
+import '#atoms/score-distribution/score-distribution.js';
+// @ts-ignore
+import '#atoms/chr-contribution/chr-contribution.js';
+import { buildPgsEntries, riskBalance, chrCoverageSection } from './trait-detail-helpers.js';
+import { topVariantsSection } from './trait-detail-variants.js';
 
 const NULL_CONF = ['none', 'insufficient', ''];
 
-/** @param {object} r @param {object|null} t @param {Array} fd @param {object} pm */
-export function scoredContent(r, t, fd, pm) {
+/** @param {object} r @param {object|null} t @param {Array} fd @param {object} pm @param {string} [ie] */
+export function scoredContent(r, t, fd, pm, ie) {
   if (NULL_CONF.includes(r.confidence || '')) return insufficientContent(r);
   const det = r.bestPGS && r.pgsDetails?.[r.bestPGS];
   const totalVars =
@@ -26,9 +26,9 @@ export function scoredContent(r, t, fd, pm) {
   return html`
     <div class="trait-detail__grid">
       ${bestPgsSection(r, det, pm, pgsLink, totalVars)} ${aqsSection(det, totalVars)}
-      ${pgsEntries.length > 0 ? pgsTableSection(pgsEntries) : html``} ${riskBalance(r)}
-      ${coverageIndicator(r)} ${chrCoverageSection(r)}
-      ${fd?.length > 0 ? familySection(fd) : html``}
+      ${distributionSection(r, ie)} ${pgsEntries.length > 0 ? pgsTableSection(pgsEntries) : html``}
+      ${riskBalance(r)} ${chrContributionSection(r)} ${topVariantsSection(r, ie)}
+      ${chrCoverageSection(r)} ${fd?.length > 0 ? familySection(fd) : html``}
     </div>
   `;
 }
@@ -77,6 +77,38 @@ function aqsSection(det, totalVars) {
   `;
 }
 
+/** @param {object} r @param {string} [ie] */
+function distributionSection(r, ie) {
+  const det = r.bestPGS && r.pgsDetails?.[r.bestPGS];
+  if (!det || det.zScore === null || det.zScore === undefined) return html``;
+  return html`
+    <section class="trait-detail__section">
+      <h2><app-icon name="bar-chart"></app-icon> Population Distribution</h2>
+      <score-distribution
+        pgsId="${r.bestPGS}"
+        rawScore="${det.score || 0}"
+        indEmoji="${ie || '🧬'}"
+      ></score-distribution>
+    </section>
+  `;
+}
+
+/** @param {object} r */
+function chrContributionSection(r) {
+  const bd = r.bestPGS && r.pgsBreakdown?.[r.bestPGS];
+  if (!bd?.chromosomeContribution || !Object.keys(bd.chromosomeContribution).length) return html``;
+  const data = JSON.stringify({
+    contribution: bd.chromosomeContribution,
+    imputed: bd.chromosomeImputed || {},
+  });
+  return html`
+    <section class="trait-detail__section">
+      <h2><app-icon name="git-branch"></app-icon> Score by Chromosome</h2>
+      <chr-contribution data="${data}"></chr-contribution>
+    </section>
+  `;
+}
+
 /** @param {Array} entries */
 function pgsTableSection(entries) {
   return html`
@@ -107,6 +139,6 @@ export function insufficientContent(r) {
         Imputation typically unlocks 60–80% coverage for more accurate scores.
       </p>
     </section>
-    ${coverageIndicator(r)}
+    ${topVariantsSection(r)}
   `;
 }

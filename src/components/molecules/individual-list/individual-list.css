@@ -68,3 +68,14 @@
   white-space: nowrap;
   color: var(--color-warning);
 }
+
+.individual-list__upgrade-choices {
+  display: flex;
+  gap: 2px;
+  flex-wrap: wrap;
+
+  & .btn {
+    font-size: var(--text-xs, 0.7rem);
+    gap: 2px;
+  }
+}

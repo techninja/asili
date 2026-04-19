@@ -79,6 +79,17 @@
   margin: 0;
 }
 
+.settings-drawer__note {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-xs);
+  font-size: 0.75rem;
+  color: var(--color-text-muted);
+  margin: 0;
+  opacity: 0.8;
+  line-height: 1.4;
+}
+
 @keyframes sd-fade-in {
   from {
     opacity: 0;
