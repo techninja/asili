@@ -69,7 +69,9 @@ export async function scoreUnifiedChrPacks(traitChrFiles, onChr) {
         SUM(CASE WHEN contribution>0 THEN contribution ELSE 0 END) AS pos_sum,
         SUM(CASE WHEN contribution<0 THEN 1 ELSE 0 END) AS neg_count,
         SUM(CASE WHEN contribution<0 THEN contribution ELSE 0 END) AS neg_sum,
-        SUM(effect_weight * effect_weight) AS wsq
+        SUM(effect_weight * effect_weight) AS wsq,
+        AVG(CASE WHEN imputed AND imputation_quality IS NOT NULL
+             THEN SQRT(imputation_quality) ELSE 1.0 END) AS avg_shrinkage
       FROM m GROUP BY pgs_id
     `);
     for (const r of rows) {
@@ -110,6 +112,7 @@ function accumulate(map, r) {
     e.positive_count += n(r.pos_count); e.positive_sum += n(r.pos_sum);
     e.negative_count += n(r.neg_count); e.negative_sum += n(r.neg_sum);
     e.weight_sum_squared += n(r.wsq);
+    e._shrinkageSum += n(r.avg_shrinkage) * n(r.matched_variants);
   } else {
     map.set(pid, {
       pgs_id: pid, raw_score: n(r.raw_score),
@@ -118,6 +121,7 @@ function accumulate(map, r) {
       positive_count: n(r.pos_count), positive_sum: n(r.pos_sum),
       negative_count: n(r.neg_count), negative_sum: n(r.neg_sum),
       weight_sum_squared: n(r.wsq),
+      _shrinkageSum: n(r.avg_shrinkage) * n(r.matched_variants),
     });
   }
 }

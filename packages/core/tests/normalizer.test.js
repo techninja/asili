@@ -126,3 +126,60 @@ describe('selectBestPGS', () => {
     assert.equal(selectBestPGS(map), 'A');
   });
 });
+
+describe('imputation shrinkage', () => {
+  it('scales empirical mean and SD by avgShrinkage', () => {
+    // avgShrinkage=0.95 (typical for R²≈0.9)
+    const { details, breakdown } = makePGS({
+      score: 0.4, matchedVariants: 100, genotypedVariants: 0,
+      imputedVariants: 100, avgShrinkage: 0.95,
+    });
+    breakdown.total = 100;
+    const np = { norm_mean: 0.5, norm_sd: 0.2, variants_number: 100 };
+    normalizePGS(details, breakdown, np);
+    // 100% coverage → no coverage scaling. Shrinkage scales both.
+    assert.ok(Math.abs(details.normMean - 0.5 * 0.95) < 1e-6);
+    assert.ok(Math.abs(details.normSd - 0.2 * 0.95) < 1e-6);
+    const expectedZ = (0.4 - 0.5 * 0.95) / (0.2 * 0.95);
+    assert.ok(Math.abs(details.zScore - expectedZ) < 0.01);
+  });
+
+  it('no shrinkage for genotyped-only data (shrinkage=1.0)', () => {
+    const { details, breakdown } = makePGS({
+      score: 1.0, matchedVariants: 100, genotypedVariants: 100,
+      avgShrinkage: 1.0,
+    });
+    breakdown.total = 100;
+    const np = { norm_mean: 0.5, norm_sd: 0.8, variants_number: 100 };
+    normalizePGS(details, breakdown, np);
+    assert.equal(details.normMean, 0.5);
+    assert.equal(details.normSd, 0.8);
+  });
+
+  it('shrinkage + coverage scaling compound correctly', () => {
+    // 50% coverage + 0.95 shrinkage
+    const { details, breakdown } = makePGS({
+      score: 0.2, matchedVariants: 50, genotypedVariants: 0,
+      imputedVariants: 50, avgShrinkage: 0.95,
+    });
+    breakdown.total = 50;
+    const np = { norm_mean: 0.5, norm_sd: 0.2, variants_number: 100 };
+    normalizePGS(details, breakdown, np);
+    const sMean = 0.5 * 0.5 * 0.95;
+    const sSd = 0.2 * Math.sqrt(0.5) * 0.95;
+    assert.ok(Math.abs(details.normMean - sMean) < 1e-6);
+    assert.ok(Math.abs(details.normSd - sSd) < 1e-6);
+  });
+
+  it('missing avgShrinkage defaults to 1.0 (no effect)', () => {
+    const { details, breakdown } = makePGS({
+      score: 1.0, matchedVariants: 100, genotypedVariants: 100,
+    });
+    breakdown.total = 100;
+    const np = { norm_mean: 0.5, norm_sd: 0.8, variants_number: 100 };
+    normalizePGS(details, breakdown, np);
+    // No avgShrinkage property → defaults to 1.0
+    assert.equal(details.normMean, 0.5);
+    assert.equal(details.normSd, 0.8);
+  });
+});

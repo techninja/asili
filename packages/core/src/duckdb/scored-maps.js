@@ -19,9 +19,12 @@ export function buildScoredMaps(pgsAggregates, chrCoverage, chrTotals = []) {
   let totalMatches = 0;
   for (const r of pgsAggregates) {
     const mv = n(r.matched_variants);
+    const shrinkage = mv > 0 && r._shrinkageSum !== undefined
+      ? n(r._shrinkageSum) / mv : 1.0;
     pgsDetails.set(r.pgs_id, {
       score: n(r.raw_score), matchedVariants: mv,
       genotypedVariants: n(r.genotyped_variants), imputedVariants: n(r.imputed_variants),
+      avgShrinkage: shrinkage,
       zScore: null, percentile: null, qualityScore: 0, topVariants: [], _topMinAbs: 0,
     });
     pgsBreakdown.set(r.pgs_id, {

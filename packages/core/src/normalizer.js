@@ -42,6 +42,15 @@ export function normalizePGS(
     sd = sd * Math.sqrt(coverage);
   }
 
+  // The norm params assume perfect dosage (no imputation quality scaling).
+  // Browser scoring multiplies imputed contributions by √(R²), shrinking
+  // the actual score. Scale the expected mean by the same factor.
+  const shrinkage = details.avgShrinkage || 1.0;
+  if (useEmpirical && mean !== undefined && shrinkage < 1.0) {
+    mean = mean * shrinkage;
+    sd = sd * shrinkage;
+  }
+
   // Sanity check: if scaled z would be extreme, the empirical norms may not
   // match our scoring method — fall back to theoretical SD.
   if (useEmpirical && mean !== undefined && sd > 0) {
