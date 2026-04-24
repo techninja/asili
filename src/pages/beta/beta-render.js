@@ -7,7 +7,7 @@ import { html } from 'hybrids';
 import { handleFile, handleSetup } from './beta-sections.js';
 import { scoringBanner } from './scoring-banner.js';
 import { heroContent } from './beta-hero.js';
-import { reportContent } from './beta-report.js';
+import '#pages/beta/beta-report.js';
 // @ts-ignore
 import '#atoms/app-icon/app-icon.js';
 // @ts-ignore
@@ -78,7 +78,12 @@ export function appContent(host) {
     </div>
     ${host.activeTab === 'traits' ? traitsTab(host) : html``}
     ${host.activeTab === 'table' ? tableTab(host) : html``}
-    ${host.activeTab === 'report' ? reportContent(host) : html``}
+    ${host.activeTab === 'report'
+      ? html`<report-content
+          resultCount="${host.resultCount}"
+          switchEpoch="${host._switchEpoch}"
+        ></report-content>`
+      : html``}
   `;
 }
 

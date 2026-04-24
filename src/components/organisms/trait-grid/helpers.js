@@ -4,12 +4,11 @@
  */
 
 import { results } from '#pages/beta/results-store.js';
-import { CATEGORY_ORDER, CATEGORY_MAP } from '#utils/categories.js';
+import { CATEGORY_ORDER, resolveCategory } from '#utils/categories.js';
 
 /** @param {object} t @returns {string} */
 export function traitCategory(t) {
-  const raw = t.categories?.[0] || 'Other';
-  return CATEGORY_MAP[raw] || raw;
+  return resolveCategory(t);
 }
 
 /** @param {Array<object>} traits @returns {string[]} */

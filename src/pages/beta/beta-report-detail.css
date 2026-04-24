@@ -1,0 +1,84 @@
+/* Report tab — category cards, quality bars, print */
+.report-tab__cat-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(10rem, 1fr));
+  gap: var(--space-sm);
+}
+
+.report-tab__cat-card {
+  display: flex;
+  flex-direction: column;
+  padding: var(--space-sm) var(--space-md);
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+}
+
+.report-tab__cat-name {
+  font-weight: 600;
+  font-size: var(--text-sm);
+}
+
+.report-tab__cat-pct {
+  font-size: var(--text-lg);
+  font-weight: 800;
+}
+
+.report-tab__cat-detail {
+  font-size: 0.7rem;
+  color: var(--color-text-muted);
+}
+
+.report-tab__quality-bars {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-xs);
+}
+
+.report-tab__qbar-row {
+  display: grid;
+  grid-template-columns: 10rem 1fr 2rem;
+  align-items: center;
+  gap: var(--space-sm);
+}
+
+.report-tab__qbar-label {
+  font-size: var(--text-sm);
+  color: var(--color-text-muted);
+}
+
+.report-tab__qbar-track {
+  height: 8px;
+  background: var(--color-surface-alt);
+  border-radius: var(--radius-sm);
+  overflow: hidden;
+}
+
+.report-tab__qbar-fill {
+  height: 100%;
+  border-radius: var(--radius-sm);
+}
+
+.report-tab__qbar-val {
+  font-size: var(--text-sm);
+  font-weight: 600;
+  text-align: right;
+}
+
+@media print {
+  .report-tab__header button {
+    display: none;
+  }
+
+  .report-tab__stat,
+  .report-tab__cat-card {
+    border: 1px solid #ccc;
+    print-color-adjust: exact;
+    -webkit-print-color-adjust: exact;
+  }
+
+  .report-tab__qbar-fill {
+    print-color-adjust: exact;
+    -webkit-print-color-adjust: exact;
+  }
+}
