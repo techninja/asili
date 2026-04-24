@@ -41,7 +41,7 @@ export async function scoreUnifiedChrPacks(traitChrFiles, onChr) {
   for (let ci = 0; ci < total; ci++) {
     if (onChr) onChr(ci, total, matchedSoFar);
     const dnaChr = chrFiles[ci];
-    const chrNum = dnaChr.replace(/[^0-9]/g, '');
+    const chrNum = dnaChr.match(/chr(\d+)/)?.[1] || dnaChr.replace(/[^0-9]/g, '');
     const traitChr = traitChrFiles.get(chrNum);
     if (!traitChr) continue;
     const dnaRef = ref(dnaChr);
@@ -132,4 +132,6 @@ export async function resetUnifiedDNA() {
     try { await ddb.dropFile(f); } catch { /* may not exist */ }
   }
   chrFiles = [];
+  // Settle time — DuckDB needs a moment to fully release file handles
+  await new Promise((r) => setTimeout(r, 300));
 }

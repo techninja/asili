@@ -111,12 +111,12 @@ describe('selectBestPGS', () => {
     assert.equal(selectBestPGS(map), 'B');
   });
 
-  it('skips extreme z-scores', () => {
+  it('selects highest quality even with extreme z-scores (clamped at normalization)', () => {
     const map = new Map([
-      ['A', { qualityScore: 90, zScore: 10, insufficientData: false }],
+      ['A', { qualityScore: 90, zScore: 4, insufficientData: false }],
       ['B', { qualityScore: 30, zScore: 1, insufficientData: false }],
     ]);
-    assert.equal(selectBestPGS(map), 'B');
+    assert.equal(selectBestPGS(map), 'A');
   });
 
   it('falls back to extreme z when all are insufficient', () => {

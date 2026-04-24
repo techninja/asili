@@ -129,3 +129,9 @@ export async function resetQueue() {
 
 // Re-export settings
 export { getScoringSettings, saveScoringSettings } from './queue-settings.js';
+
+/** Set paused state without triggering runner stop (for init from localStorage). */
+export function setPaused(val) {
+  S.paused = val;
+  notifyNow();
+}

@@ -22,7 +22,7 @@ export async function getNormParams() {
   if (normCache) return normCache;
   normCache = {};
   try {
-    const resp = await fetch(`${window.location.origin}/data/pgs_norm_params.json`);
+    const resp = await fetch(`${window.location.origin}/data/pgs_norm_params.json?v=${Date.now()}`);
     if (!resp.ok) throw new Error(`${resp.status}`);
     const raw = await resp.json();
     for (const [id, v] of Object.entries(raw)) {
@@ -72,7 +72,7 @@ async function loadTraitPack(url, traitId) {
   const prefix = `t_${traitId}_`;
   for (const e of entries) {
     if (!e.name.endsWith('.parquet') || e.size < 100) continue;
-    const chrNum = e.name.replace(/[^0-9]/g, '');
+    const chrNum = e.name.match(/chr(\d+)/)?.[1] || e.name.replace(/[^0-9]/g, '');
     const regName = `${prefix}${e.name}`;
     await registerBuffer(regName, tarBuf.slice(e.offset, e.offset + e.size));
     chrMap.set(chrNum, regName);

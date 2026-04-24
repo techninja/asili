@@ -49,15 +49,18 @@ export async function loadDNA(s, variants, file, onProgress) {
 
   if (file) {
     const entries = await parseTar(file);
+    const prefix = `dna_${Date.now()}_`;
     for (const e of entries) {
       if (!e.name.endsWith('.parquet')) continue;
       const buf = await file.slice(e.offset, e.offset + e.size).arrayBuffer();
       if (buf.byteLength !== e.size) {
         console.error(`[loadDNA] ${e.name}: expected ${e.size} bytes, got ${buf.byteLength}`);
       }
-      await registerBuffer(e.name, buf);
+      await registerBuffer(prefix + e.name, buf);
     }
-    await loadUnifiedDNA(entries.filter((e) => e.name.endsWith('.parquet')).map((e) => e.name));
+    await loadUnifiedDNA(
+      entries.filter((e) => e.name.endsWith('.parquet')).map((e) => prefix + e.name),
+    );
     await new Promise((r) => setTimeout(r, 200));
   } else {
     const liftoverFiles = await loadLiftover();

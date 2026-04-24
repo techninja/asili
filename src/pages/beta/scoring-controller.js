@@ -47,7 +47,9 @@ export async function initQueue(host) {
 
   const settings = await queue.getScoringSettings();
   const wasPaused = get('paused') === '1';
-  if (settings.autoScore && !wasPaused) {
+  if (wasPaused) {
+    queue.setPaused(true);
+  } else if (settings.autoScore) {
     await queue.start();
   }
 }

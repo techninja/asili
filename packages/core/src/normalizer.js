@@ -11,16 +11,13 @@ import {
 } from './calculator.js';
 
 const MIN_COVERAGE = 0.05;
+const MAX_Z = 4;
 
 /**
  * Normalize a single PGS result. Mutates `details` in place.
- * @param {object} details - PGS details (score, matchedVariants, etc.)
- * @param {object} breakdown - PGS breakdown accumulators
- * @param {object} normParams - { norm_mean, norm_sd, performance_weight, variants_number }
- * @param {string} traitType
- * @param {number|null} phenotypeMean
- * @param {number|null} phenotypeSd
- * @param {object|null} perfMetrics - { r2 } from pgs_performance
+ * @param {object} details @param {object} breakdown @param {object} normParams
+ * @param {string} traitType @param {number|null} phenotypeMean
+ * @param {number|null} phenotypeSd @param {object|null} perfMetrics
  */
 export function normalizePGS(
   details, breakdown, normParams,
@@ -37,17 +34,17 @@ export function normalizePGS(
   const sufficientCoverage = coverage >= MIN_COVERAGE;
   let useEmpirical = hasEmpirical && sufficientCoverage;
 
-  // Scale empirical norm params by coverage when partial.
-  // At high coverage (≥80%), the population distribution is close enough
-  // to the reference that scaling introduces more error than it corrects.
-  // At moderate coverage (5–80%), scale linearly: mean × coverage, SD × √coverage.
-  // This prevents tiny SDs from producing extreme z-scores at near-full coverage.
-  if (useEmpirical && coverage < 0.8 && mean !== undefined) {
+  // Scale empirical norm params by coverage: at partial coverage the expected
+  // score is proportionally smaller (mean × cov) and variance scales with
+  // the fraction of variants scored (SD × √cov).
+  if (useEmpirical && coverage < 1.0 && mean !== undefined) {
     mean = mean * coverage;
     sd = sd * Math.sqrt(coverage);
   }
 
-  if (useEmpirical && coverage < 0.8 && mean !== undefined && mean !== 0) {
+  // Sanity check: if scaled z would be extreme, the empirical norms may not
+  // match our scoring method — fall back to theoretical SD.
+  if (useEmpirical && mean !== undefined && sd > 0) {
     const naiveZ = Math.abs((details.score - mean) / sd);
     if (naiveZ > 20) useEmpirical = false;
   }
@@ -66,15 +63,21 @@ export function normalizePGS(
 
   const hasGoodNorm = hasEmpirical && sufficientCoverage;
   if (mean !== undefined && sd !== undefined && sd > 0 && details.matchedVariants > 0) {
-    details.zScore = calculateZScore(details.score, { mean, sd });
-    details.percentile = calculatePercentile(details.zScore);
+    let z = calculateZScore(details.score, { mean, sd });
+    // Clamp to ±4σ — extreme values indicate norm param mismatch, not real signal.
+    // TODO: remove clamp once norm params are recomputed with correct orientation.
+    if (z !== null && Math.abs(z) > MAX_Z) z = Math.sign(z) * MAX_Z;
+    details.zScore = z;
+    details.percentile = calculatePercentile(z);
     details.qualityScore = calculateQualityScore(
       details.matchedVariants, totalVariants, perfWeight,
-      hasGoodNorm, details.zScore, details.genotypedVariants
+      hasGoodNorm, z, details.genotypedVariants
     );
-    if (traitType === 'quantitative' && phenotypeMean !== null && phenotypeMean !== undefined && phenotypeSd !== null && phenotypeSd !== undefined) {
+    if (traitType === 'quantitative' && phenotypeMean !== null
+      && phenotypeMean !== undefined && phenotypeSd !== null
+      && phenotypeSd !== undefined) {
       const r2 = perfMetrics?.r2 || perfWeight;
-      details.value = phenotypeMean + details.zScore * Math.sqrt(r2) * phenotypeSd;
+      details.value = phenotypeMean + z * Math.sqrt(r2) * phenotypeSd;
     }
   } else {
     details.zScore = null;
@@ -97,7 +100,6 @@ export function selectBestPGS(pgsDetails) {
 
   for (const [id, d] of pgsDetails) {
     if (d.insufficientData) continue;
-    if (d.zScore !== null && d.zScore !== undefined && Math.abs(d.zScore) > 5) continue;
     if (d.qualityScore > bestScore) {
       bestScore = d.qualityScore;
       bestId = id;

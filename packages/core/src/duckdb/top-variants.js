@@ -18,7 +18,7 @@ export async function fetchTopVariants(chrFiles, traitChrFiles, pgsId, limit = 2
   const all = [];
 
   for (const dnaChr of chrFiles) {
-    const chrNum = dnaChr.replace(/[^0-9]/g, '');
+    const chrNum = dnaChr.match(/chr(\d+)/)?.[1] || dnaChr.replace(/[^0-9]/g, '');
     const traitChr = traitChrFiles.get(chrNum);
     if (!traitChr) continue;
 
