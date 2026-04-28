@@ -5,6 +5,7 @@
 
 import { results } from '#pages/beta/results-store.js';
 import { CATEGORY_ORDER, resolveCategory } from '#utils/categories.js';
+import { getShowFamily, hasFamilyScore } from './render-card.js';
 
 /** @param {object} t @returns {string} */
 export function traitCategory(t) {
@@ -33,8 +34,9 @@ export function filterAndSort(traits, opts) {
   if (categories.size > 0) {
     out = out.filter((t) => categories.has(traitCategory(t)));
   }
-  const totalScored = out.filter((t) => results[t.trait_id]).length;
-  if (scoredOnly) out = out.filter((t) => results[t.trait_id]);
+  const isScored = (t) => results[t.trait_id] || (getShowFamily() && hasFamilyScore(t.trait_id));
+  const totalScored = out.filter(isScored).length;
+  if (scoredOnly) out = out.filter(isScored);
   out = [...out].sort((a, b) => {
     const ra = results[a.trait_id],
       rb = results[b.trait_id];

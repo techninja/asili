@@ -10,15 +10,34 @@ import { formatTraitValue } from '/packages/core/src/formatter.js';
 import { traitCategory } from './helpers.js';
 import TraitDetailView from '#pages/trait-detail/trait-detail-view.js';
 
-/** @type {Record<string, Array<{e: string, p: number}>>} */
 let familyCache = {};
-/** @type {string} */
-let activeEmoji = '👤';
+let activeEmoji = '\u{1F464}';
+let showFamily = false;
 
-/** Clear cached family data (call after delete-all or individual removal). */
+/**
+ *
+ */
 export function clearFamilyCache() {
   familyCache = {};
-  activeEmoji = '👤';
+  activeEmoji = '\u{1F464}';
+}
+/**
+ *
+ */
+export function setShowFamily(val) {
+  showFamily = val;
+}
+/**
+ *
+ */
+export function getShowFamily() {
+  return showFamily;
+}
+/**
+ *
+ */
+export function hasFamilyScore(traitId) {
+  return !!familyCache[traitId]?.length;
 }
 
 /** @param {object} t @param {number} rc @param {boolean} scoring */
@@ -26,13 +45,13 @@ export function renderCard(t, rc, scoring) {
   const r = results[t.trait_id];
   const fmt =
     r?.value !== null && r?.value !== undefined ? formatTraitValue(r.value, t.unit) : null;
-  const markers = familyCache[t.trait_id];
+  const markers = showFamily ? familyCache[t.trait_id] : null;
   const markersJson = markers?.length ? JSON.stringify(markers) : '';
   const cov = r?.pgsDetails?.[r?.bestPGS]?.coverage ?? 0;
   return html`
     <a href="${router.url(TraitDetailView, { traitId: t.trait_id })}" class="trait-grid__link">
       <trait-card
-        emoji="${t.emoji || '🧬'}"
+        emoji="${t.emoji || '\u{1F9EC}'}"
         name="${t.name}"
         traitType="${t.trait_type || 'quantitative'}"
         percentile="${r?.percentile || 0}"
@@ -48,7 +67,20 @@ export function renderCard(t, rc, scoring) {
         category="${traitCategory(t)}"
       ></trait-card>
     </a>
-  `.key(`${t.trait_id}:${r ? rc : 0}`);
+  `;
+}
+
+/** Load active individual's emoji. */
+export async function loadActiveEmoji() {
+  try {
+    await idb.openDB();
+    const id = getActiveId();
+    const individuals = await idb.getAll('individuals');
+    const active = individuals.find((i) => i.id === id);
+    if (active) activeEmoji = active.emoji || '\u{1F464}';
+  } catch {
+    /* */
+  }
 }
 
 /** Load other individuals' results into familyCache for mini-curve markers. */
@@ -59,7 +91,7 @@ export async function loadFamilyCache() {
     const activeId = getActiveId();
     const individuals = await idb.getAll('individuals');
     const active = individuals.find((i) => i.id === activeId);
-    if (active) activeEmoji = active.emoji || '👤';
+    if (active) activeEmoji = active.emoji || '\u{1F464}';
     const others = individuals.filter((i) => i.id !== activeId);
     if (others.length === 0) return;
     const keys = await idb.getAllKeys('results');
@@ -71,7 +103,7 @@ export async function loadFamilyCache() {
         const r = await idb.get('results', k);
         if (r?.percentile !== null && r?.percentile !== undefined) {
           if (!familyCache[tid]) familyCache[tid] = [];
-          familyCache[tid].push({ e: ind.emoji || '👤', p: Math.round(r.percentile) });
+          familyCache[tid].push({ e: ind.emoji || '\u{1F464}', p: Math.round(r.percentile) });
         }
       }
     }
