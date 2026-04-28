@@ -54,6 +54,8 @@ export async function scoreIndividual(individualId) {
 
   if (!S.startMs) S.startMs = Date.now();
 
+  const retrySet = new Set();
+
   try {
     await scoreAll(session, traitsToScore, '/data', {
       onProgress: ({ traitName, chrDone, chrTotal, variantsSoFar }) => {
@@ -71,12 +73,32 @@ export async function scoreIndividual(individualId) {
         markDone(individualId, traitId, result.totalMatches || 0);
       },
       onTraitError: ({ traitId }) => {
-        markError(individualId, traitId);
+        retrySet.add(traitId);
       },
     });
   } catch (err) {
     if (!S.paused && !S.needsReprioritize) {
       console.error(`Queue: scoring batch error for ${individualId}`, err.message);
+    }
+  }
+
+  // Retry failed traits once
+  if (retrySet.size > 0 && !S.paused && !S.needsReprioritize) {
+    const retryTraits = allTraits.filter((t) => retrySet.has(t.trait_id));
+    try {
+      await scoreAll(session, retryTraits, '/data', {
+        onTraitScored: async ({ traitId, result }) => {
+          await idb.put('results', `${individualId}:${traitId}`, {
+            ...result,
+            traitId,
+            calculatedAt: new Date().toISOString(),
+          });
+          markDone(individualId, traitId, result.totalMatches || 0);
+        },
+        onTraitError: ({ traitId }) => markError(individualId, traitId),
+      });
+    } catch {
+      /* retry batch failed */
     }
   }
 
