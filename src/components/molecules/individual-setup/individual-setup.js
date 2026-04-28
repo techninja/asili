@@ -8,14 +8,16 @@ import { html, define, dispatch } from 'hybrids';
 // @ts-ignore
 import '#molecules/emoji-builder/emoji-builder.js';
 
-/** @param {object & HTMLElement} host */
+/**
+ *
+ */
 function handleSubmit(host, e) {
   e.preventDefault();
   const m = host.manifest ? JSON.parse(host.manifest) : null;
   const name = host.name.trim() || m?.individual || '';
   if (!name) return;
   dispatch(host, 'setup-complete', {
-    detail: { name, emoji: host.emoji },
+    detail: { name, emoji: host.emoji, emojiParams: host.emojiParams },
     bubbles: true,
   });
 }
@@ -23,7 +25,8 @@ function handleSubmit(host, e) {
 export default define({
   tag: 'individual-setup',
   name: '',
-  emoji: '👤',
+  emoji: '👨',
+  emojiParams: '',
   variantCount: 0,
   format: '',
   filename: '',
@@ -33,80 +36,84 @@ export default define({
       const m = manifest ? JSON.parse(manifest) : null;
       const effectiveName = name || m?.individual || '';
       return html`
-        <div class="individual-setup">
-          <div class="individual-setup__status">
-            ${m ? imputedStatus(m, filename) : textStatus(variantCount, format, filename)}
-          </div>
-          <form class="individual-setup__form" onsubmit="${handleSubmit}">
-            <label class="individual-setup__label">
-              Name
+        <form class="individual-setup" onsubmit="${handleSubmit}">
+          <div class="individual-setup__top">
+            <div class="individual-setup__meta">
+              ${m ? imputedStatus(m, filename) : textStatus(variantCount, format, filename)}
               <input
                 type="text"
                 class="individual-setup__input"
-                placeholder="e.g. Sarah"
+                placeholder="Name"
                 value="${effectiveName}"
                 oninput="${(h, e) => {
                   h.name = e.target.value;
                 }}"
                 autofocus
               />
-            </label>
-            <div class="individual-setup__emoji-section">
-              <span class="individual-setup__label">Avatar</span>
-              <emoji-builder
-                onemoji-change="${(host, e) => {
-                  host.emoji = e.detail;
-                }}"
-              ></emoji-builder>
             </div>
-            <div class="individual-setup__actions">
-              <button type="submit" class="btn btn-primary" disabled="${!effectiveName.trim()}">
-                Continue & Score
-              </button>
-              <button
-                type="button"
-                class="btn btn-ghost"
-                onclick="${(host) => dispatch(host, 'setup-cancel', { bubbles: true })}"
-              >
-                Cancel
-              </button>
-            </div>
-          </form>
-        </div>
+            <span class="individual-setup__preview">${emoji}</span>
+          </div>
+          <emoji-builder
+            onemoji-change="${(host, e) => {
+              host.emoji = e.detail.emoji || e.detail;
+              host.emojiParams = e.detail.params || '';
+            }}"
+          ></emoji-builder>
+          <div class="individual-setup__actions">
+            <button
+              type="button"
+              class="btn btn-ghost"
+              onclick="${(host) => dispatch(host, 'setup-cancel', { bubbles: true })}"
+            >
+              Cancel
+            </button>
+            <button type="submit" class="btn btn-primary" disabled="${!effectiveName.trim()}">
+              <app-icon name="zap" size="sm"></app-icon> Score
+            </button>
+          </div>
+        </form>
       `;
     },
     shadow: false,
   },
 });
 
-/** @param {object} m @param {string} filename */
+/**
+ *
+ */
 function imputedStatus(m, filename) {
-  const date = m.createdAt ? new Date(m.createdAt).toLocaleDateString() : 'Unknown';
   const total = (m.totalVariants || 0).toLocaleString();
   const geno = (m.genotypedVariants || 0).toLocaleString();
   const imp = (m.imputedVariants || 0).toLocaleString();
   const chrCount = m.chromosomes ? Object.keys(m.chromosomes).length : 0;
   return html`
-    <div class="individual-setup__imputed-card">
-      <p class="individual-setup__verified">✅ Verified .asili archive</p>
-      <p class="individual-setup__imputed-name">⭐ ${m.individual || 'Unknown'}</p>
-      <div class="individual-setup__imputed-stats">
-        <span>${total} total variants</span>
-        <span>${geno} genotyped · ${imp} imputed</span>
-        <span>${chrCount} chromosomes · ${m.source || ''}</span>
-      </div>
-      <p class="individual-setup__imputed-date">Created ${date}</p>
-      ${filename ? html`<p class="individual-setup__file">📄 ${filename}</p>` : html``}
+    <div class="individual-setup__status-grid">
+      <span><app-icon name="shield-check" size="sm"></app-icon> Verified .asili</span>
+      <span><app-icon name="dna" size="sm"></app-icon> ${total} variants</span>
+      <span><app-icon name="flask-conical" size="sm"></app-icon> ${geno} geno · ${imp} imp</span>
+      ${chrCount
+        ? html`<span
+            ><app-icon name="git-branch" size="sm"></app-icon> ${chrCount} chromosomes</span
+          >`
+        : html``}
+      ${filename
+        ? html`<span><app-icon name="document" size="sm"></app-icon> ${filename}</span>`
+        : html``}
     </div>
   `;
 }
 
-/** @param {number} count @param {string} format @param {string} filename */
+/**
+ *
+ */
 function textStatus(count, format, filename) {
   return html`
-    <p class="individual-setup__parsed">
-      ✓ ${count.toLocaleString()} variants parsed from ${format}
-    </p>
-    ${filename ? html`<p class="individual-setup__file">📄 ${filename}</p>` : html``}
+    <div class="individual-setup__status-grid">
+      <span><app-icon name="check" size="sm"></app-icon> ${format} detected</span>
+      <span><app-icon name="dna" size="sm"></app-icon> ${count.toLocaleString()} variants</span>
+      ${filename
+        ? html`<span><app-icon name="document" size="sm"></app-icon> ${filename}</span>`
+        : html``}
+    </div>
   `;
 }

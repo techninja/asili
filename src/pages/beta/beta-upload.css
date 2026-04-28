@@ -1,30 +1,73 @@
+/* Upload panel — header drawer */
 .beta-view__upload-panel {
-  position: relative;
-  z-index: 20;
+  position: fixed;
+  top: 3.5rem;
+  right: var(--space-lg);
+  z-index: 150;
+  width: min(28rem, calc(100vw - 2 * var(--space-lg)));
   padding: var(--space-lg);
-  border: 2px solid var(--color-warning);
+  background: color-mix(in srgb, var(--color-surface) 85%, transparent);
+  backdrop-filter: blur(12px);
+  border: 1px solid var(--color-border);
+  border-top: none;
   border-radius: 0 0 var(--radius-lg) var(--radius-lg);
-  background: var(--color-surface-alt);
-  box-shadow: var(--shadow-md, 0 4px 12px rgb(0 0 0 / 15%));
+  box-shadow: var(--shadow-md);
   display: flex;
   flex-direction: column;
   align-items: center;
   gap: var(--space-md);
-  animation: slide-down 0.2s ease-out;
+  animation: upload-slide-down 0.25s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
-@keyframes slide-down {
+.beta-view__upload-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 101;
+  background: transparent;
+
+  &::after {
+    content: '';
+    position: absolute;
+    inset: 3.5rem 0 0;
+    background: rgb(0 0 0 / 30%);
+  }
+}
+
+.beta-view__upload--closing .beta-view__upload-panel {
+  animation: upload-slide-up 0.2s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+}
+
+.beta-view__upload--closing .beta-view__upload-backdrop::after {
+  animation: upload-fade-out 0.2s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+}
+
+@keyframes upload-slide-down {
+  from {
+    transform: translateY(-1rem);
+    opacity: 0;
+  }
+}
+
+@keyframes upload-slide-up {
+  to {
+    transform: translateY(-1rem);
+    opacity: 0;
+  }
+}
+
+@keyframes upload-fade-in {
   from {
     opacity: 0;
-    transform: translateY(-8px);
-  }
-
-  to {
-    opacity: 1;
-    transform: translateY(0);
   }
 }
 
+@keyframes upload-fade-out {
+  to {
+    opacity: 0;
+  }
+}
+
+/* Upload inline states */
 .beta-view__status {
   text-align: center;
   display: flex;
@@ -62,4 +105,13 @@
   color: var(--color-danger);
   margin: 0;
   max-width: 24rem;
+}
+
+@media (width <= 640px) {
+  .beta-view__upload-panel {
+    right: 0;
+    left: 0;
+    width: auto;
+    border-radius: 0;
+  }
 }

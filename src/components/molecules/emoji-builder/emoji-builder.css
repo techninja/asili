@@ -1,44 +1,45 @@
+/* Emoji builder — compact picker */
 .emoji-builder {
   display: flex;
   flex-direction: column;
-  gap: var(--space-sm);
+  gap: 4px;
 }
 
 .emoji-builder__preview {
-  font-size: 3rem;
-  text-align: center;
-  line-height: 1;
-  padding: var(--space-sm) 0;
+  display: none;
 }
 
 .emoji-builder__row {
   display: flex;
   align-items: center;
-  gap: var(--space-xs);
+  gap: 3px;
   flex-wrap: wrap;
 }
 
 .emoji-builder__label {
-  font-size: var(--text-sm);
-  color: var(--color-text-muted);
-  min-width: 3.5rem;
-  text-transform: uppercase;
-  font-weight: 600;
+  display: none;
+}
+
+.emoji-builder__sep {
+  width: 1px;
+  height: 1.2rem;
+  background: var(--color-border);
+  margin: 0 2px;
 }
 
 .emoji-builder__opt {
-  font-size: 1.25rem;
-  padding: var(--space-xs) var(--space-sm);
+  font-size: 1.1rem;
+  padding: 3px 5px;
   border: 2px solid transparent;
-  border-radius: var(--radius-md);
+  border-radius: var(--radius-sm);
   background: var(--color-surface-alt);
   cursor: pointer;
   line-height: 1;
   transition: border-color 0.1s;
-}
 
-.emoji-builder__opt:hover {
-  border-color: var(--color-border);
+  &:hover {
+    border-color: var(--color-border);
+  }
 }
 
 .emoji-builder__opt--sel {
@@ -47,16 +48,16 @@
 }
 
 .emoji-builder__dot {
-  width: 1.5rem;
-  height: 1.5rem;
+  width: 1.2rem;
+  height: 1.2rem;
   border-radius: 50%;
   border: 2px solid transparent;
   cursor: pointer;
   transition: border-color 0.1s;
-}
 
-.emoji-builder__dot:hover {
-  border-color: var(--color-text-muted);
+  &:hover {
+    border-color: var(--color-text-muted);
+  }
 }
 
 .emoji-builder__dot--sel {

@@ -73,6 +73,11 @@
   }
 }
 
+.app-header__link--active {
+  color: var(--color-primary);
+  background: var(--color-surface-alt);
+}
+
 @media (width <= 640px) {
   .app-header {
     padding: var(--space-xs) var(--space-sm);

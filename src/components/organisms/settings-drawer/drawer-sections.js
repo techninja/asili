@@ -4,13 +4,9 @@
  */
 
 import { html } from 'hybrids';
-import {
-  handleDelete,
-  handleAutoScore,
-  handleMemory,
-  handleAncestry,
-  doClearAll,
-} from './drawer-handlers.js';
+import { handleDelete, handleAutoScore, handleMemory, handleAncestry } from './drawer-handlers.js';
+
+export { dangerSection, footerSection } from './drawer-danger.js';
 
 /**
  *
@@ -22,6 +18,7 @@ export function individualsSection(host) {
       <individual-list
         individuals="${JSON.stringify(host.individuals)}"
         ondelete-individual="${handleDelete}"
+        onedit-individual="${handleDelete}"
       ></individual-list>
     </section>
   `;
@@ -81,62 +78,6 @@ export function scoringSection(host) {
         <app-icon name="earth" size="sm"></app-icon>
         Adjusts PGS normalization to compare against a specific ancestry group. Scores must be
         recalculated after changing. Applies to all individuals.
-      </p>
-    </section>
-  `;
-}
-
-/**
- *
- */
-export function dangerSection(host) {
-  if (host.confirmClear) {
-    return html`
-      <section class="settings-drawer__section">
-        <h3><app-icon name="alert"></app-icon> Danger Zone</h3>
-        <p class="settings-drawer__meta">
-          This will permanently delete all individuals, results, and settings.
-        </p>
-        <div class="settings-drawer__row">
-          <button class="btn btn-danger" onclick="${doClearAll}">
-            <app-icon name="trash"></app-icon> Yes, Delete Everything
-          </button>
-          <button
-            class="btn btn-ghost"
-            onclick="${(h) => {
-              h.confirmClear = false;
-            }}"
-          >
-            Cancel
-          </button>
-        </div>
-      </section>
-    `;
-  }
-  return html`
-    <section class="settings-drawer__section">
-      <h3><app-icon name="alert"></app-icon> Danger Zone</h3>
-      <button
-        class="btn btn-danger"
-        onclick="${(h) => {
-          h.confirmClear = true;
-        }}"
-      >
-        <app-icon name="trash"></app-icon> Clear All Data
-      </button>
-    </section>
-  `;
-}
-
-/**
- *
- */
-export function footerSection() {
-  return html`
-    <section class="settings-drawer__section">
-      <p class="settings-drawer__meta">
-        <app-icon name="shield-check" size="sm"></app-icon>
-        Asili v1.0 · Privacy-first · Your data never leaves this device
       </p>
     </section>
   `;

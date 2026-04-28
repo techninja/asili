@@ -24,6 +24,8 @@ export default define({
   memoryLimit: '2GB',
   ancestry: '',
   confirmClear: false,
+  clearing: false,
+  closing: false,
   _loaded: {
     value: false,
     observe(host, _, last) {
@@ -33,18 +35,21 @@ export default define({
   render: {
     value: (host) => {
       if (!host.open) return html``;
+      const cls = host.closing ? 'settings-drawer--closing' : '';
       return html`
-        <div class="settings-drawer__backdrop" onclick="${close}"></div>
-        <div class="settings-drawer">
-          <div class="settings-drawer__header">
-            <h2>Settings</h2>
-            <button class="settings-drawer__close" onclick="${close}">
-              <app-icon name="x"></app-icon>
-            </button>
-          </div>
-          <div class="settings-drawer__body">
-            ${individualsSection(host)} ${storageSection(host)} ${scoringSection(host)}
-            ${dangerSection(host)} ${footerSection()}
+        <div class="${cls}">
+          <div class="settings-drawer__backdrop" onclick="${close}"></div>
+          <div class="settings-drawer">
+            <div class="settings-drawer__header">
+              <h2>Settings</h2>
+              <button class="settings-drawer__close" onclick="${close}">
+                <app-icon name="x"></app-icon>
+              </button>
+            </div>
+            <div class="settings-drawer__body">
+              ${individualsSection(host)} ${storageSection(host)} ${scoringSection(host)}
+              ${dangerSection(host)} ${footerSection()}
+            </div>
           </div>
         </div>
       `;

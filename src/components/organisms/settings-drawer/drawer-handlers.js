@@ -11,7 +11,11 @@ import { clearLocalStorage, IDB_STORES, get, set, remove } from '#utils/storage.
 
 /** @param {object} host */
 export function close(host) {
-  host.open = false;
+  host.closing = true;
+  setTimeout(() => {
+    host.open = false;
+    host.closing = false;
+  }, 200);
 }
 
 /** @param {object} host */
@@ -19,12 +23,23 @@ export async function loadData(host) {
   await idb.openDB();
   host.individuals = await idb.getAll('individuals');
 
-  // Count stored results and individuals for a meaningful size
+  const prefs = await getScoringSettings();
+  host.autoScore = prefs.autoScore;
+  host.memoryLimit = prefs.memoryLimit;
+  host.ancestry = get('ancestry') || '';
+
+  // Defer heavy storage calculation so the drawer renders immediately
+  host.storageInfo = 'Calculating…';
+  setTimeout(() => computeStorage(host), 50);
+}
+
+/**
+ *
+ */
+async function computeStorage(host) {
   const resultKeys = await idb.getAllKeys('results');
   const indCount = host.individuals.length;
   const resultCount = resultKeys.length;
-
-  // Manual size measurement — navigator.storage.estimate() reports 0 when not persisted
   let totalBytes = 0;
   for (const store of ['individuals', 'variants', 'results', 'settings']) {
     const all = await idb.getAll(store);
@@ -32,11 +47,6 @@ export async function loadData(host) {
   }
   const mb = (totalBytes / 1024 / 1024).toFixed(1);
   host.storageInfo = `${mb} MB stored (${indCount} individuals, ${resultCount} results)`;
-
-  const prefs = await getScoringSettings();
-  host.autoScore = prefs.autoScore;
-  host.memoryLimit = prefs.memoryLimit;
-  host.ancestry = get('ancestry') || '';
 }
 
 /** @param {object} host */

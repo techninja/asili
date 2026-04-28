@@ -42,13 +42,16 @@ export function normalizePGS(
     sd = sd * Math.sqrt(coverage);
   }
 
-  // The norm params assume perfect dosage (no imputation quality scaling).
-  // Browser scoring multiplies imputed contributions by √(R²), shrinking
-  // the actual score. Scale the expected mean by the same factor.
+  // The norm params were computed from genotyped reference individuals.
+  // Imputed scoring applies √(R²) per variant, which:
+  //   1. Shrinks the mean proportionally (mean × avgShrinkage)
+  //   2. Compresses dosage variance more aggressively — imputed dosages
+  //      are posterior means that cluster toward het, reducing score spread.
+  //      SD scales by shrinkage² (approximating the R² variance reduction).
   const shrinkage = details.avgShrinkage || 1.0;
   if (useEmpirical && mean !== undefined && shrinkage < 1.0) {
     mean = mean * shrinkage;
-    sd = sd * shrinkage;
+    sd = sd * shrinkage * shrinkage;
   }
 
   // Sanity check: if scaled z would be extreme, the empirical norms may not

@@ -1,0 +1,39 @@
+/* Settings drawer — row, note, clearing styles */
+.settings-drawer__row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-sm);
+  font-size: var(--text-sm);
+  cursor: pointer;
+
+  & select {
+    padding: 2px var(--space-sm);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-sm);
+    background: var(--color-surface);
+    color: var(--color-text);
+    font-size: var(--text-sm);
+  }
+}
+
+.settings-drawer__note {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-xs);
+  font-size: 0.75rem;
+  color: var(--color-text-muted);
+  margin: 0;
+  opacity: 0.8;
+  line-height: 1.4;
+}
+
+.settings-drawer__clearing {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+  padding: var(--space-lg);
+  justify-content: center;
+  color: var(--color-text-muted);
+  font-size: var(--text-sm);
+}

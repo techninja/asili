@@ -17,6 +17,7 @@ import '#organisms/scoring-screen/scoring-screen.js';
 import { individualSelector, appContent, uploadContent, uploadPanel } from './beta-render.js';
 import { loadResults } from './results-store.js';
 import { initQueue, switchIndividual } from './scoring-controller.js';
+import { handleSwitch, closeOrToggleUpload, cancelSetup } from './beta-actions.js';
 import { appHeader } from '#molecules/app-header/app-header.js';
 import { appFooter } from '#molecules/app-footer/app-footer.js';
 import { toggleSettings } from '#utils/settings-toggle.js';
@@ -57,6 +58,7 @@ export default define({
   },
   scoringScreen: { value: false, connect: () => {} },
   showUpload: { value: false, connect: () => {} },
+  closingUpload: false,
   activeTab: 'traits',
   _variants: { value: [], connect: () => {} },
   _manifest: { value: '', connect: () => {} },
@@ -65,11 +67,17 @@ export default define({
     connect: (host, _key, invalidate) => {
       initApp(host).then(() => {
         invalidate();
-        // Trigger switchIndividual after render — same path as user click
         requestAnimationFrame(() => {
           if (host.activeId) switchIndividual(host, host.activeId);
         });
       });
+      const refresh = () => {
+        idb.getAll('individuals').then((list) => {
+          host.individuals = list;
+        });
+      };
+      window.addEventListener('asili-individuals-changed', refresh);
+      return () => window.removeEventListener('asili-individuals-changed', refresh);
     },
   },
   render: {
@@ -82,22 +90,21 @@ export default define({
           ${appHeader({
             badge: 'beta',
             onSettings: (h) => {
+              h.showUpload = false;
               toggleSettings();
             },
             center: hasData ? individualSelector(host, list, handleSwitch) : html``,
             trailing: hasData
               ? html`<button
-                  class="app-header__link"
-                  onclick="${(h) => {
-                    h.showUpload = !h.showUpload;
-                  }}"
+                  class="app-header__link ${showPanel ? 'app-header__link--active' : ''}"
+                  onclick="${closeOrToggleUpload}"
                   title="Add individual"
                 >
                   <app-icon name="user-plus"></app-icon>
                 </button>`
               : html``,
           })}
-          ${showPanel ? uploadPanel(host, cancelSetup) : html``}
+          ${showPanel || host.closingUpload ? uploadPanel(host, cancelSetup) : html``}
           <main class="beta-view__main">
             ${hasData ? appContent(host) : uploadContent(host, cancelSetup)}
           </main>
@@ -119,11 +126,6 @@ export default define({
   },
 });
 
-/** @param {object} host @param {string} id */
-async function handleSwitch(host, id) {
-  await switchIndividual(host, id);
-}
-
 /** @param {object} host */
 async function initApp(host) {
   await idb.openDB();
@@ -135,14 +137,4 @@ async function initApp(host) {
     host.resultCount = await loadResults(id);
     await initQueue(host);
   }
-}
-
-/** @param {object} host */
-function cancelSetup(host) {
-  host.parseStatus = '';
-  host.parsedCount = 0;
-  host._variants = [];
-  host._manifest = '';
-  host.parseError = '';
-  host.showUpload = false;
 }
