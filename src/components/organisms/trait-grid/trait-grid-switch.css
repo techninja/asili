@@ -17,6 +17,7 @@
 
   & input:checked + .trait-grid__switch-track {
     background: var(--color-primary);
+    border-color: var(--color-primary);
   }
 
   & input:checked + .trait-grid__switch-track::after {
@@ -29,8 +30,9 @@
   width: 30px;
   height: 16px;
   background: var(--color-surface-alt);
+  border: 1px solid var(--color-border);
   border-radius: 8px;
-  transition: background 0.2s;
+  transition: background 0.2s, border-color 0.2s;
   flex-shrink: 0;
 
   &::after {

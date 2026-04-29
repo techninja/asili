@@ -31,9 +31,6 @@ function traitInfoSection(t) {
           t.trait_type === 'quantitative' ? 'Quantitative (measurable)' : 'Disease risk',
         )}
         ${t.unit ? infoRow('Unit', t.unit) : html``} ${cats ? infoRow('Categories', cats) : html``}
-        ${t.phenotype_mean
-          ? infoRow('Population avg', `${t.phenotype_mean} ${t.unit || ''}`)
-          : html``}
       </div>
     </section>
   `;
@@ -87,7 +84,6 @@ function pgsInfoSection(t) {
       <div class="trait-detail__info-grid">
         ${infoRow('Polygenic scores', `${t.pgs_count} PGS from the PGS Catalog`)}
         ${infoRow('Variants analyzed', `~${vars} across all PGS`)}
-        ${t.reference_population ? infoRow('Reference', t.reference_population) : html``}
       </div>
     </section>
   `;

@@ -7,7 +7,7 @@
 .trait-detail__main {
   max-width: var(--max-width);
   margin: 0 auto;
-  padding: 0 var(--space-lg) var(--space-lg);
+  padding: var(--space-lg) var(--space-lg) var(--space-lg);
   flex: 1;
   width: 100%;
 }
@@ -50,7 +50,7 @@
   flex-direction: column;
   gap: var(--space-sm);
   padding: var(--space-md);
-  background: var(--color-surface);
+  background: linear-gradient(135deg, var(--color-surface) 0%, var(--color-surface-alt) 100%);
   border: 1px solid var(--color-border);
   border-radius: var(--radius-lg);
 
@@ -70,6 +70,20 @@
   font-size: var(--text-sm);
   color: var(--color-text-muted);
   margin: 0;
+
+  & a {
+    color: var(--color-primary);
+    text-decoration: none;
+
+    &:hover {
+      text-decoration: underline;
+    }
+  }
+
+  & app-icon {
+    vertical-align: -0.1em;
+    opacity: 0.6;
+  }
 }
 
 .trait-detail__pager {

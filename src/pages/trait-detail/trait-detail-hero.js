@@ -13,7 +13,8 @@ import '#atoms/confidence-badge/confidence-badge.js';
 /** Score hero — large bell curve with family markers for the top-right. */
 export function scoreHero(r, t, fd, indEmoji) {
   const fmt = r.value !== null && r.value !== undefined ? formatTraitValue(r.value, t?.unit) : null;
-  const markers = (fd || []).map((f) => ({ e: f.emoji || '👤', p: Math.round(f.percentile || 0) }));
+  const markers = (Array.isArray(fd) ? fd : []).map((f) => ({ e: f.emoji || '👤', p: Math.round(f.percentile || 0) }));
+  const interp = interpretLine(r, t);
   return html`
     <section class="trait-detail__score-hero">
       <mini-curve
@@ -27,6 +28,7 @@ export function scoreHero(r, t, fd, indEmoji) {
         ${fmt ? html`<span class="trait-detail__pred">${fmt.display}</span>` : html``}
         <confidence-badge level="${r.confidence || 'none'}"></confidence-badge>
       </div>
+      ${interp}
     </section>
   `;
 }
@@ -45,4 +47,20 @@ function fmtPct(p) {
           ? 'rd'
           : 'th';
   return `${r}${s}`;
+}
+
+/** Build interpretation line from score_interpretation + z-score. */
+function interpretLine(r, t) {
+  const si = t?.score_interpretation;
+  if (!si) return html``;
+  const det = r.bestPGS && r.pgsDetails?.[r.bestPGS];
+  const z = det?.zScore ?? 0;
+  const positive = z >= 0;
+  const text = positive ? si.higher : si.lower;
+  if (!text) return html``;
+  const dir = si.direction || 'neutral';
+  let cls = 'trait-detail__interp--neutral';
+  if (dir === 'higher_better') cls = positive ? 'trait-detail__interp--good' : 'trait-detail__interp--caution';
+  else if (dir === 'lower_better') cls = positive ? 'trait-detail__interp--caution' : 'trait-detail__interp--good';
+  return html`<p class="trait-detail__interp ${cls}">Your score suggests ${text}</p>`;
 }

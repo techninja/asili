@@ -4,7 +4,7 @@
  */
 
 import { results, getActiveId, loadResults } from '#pages/beta/results-store.js';
-import { getTraitList, getPgsMeta } from '#utils/manifest.js';
+import { getTraitList, getPgsDetail } from '#utils/manifest.js';
 import * as idb from '/packages/core/src/data-layer/idb.js';
 import { loadFamily } from './trait-detail-helpers.js';
 
@@ -30,7 +30,7 @@ export async function initView(host) {
   host.trait = t;
 
   const r = results[host.traitId];
-  host.pgsMeta = r?.bestPGS ? (await getPgsMeta(r.bestPGS)) || {} : {};
+  host.pgsMeta = r?.bestPGS ? (await getPgsDetail(r.bestPGS)) || {} : {};
 
   await loadFamily(host);
 }

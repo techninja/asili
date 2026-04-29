@@ -97,8 +97,8 @@ export async function scoreUnifiedTrait(url, t, onProgress) {
     const normParams = await getNormParams();
     const result = finalize(buildScoredMaps(pgsAggregates, chrCoverage, chrTotals), normParams, {
       traitType: t.trait_type,
-      phenotypeMean: t.phenotype_mean,
-      phenotypeSd: t.phenotype_sd,
+      phenotypeMean: null,
+      phenotypeSd: null,
     });
     // Fetch top variants for the best PGS while trait files are still loaded
     if (result.bestPGS) {

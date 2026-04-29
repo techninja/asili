@@ -36,7 +36,7 @@ const TraitDetail = define({
   activeId: { value: '', connect: () => {} },
   trait: { value: /** @type {object} */ ({}) },
   pgsMeta: { value: /** @type {object} */ ({}) },
-  familyData: { value: /** @type {Array<object>} */ ([]) },
+  familyData: { value: /** @type {Array<object>} */ ([]), connect: () => {} },
   indEmoji: '🧬',
   _init: {
     value: false,
@@ -69,11 +69,18 @@ const TraitDetail = define({
           </div>
           <main class="trait-detail__main">
             <div class="trait-detail__hero">
-              <div class="trait-detail__identity">
-                <h1 class="trait-detail__title">${emoji} ${name}</h1>
-                ${trait?.description
-                  ? html`<p class="trait-detail__desc">${trait.description}</p>`
-                  : html``}
+              <div
+                class="trait-detail__identity ${trait?.cover_image ? 'trait-detail__identity--cover' : ''}"
+                style="${coverStyle(trait)}"
+              >
+                <span class="trait-detail__hero-emoji">${emoji}</span>
+                <div class="trait-detail__identity-text">
+                  <h1 class="trait-detail__title">${name}</h1>
+                  ${trait?.description
+                    ? html`<p class="trait-detail__desc">${trait.description}</p>`
+                    : html``}
+                </div>
+                ${coverAttribution(trait)}
               </div>
               ${r
                 ? scoreHero(r, trait, familyData, host.indEmoji)
@@ -122,3 +129,26 @@ function pagerButtons(trait) {
 }
 
 export default TraitDetail;
+
+/** @param {object} t */
+function coverStyle(t) {
+  if (!t?.cover_image?.thumb) return {};
+  return {
+    'background-image': `linear-gradient(to top, rgba(0,0,0,0.85) 0%, rgba(0,0,0,0.3) 100%), url(${t.cover_image.thumb})`,
+    'background-size': 'cover',
+    'background-position': 'center',
+  };
+}
+
+/** @param {object} t */
+function coverAttribution(t) {
+  if (!t?.cover_image?.photographer) return html``;
+  const url = `https://unsplash.com/@${t.cover_image.photographer_username}?utm_source=asili&utm_medium=referral`;
+  return html`<a
+    href="${url}"
+    target="_blank"
+    rel="noopener"
+    class="trait-detail__attribution"
+    >📷 ${t.cover_image.photographer}</a
+  >`;
+}

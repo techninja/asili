@@ -51,3 +51,24 @@ export function resetManifest() {
   cache = null;
   pending = null;
 }
+
+/** @type {Map<string, object>} */
+const detailCache = new Map();
+
+/**
+ * Fetch rich PGS detail from per-file JSON. Cached after first call per ID.
+ * @param {string} pgsId
+ * @returns {Promise<object|null>}
+ */
+export async function getPgsDetail(pgsId) {
+  if (detailCache.has(pgsId)) return detailCache.get(pgsId);
+  try {
+    const r = await fetch(`/data/pgs_detail/${pgsId}.json`);
+    if (!r.ok) return null;
+    const data = await r.json();
+    detailCache.set(pgsId, data);
+    return data;
+  } catch {
+    return null;
+  }
+}
