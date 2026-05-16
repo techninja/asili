@@ -55,6 +55,13 @@ export async function handleDelete(host) {
   host.individuals = await idb.getAll('individuals');
 }
 
+/** Rescore: clear results and dispatch global event to restart scoring. */
+export async function handleRescore(_host, e) {
+  const ind = e.detail;
+  if (!ind?.id) return;
+  window.dispatchEvent(new CustomEvent('asili-rescore', { detail: ind.id }));
+}
+
 /** @param {object} host @param {Event} e */
 export async function handleAutoScore(host, e) {
   host.autoScore = /** @type {HTMLInputElement} */ (e.target).checked;

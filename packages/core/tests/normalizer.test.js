@@ -128,7 +128,7 @@ describe('selectBestPGS', () => {
 });
 
 describe('imputation shrinkage', () => {
-  it('scales empirical mean by shrinkage, SD by shrinkage²', () => {
+  it('scales empirical mean by shrinkage, SD unchanged', () => {
     // avgShrinkage=0.95 (typical for R²≈0.9)
     const { details, breakdown } = makePGS({
       score: 0.4, matchedVariants: 100, genotypedVariants: 0,
@@ -137,10 +137,10 @@ describe('imputation shrinkage', () => {
     breakdown.total = 100;
     const np = { norm_mean: 0.5, norm_sd: 0.2, variants_number: 100 };
     normalizePGS(details, breakdown, np);
-    // 100% coverage → no coverage scaling. Mean × shrinkage, SD × shrinkage².
+    // 100% coverage → no coverage scaling. Mean × shrinkage, SD unchanged.
     assert.ok(Math.abs(details.normMean - 0.5 * 0.95) < 1e-6);
-    assert.ok(Math.abs(details.normSd - 0.2 * 0.95 * 0.95) < 1e-6);
-    const expectedZ = (0.4 - 0.5 * 0.95) / (0.2 * 0.95 * 0.95);
+    assert.ok(Math.abs(details.normSd - 0.2) < 1e-6);
+    const expectedZ = (0.4 - 0.5 * 0.95) / 0.2;
     assert.ok(Math.abs(details.zScore - expectedZ) < 0.01);
   });
 
@@ -165,9 +165,9 @@ describe('imputation shrinkage', () => {
     breakdown.total = 50;
     const np = { norm_mean: 0.5, norm_sd: 0.2, variants_number: 100 };
     normalizePGS(details, breakdown, np);
-    // Coverage: mean*0.5, sd*√0.5. Then shrinkage: mean*0.95, sd*0.95²
+    // Coverage: mean*0.5, sd*√0.5. Then shrinkage: mean*0.95, SD unchanged.
     const sMean = 0.5 * 0.5 * 0.95;
-    const sSd = 0.2 * Math.sqrt(0.5) * 0.95 * 0.95;
+    const sSd = 0.2 * Math.sqrt(0.5);
     assert.ok(Math.abs(details.normMean - sMean) < 1e-6);
     assert.ok(Math.abs(details.normSd - sSd) < 1e-6);
   });

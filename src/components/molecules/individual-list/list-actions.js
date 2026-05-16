@@ -80,6 +80,13 @@ export function deleteArea(ind, confirmId) {
   return html`
     <button
       class="btn btn-ghost btn-sm"
+      title="Rescore"
+      onclick="${(host) => doRescore(host, ind)}"
+    >
+      <app-icon name="refresh" size="sm"></app-icon>
+    </button>
+    <button
+      class="btn btn-ghost btn-sm"
       onclick="${(host) => {
         host.confirmDelete = ind.id;
       }}"
@@ -101,4 +108,17 @@ async function doDelete(host, ind) {
   }
   host.confirmDelete = '';
   dispatch(host, 'delete-individual', { detail: ind, bubbles: true });
+}
+
+/**
+ * Clear results and re-trigger scoring for an individual.
+ */
+async function doRescore(host, ind) {
+  try {
+    const dl = getDataLayer();
+    await dl.clearResults(ind.id);
+  } catch (e) {
+    console.error(e);
+  }
+  dispatch(host, 'rescore-individual', { detail: ind, bubbles: true });
 }

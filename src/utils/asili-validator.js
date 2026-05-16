@@ -75,5 +75,16 @@ export async function validateAsili(file) {
     return { ok: false, error: 'No chromosome data found in archive' };
   }
 
+  // Compute genotypedVariants/imputedVariants from per-chr data if missing at top level
+  if (!manifest.genotypedVariants && manifest.chromosomes) {
+    let geno = 0, imp = 0;
+    for (const chr of Object.values(manifest.chromosomes)) {
+      geno += chr.genotyped_count || 0;
+      imp += chr.imputed_count || 0;
+    }
+    manifest.genotypedVariants = geno;
+    manifest.imputedVariants = imp;
+  }
+
   return { ok: true, manifest, entries };
 }

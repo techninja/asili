@@ -31,6 +31,7 @@ export function buildScoredMaps(pgsAggregates, chrCoverage, chrTotals = []) {
       positive: n(r.positive_count), negative: n(r.negative_count),
       positiveSum: n(r.positive_sum), negativeSum: n(r.negative_sum),
       total: mv, weightSumSquared: n(r.weight_sum_squared),
+      varianceIncluded: true,
       chromosomeCoverage: {}, chromosomeTotals: {},
       chromosomeContribution: {}, chromosomeImputed: {},
       genotypedVariants: n(r.genotyped_variants), imputedVariants: n(r.imputed_variants),

@@ -45,20 +45,45 @@ export async function scoreUnifiedChrPacks(traitChrFiles, onChr) {
     const traitChr = traitChrFiles.get(chrNum);
     if (!traitChr) continue;
     const dnaRef = ref(dnaChr);
-    // Oriented dosage: genotype_dosage is alt-allele count. If effect_allele
-    // is the ref (LEAST), flip to 2-dosage. CTE computes contribution once.
+    // Orientation: for imputed parquets (file paths), dosage counts the ALT allele
+    // (4th field of variant_id). For genotyped tables, dosage counts GREATEST allele.
+    const isFile = !dnaChr.startsWith('_');
+    const orientExpr = isFile
+      ? `CASE WHEN t.effect_allele = SPLIT_PART(d.variant_id,':',4)
+              THEN d.genotype_dosage ELSE 2.0 - d.genotype_dosage END`
+      : `CASE WHEN t.effect_allele = GREATEST(
+              SPLIT_PART(t.variant_id,':',3), SPLIT_PART(t.variant_id,':',4))
+              THEN d.genotype_dosage ELSE 2.0 - d.genotype_dosage END`;
+    // Dosage centering: subtract expected_dosage (2*AF) for imputed variants.
+    // expected_dosage stores 2*AF for ALT allele; flip it when dosage is flipped.
+    const centerExpr = isFile
+      ? `CASE WHEN d.imputed THEN
+              CASE WHEN t.effect_allele = SPLIT_PART(d.variant_id,':',4)
+                   THEN COALESCE(d.expected_dosage, 0.0)
+                   ELSE 2.0 - COALESCE(d.expected_dosage, 0.0) END
+            ELSE 0.0 END`
+      : '0.0';
+    // DR2 filter: pre-filter DNA to exclude imputed variants with DR2 < 0.3.
+    // sqrt(DR2) shrinkage downweights remaining imputed variants proportionally.
+    const dnaExpr = isFile
+      ? `(SELECT * FROM ${dnaRef} WHERE (NOT imputed) OR (imputation_quality >= 0.3))`
+      : dnaRef;
     const rows = await ddb.query(`
       WITH m AS (
         SELECT t.pgs_id, t.effect_weight, d.imputed, d.imputation_quality,
-          t.effect_weight
-            * CASE WHEN t.effect_allele = GREATEST(
-                     SPLIT_PART(t.variant_id,':',3), SPLIT_PART(t.variant_id,':',4))
-                   THEN d.genotype_dosage ELSE 2.0 - d.genotype_dosage END
+          t.effect_weight * (${orientExpr} - ${centerExpr})
             * CASE WHEN d.imputed AND d.imputation_quality IS NOT NULL
                    THEN SQRT(d.imputation_quality) ELSE 1.0 END
-            AS contribution
+            AS contribution,
+          ${isFile
+            ? `CASE WHEN d.imputed
+                    THEN COALESCE(d.expected_dosage, 0.0) * (1.0 - COALESCE(d.expected_dosage, 0.0) / 2.0)
+                         * COALESCE(d.imputation_quality, 1.0)
+                    ELSE 0.5 END`
+            : '0.5'}
+            AS dosage_variance
         FROM '${traitChr}' t
-        INNER JOIN ${dnaRef} d ON t.pos=d.pos AND t.allele_key=d.allele_key
+        INNER JOIN ${dnaExpr} d ON t.pos=d.pos AND t.allele_key=d.allele_key
       )
       SELECT pgs_id,
         SUM(contribution) AS raw_score,
@@ -69,7 +94,7 @@ export async function scoreUnifiedChrPacks(traitChrFiles, onChr) {
         SUM(CASE WHEN contribution>0 THEN contribution ELSE 0 END) AS pos_sum,
         SUM(CASE WHEN contribution<0 THEN 1 ELSE 0 END) AS neg_count,
         SUM(CASE WHEN contribution<0 THEN contribution ELSE 0 END) AS neg_sum,
-        SUM(effect_weight * effect_weight) AS wsq,
+        SUM(effect_weight * effect_weight * dosage_variance) AS wsq,
         AVG(CASE WHEN imputed AND imputation_quality IS NOT NULL
              THEN SQRT(imputation_quality) ELSE 1.0 END) AS avg_shrinkage
       FROM m GROUP BY pgs_id
@@ -80,16 +105,13 @@ export async function scoreUnifiedChrPacks(traitChrFiles, onChr) {
     }
     const cov = await ddb.query(`
       SELECT t.pgs_id, '${chrNum}' as chr, COUNT(*) AS cnt,
-        SUM(t.effect_weight
-          * CASE WHEN t.effect_allele = GREATEST(
-                   SPLIT_PART(t.variant_id,':',3), SPLIT_PART(t.variant_id,':',4))
-                 THEN d.genotype_dosage ELSE 2.0 - d.genotype_dosage END
+        SUM(t.effect_weight * (${orientExpr} - ${centerExpr})
           * CASE WHEN d.imputed AND d.imputation_quality IS NOT NULL
                  THEN SQRT(d.imputation_quality) ELSE 1.0 END
         ) AS chr_contribution,
         SUM(CASE WHEN d.imputed THEN 1 ELSE 0 END) AS chr_imputed
       FROM '${traitChr}' t
-      INNER JOIN ${dnaRef} d ON t.pos=d.pos AND t.allele_key=d.allele_key
+      INNER JOIN ${dnaExpr} d ON t.pos=d.pos AND t.allele_key=d.allele_key
       GROUP BY t.pgs_id
     `);
     chrCov.push(...cov);

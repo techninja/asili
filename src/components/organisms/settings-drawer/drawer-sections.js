@@ -4,7 +4,7 @@
  */
 
 import { html } from 'hybrids';
-import { handleDelete, handleAutoScore, handleMemory, handleAncestry } from './drawer-handlers.js';
+import { handleDelete, handleRescore, handleAutoScore, handleMemory, handleAncestry } from './drawer-handlers.js';
 
 export { dangerSection, footerSection } from './drawer-danger.js';
 
@@ -19,6 +19,7 @@ export function individualsSection(host) {
         individuals="${JSON.stringify(host.individuals)}"
         ondelete-individual="${handleDelete}"
         onedit-individual="${handleDelete}"
+        onrescore-individual="${handleRescore}"
       ></individual-list>
     </section>
   `;

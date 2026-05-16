@@ -42,16 +42,12 @@ export function normalizePGS(
     sd = sd * Math.sqrt(coverage);
   }
 
-  // The norm params were computed from genotyped reference individuals.
-  // Imputed scoring applies √(R²) per variant, which:
-  //   1. Shrinks the mean proportionally (mean × avgShrinkage)
-  //   2. Compresses dosage variance more aggressively — imputed dosages
-  //      are posterior means that cluster toward het, reducing score spread.
-  //      SD scales by shrinkage² (approximating the R² variance reduction).
+  // Imputed scoring applies √(DR2) per variant in the SQL, shrinking each
+  // contribution. Mean is adjusted by avgShrinkage to account for the
+  // reduced expected sum. SD is left to coverage scaling only.
   const shrinkage = details.avgShrinkage || 1.0;
   if (useEmpirical && mean !== undefined && shrinkage < 1.0) {
     mean = mean * shrinkage;
-    sd = sd * shrinkage * shrinkage;
   }
 
   // Sanity check: if scaled z would be extreme, the empirical norms may not
@@ -63,7 +59,10 @@ export function normalizePGS(
 
   if (!useEmpirical && breakdown.total > 0) {
     mean = 0;
-    sd = estimateTheoreticalSD(breakdown.weightSumSquared, breakdown.total);
+    sd = estimateTheoreticalSD(
+      breakdown.weightSumSquared, breakdown.total,
+      breakdown.varianceIncluded || false
+    );
   }
 
   details.confidence = calculateConfidence(details.matchedVariants);

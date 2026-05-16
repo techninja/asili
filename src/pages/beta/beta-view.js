@@ -15,7 +15,7 @@ import '#organisms/trait-grid/trait-grid.js';
 // @ts-ignore
 import '#organisms/scoring-screen/scoring-screen.js';
 import { individualSelector, appContent, uploadContent, uploadPanel } from './beta-render.js';
-import { loadResults } from './results-store.js';
+import { loadResults, clearResults } from './results-store.js';
 import { initQueue, switchIndividual } from './scoring-controller.js';
 import { handleSwitch, closeOrToggleUpload, cancelSetup } from './beta-actions.js';
 import { appHeader } from '#molecules/app-header/app-header.js';
@@ -77,7 +77,20 @@ export default define({
         });
       };
       window.addEventListener('asili-individuals-changed', refresh);
-      return () => window.removeEventListener('asili-individuals-changed', refresh);
+      const rescore = async (e) => {
+        const id = e.detail;
+        if (id === host.activeId) {
+          await clearResults();
+          host.resultCount = 0;
+          host.scoringStatus = '';
+          initQueue(host);
+        }
+      };
+      window.addEventListener('asili-rescore', rescore);
+      return () => {
+        window.removeEventListener('asili-individuals-changed', refresh);
+        window.removeEventListener('asili-rescore', rescore);
+      };
     },
   },
   render: {

@@ -35,13 +35,17 @@ export function calculatePercentile(zScore) {
 }
 
 /**
- * @param {number} weightSumSquared - Σ(w²)
+ * @param {number} weightSumSquared - Σ(w² × dosage_variance) when from unified source,
+ *                                    or Σ(w²) when from genotyped-only source
  * @param {number} count
+ * @param {boolean} [varianceIncluded=false] - true if wsq already includes per-variant variance
  * @returns {number}
  */
-export function estimateTheoreticalSD(weightSumSquared, count) {
+export function estimateTheoreticalSD(weightSumSquared, count, varianceIncluded = false) {
   if (!count) return 1.0;
-  return Math.sqrt(weightSumSquared * 0.5);
+  return varianceIncluded
+    ? Math.sqrt(weightSumSquared)
+    : Math.sqrt(weightSumSquared * 0.5);
 }
 
 /**

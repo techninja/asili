@@ -91,7 +91,7 @@ describe('buildScoredMaps', () => {
 describe('end-to-end scoring pipeline', () => {
   it('low coverage → theoretical SD fallback', () => {
     // 3/100 = 3% < MIN_COVERAGE(5%) → theoretical SD
-    // wsq=0.98, sd=sqrt(0.98*0.5)=0.7, z=1.5/0.7≈2.1429
+    // wsq=0.98, varianceIncluded=true, sd=sqrt(0.98), z=1.5/sqrt(0.98)≈1.5153
     const scored = buildScoredMaps([{
       pgs_id: 'P', raw_score: 1.5, matched_variants: 3,
       imputed_variants: 0, genotyped_variants: 3,
@@ -100,7 +100,7 @@ describe('end-to-end scoring pipeline', () => {
     }], []);
     const result = finalize(scored,
       { P: { norm_mean: 0.5, norm_sd: 0.8, variants_number: 100 } });
-    const expectedZ = 1.5 / Math.sqrt(0.98 * 0.5);
+    const expectedZ = 1.5 / Math.sqrt(0.98);
     assert.equal(r(result.zScore, 4), r(expectedZ, 4));
   });
 
@@ -168,7 +168,7 @@ describe('end-to-end scoring pipeline', () => {
   });
 
   it('no norm params → theoretical SD', () => {
-    // wsq=0.98, sd=sqrt(0.49)=0.7, z=1.5/0.7
+    // wsq=0.98, varianceIncluded=true, sd=sqrt(0.98), z=1.5/sqrt(0.98)
     const scored = buildScoredMaps([{
       pgs_id: 'P', raw_score: 1.5, matched_variants: 20,
       imputed_variants: 0, genotyped_variants: 20,
@@ -176,7 +176,7 @@ describe('end-to-end scoring pipeline', () => {
       negative_count: 5, negative_sum: -0.5, weight_sum_squared: 0.98,
     }], []);
     const result = finalize(scored, {});
-    assert.equal(r(result.zScore, 4), r(1.5 / Math.sqrt(0.49), 4));
+    assert.equal(r(result.zScore, 4), r(1.5 / Math.sqrt(0.98), 4));
   });
 
   it('mixed imputed + genotyped', () => {
