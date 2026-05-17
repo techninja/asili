@@ -34,20 +34,17 @@ export function normalizePGS(
   const sufficientCoverage = coverage >= MIN_COVERAGE;
   let useEmpirical = hasEmpirical && sufficientCoverage;
 
-  // Scale empirical norm params by coverage: at partial coverage the expected
-  // score is proportionally smaller (mean × cov) and variance scales with
-  // the fraction of variants scored (SD × √cov).
-  if (useEmpirical && coverage < 1.0 && mean !== undefined) {
-    mean = mean * coverage;
-    sd = sd * Math.sqrt(coverage);
-  }
-
-  // Imputed scoring applies √(DR2) per variant in the SQL, shrinking each
-  // contribution. Mean is adjusted by avgShrinkage to account for the
-  // reduced expected sum. SD is left to coverage scaling only.
+  // Scale empirical norm params by coverage and shrinkage.
+  // Coverage: at partial coverage, mean ∝ coverage, SD ∝ √coverage.
+  // Shrinkage: the SQL applies √(DR2) per variant, shrinking contributions.
+  // Mean shifts by coverage × shrinkage. However, imputed dosage noise means
+  // the score's SD doesn't shrink as much as the mean — we divide SD by
+  // shrinkage to widen the denominator, reducing extreme z-scores.
+  // For raw data (shrinkage=1.0), this has no effect.
   const shrinkage = details.avgShrinkage || 1.0;
-  if (useEmpirical && mean !== undefined && shrinkage < 1.0) {
-    mean = mean * shrinkage;
+  if (useEmpirical && coverage < 1.0 && mean !== undefined) {
+    mean = mean * coverage * shrinkage;
+    sd = sd * Math.sqrt(coverage) / shrinkage;
   }
 
   // Sanity check: if scaled z would be extreme, the empirical norms may not

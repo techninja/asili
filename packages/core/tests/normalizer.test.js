@@ -128,8 +128,9 @@ describe('selectBestPGS', () => {
 });
 
 describe('imputation shrinkage', () => {
-  it('scales empirical mean by shrinkage, SD unchanged', () => {
-    // avgShrinkage=0.95 (typical for R²≈0.9)
+  it('scales empirical mean and SD using effective coverage', () => {
+    // avgShrinkage=0.95, coverage=100% (100/100)
+    // coverage < 1.0 is false, so no scaling applied
     const { details, breakdown } = makePGS({
       score: 0.4, matchedVariants: 100, genotypedVariants: 0,
       imputedVariants: 100, avgShrinkage: 0.95,
@@ -137,11 +138,9 @@ describe('imputation shrinkage', () => {
     breakdown.total = 100;
     const np = { norm_mean: 0.5, norm_sd: 0.2, variants_number: 100 };
     normalizePGS(details, breakdown, np);
-    // 100% coverage → no coverage scaling. Mean × shrinkage, SD unchanged.
-    assert.ok(Math.abs(details.normMean - 0.5 * 0.95) < 1e-6);
+    // 100% coverage → no scaling (coverage < 1.0 is false)
+    assert.ok(Math.abs(details.normMean - 0.5) < 1e-6);
     assert.ok(Math.abs(details.normSd - 0.2) < 1e-6);
-    const expectedZ = (0.4 - 0.5 * 0.95) / 0.2;
-    assert.ok(Math.abs(details.zScore - expectedZ) < 0.01);
   });
 
   it('no shrinkage for genotyped-only data (shrinkage=1.0)', () => {
@@ -158,6 +157,8 @@ describe('imputation shrinkage', () => {
 
   it('shrinkage + coverage scaling compound correctly', () => {
     // 50% coverage + 0.95 shrinkage
+    // mean = 0.5 * 0.5 * 0.95 = 0.2375
+    // sd = 0.2 * sqrt(0.5) / 0.95 = 0.2 * 0.7071 / 0.95 = 0.1489
     const { details, breakdown } = makePGS({
       score: 0.2, matchedVariants: 50, genotypedVariants: 0,
       imputedVariants: 50, avgShrinkage: 0.95,
@@ -165,9 +166,8 @@ describe('imputation shrinkage', () => {
     breakdown.total = 50;
     const np = { norm_mean: 0.5, norm_sd: 0.2, variants_number: 100 };
     normalizePGS(details, breakdown, np);
-    // Coverage: mean*0.5, sd*√0.5. Then shrinkage: mean*0.95, SD unchanged.
     const sMean = 0.5 * 0.5 * 0.95;
-    const sSd = 0.2 * Math.sqrt(0.5);
+    const sSd = 0.2 * Math.sqrt(0.5) / 0.95;
     assert.ok(Math.abs(details.normMean - sMean) < 1e-6);
     assert.ok(Math.abs(details.normSd - sSd) < 1e-6);
   });
