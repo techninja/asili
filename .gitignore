@@ -1,7 +1,6 @@
 node_modules/
 src/vendor/
 src/icons.json
-src/deps/
 src/data/
 data/db.json
 .env.local

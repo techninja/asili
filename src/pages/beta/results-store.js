@@ -6,6 +6,7 @@
 
 import { createDataLayer, getDataLayer } from '/packages/core/src/data-layer/create.js';
 import { get, set } from '#utils/storage.js';
+import { DATA_BASE } from '#utils/data-url.js';
 
 /** @type {Record<string, object>} In-memory cache for render perf. */
 export const results = {};
@@ -93,5 +94,5 @@ async function ensureDataLayer() {
   } catch {
     /* first call */
   }
-  return createDataLayer({ mode: 'browser' });
+  return createDataLayer({ mode: 'browser', manifestUrl: `${DATA_BASE}/trait_manifest.json` });
 }
