@@ -51,54 +51,46 @@ function col(pct) {
 
 /**
  * Resolve emoji horizontal positions so none overlap.
- * Active individual is FIXED at its true position; others nudge around it.
+ * Active is fixed. Others split into left/right groups and spread outward.
  */
 function resolveRow(activePct, others) {
   const activeX = toX(activePct);
-
-  // Others sorted by true x
   const items = others
     .map(m => ({ p: m.p, e: m.e, n: m.n || '', trueX: toX(m.p) }))
     .sort((a, b) => a.trueX - b.trueX);
 
-  // Place others, treating active position as an immovable obstacle
-  const displayX = items.map(it => it.trueX);
+  // Split into left and right of active
+  const left = items.filter(it => it.trueX <= activeX);
+  const right = items.filter(it => it.trueX > activeX);
 
-  // Insert active as a fixed obstacle for gap calculations
-  const obstacles = [{ x: activeX, fixed: true }];
-  
-  // Forward pass: ensure min gap between all items
-  for (let i = 0; i < displayX.length; i++) {
-    // Check against active
-    if (Math.abs(displayX[i] - activeX) < MIN_GAP) {
-      // Push away from active
-      displayX[i] = displayX[i] < activeX
-        ? activeX - MIN_GAP
-        : activeX + MIN_GAP;
-    }
-    // Check against previous other
-    if (i > 0 && displayX[i] - displayX[i - 1] < MIN_GAP) {
-      displayX[i] = displayX[i - 1] + MIN_GAP;
-    }
+  // Spread left group outward (right to left from active)
+  const leftX = [];
+  let boundary = activeX - MIN_GAP;
+  for (let i = left.length - 1; i >= 0; i--) {
+    leftX[i] = Math.min(left[i].trueX, boundary);
+    boundary = leftX[i] - MIN_GAP;
+  }
+  // Clamp left edge
+  for (let i = 0; i < leftX.length; i++) {
+    leftX[i] = Math.max(leftX[i], PAD + i * MIN_GAP);
   }
 
-  // Backward pass: pull back items past right edge
-  for (let i = displayX.length - 1; i >= 0; i--) {
-    displayX[i] = Math.min(displayX[i], VW - PAD);
-    if (i < displayX.length - 1 && displayX[i + 1] - displayX[i] < MIN_GAP) {
-      displayX[i] = displayX[i + 1] - MIN_GAP;
-    }
+  // Spread right group outward (left to right from active)
+  const rightX = [];
+  boundary = activeX + MIN_GAP;
+  for (let i = 0; i < right.length; i++) {
+    rightX[i] = Math.max(right[i].trueX, boundary);
+    boundary = rightX[i] + MIN_GAP;
+  }
+  // Clamp right edge
+  for (let i = rightX.length - 1; i >= 0; i--) {
+    rightX[i] = Math.min(rightX[i], VW - PAD - (rightX.length - 1 - i) * MIN_GAP);
   }
 
-  // Clamp left
-  for (let i = 0; i < displayX.length; i++) {
-    displayX[i] = Math.max(displayX[i], PAD);
-    if (i > 0 && displayX[i] - displayX[i - 1] < MIN_GAP) {
-      displayX[i] = displayX[i - 1] + MIN_GAP;
-    }
-  }
-
-  return items.map((it, i) => ({ ...it, displayX: displayX[i] }));
+  return [
+    ...left.map((it, i) => ({ ...it, displayX: leftX[i] })),
+    ...right.map((it, i) => ({ ...it, displayX: rightX[i] })),
+  ];
 }
 
 function buildSvg(pct, indEmoji, markers, dimmed) {
