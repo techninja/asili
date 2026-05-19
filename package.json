@@ -53,5 +53,8 @@
     "express": "^5.2.1",
     "hybrids": "^9.1.22",
     "lucide-static": "^1.7.0"
+  },
+  "pnpm": {
+    "onlyBuiltDependencies": ["esbuild", "workerd"]
   }
 }
