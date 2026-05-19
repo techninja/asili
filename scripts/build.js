@@ -27,9 +27,12 @@ mkdirSync(DIST, { recursive: true });
 console.log('→ Building icons...');
 execSync('node scripts/build-icons.js', { cwd: ROOT, stdio: 'inherit' });
 
-// Copy src/ as the root
+// Copy src/ as the root (skip data/ — served from R2)
 console.log('→ Copying src/ → dist/');
-cpSync(resolve(ROOT, 'src'), DIST, { recursive: true });
+cpSync(resolve(ROOT, 'src'), DIST, {
+  recursive: true,
+  filter: (src) => !src.includes('/data/') && !src.endsWith('/data'),
+});
 
 // Inject deploy hash into index.html for cache busting
 console.log(`→ Injecting deploy hash: ${HASH}`);
