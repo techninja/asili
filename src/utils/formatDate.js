@@ -39,3 +39,26 @@ export function timeAgo(iso) {
   }
   return 'just now';
 }
+
+/**
+ * Abbreviate large numbers: 1234 → "1.2K", 1234567 → "1.2M".
+ * @param {number} n
+ * @returns {string}
+ */
+export function fmtNum(n) {
+  if (n >= 1e6) return `${(n / 1e6).toFixed(1)}M`;
+  if (n >= 1e3) return `${(n / 1e3).toFixed(1)}K`;
+  return String(n);
+}
+
+/**
+ * Format "X of Y (Z%)" coverage string.
+ * @param {number} matched
+ * @param {number} total
+ * @returns {string}
+ */
+export function fmtCoverage(matched, total) {
+  if (!total) return `${fmtNum(matched)} variants`;
+  const pct = Math.round((matched / total) * 100);
+  return `${fmtNum(matched)} of ${fmtNum(total)} variants (${pct}%)`;
+}

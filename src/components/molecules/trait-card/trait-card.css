@@ -1,0 +1,126 @@
+.trait-card {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  padding: var(--space-md);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-xs);
+  transition:
+    box-shadow 0.2s,
+    border-color 0.2s;
+}
+
+.trait-card:hover {
+  box-shadow: var(--shadow-md);
+  border-color: var(--color-primary);
+}
+
+.trait-card--tier-high {
+  border-left: 3px solid var(--color-success);
+}
+
+.trait-card--tier-mid {
+  border-left: 3px solid var(--color-info);
+}
+
+.trait-card--tier-low {
+  border-left: 3px solid var(--color-warning);
+}
+
+.trait-card--tier-min {
+  border-left: 3px solid var(--color-danger);
+}
+
+.trait-card--empty {
+  opacity: 0.65;
+}
+
+.trait-card__placeholder {
+  opacity: 0.25;
+  pointer-events: none;
+}
+
+.trait-card__percentile--empty {
+  color: var(--color-text-muted);
+}
+
+.trait-card__header {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+}
+
+.trait-card__emoji {
+  font-size: 1.4rem;
+  line-height: 1;
+}
+
+.trait-card__name {
+  font-weight: 600;
+  font-size: var(--text-sm);
+  line-height: 1.3;
+}
+
+.trait-card__score {
+  display: flex;
+  align-items: baseline;
+  gap: var(--space-xs);
+  flex-wrap: wrap;
+}
+
+.trait-card__percentile {
+  font-size: var(--text-xl);
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+  line-height: 1;
+}
+
+.trait-card__pct-label {
+  font-size: var(--text-xs);
+  color: var(--color-text-muted);
+}
+
+.trait-card__value {
+  font-size: var(--text-xs);
+  color: var(--color-text-muted);
+  margin-left: auto;
+}
+
+.trait-card__empty {
+  font-size: var(--text-sm);
+  color: var(--color-text-muted);
+  margin: 0;
+  font-style: italic;
+  text-align: center;
+}
+
+.trait-card__empty--nodata {
+  color: var(--color-warning);
+}
+
+.trait-card__hint {
+  font-size: var(--text-xs);
+  opacity: 0.8;
+}
+
+.trait-card__footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-xs);
+  margin-top: auto;
+}
+
+.trait-card__coverage {
+  font-size: 0.65rem;
+  color: var(--color-warning);
+}
+
+.trait-card__category {
+  font-size: 0.65rem;
+  color: var(--color-text-muted);
+  background: var(--color-surface-alt);
+  padding: 1px 6px;
+  border-radius: var(--radius-sm);
+}

@@ -1,0 +1,20 @@
+.app-footer {
+  padding: var(--space-lg) var(--space-xl);
+  text-align: center;
+  font-size: var(--text-sm);
+  color: var(--color-text-muted);
+  border-top: 1px solid var(--color-border);
+
+  & p {
+    margin: 0;
+  }
+
+  & a {
+    color: var(--color-text-muted);
+    text-decoration: none;
+
+    &:hover {
+      color: var(--color-primary);
+    }
+  }
+}

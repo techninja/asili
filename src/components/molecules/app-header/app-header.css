@@ -1,0 +1,105 @@
+.app-header {
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+  padding: var(--space-sm) var(--space-lg);
+  border-bottom: 1px solid var(--color-border);
+  background: color-mix(in srgb, var(--color-surface) 85%, transparent);
+  backdrop-filter: blur(12px);
+  flex-wrap: wrap;
+}
+
+.app-header__logo {
+  display: flex;
+  align-items: center;
+  gap: var(--space-xs);
+  text-decoration: none;
+  color: var(--color-text);
+  font-weight: 700;
+  font-size: var(--text-lg);
+  flex-shrink: 0;
+  overflow: hidden;
+  height: 2.5rem;
+
+  & img {
+    height: 4rem;
+    width: auto;
+    margin: -0.75rem 0;
+  }
+}
+
+.app-header__badge {
+  font-size: 0.65rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--color-primary);
+  background: color-mix(in srgb, var(--color-primary) 15%, transparent);
+  padding: 1px 6px;
+  border-radius: var(--radius-sm);
+  flex-shrink: 0;
+}
+
+.app-header__center {
+  flex: 1;
+  min-width: 0;
+}
+
+.app-header__actions {
+  display: flex;
+  align-items: center;
+  gap: var(--space-xs);
+  flex-shrink: 0;
+}
+
+.app-header__link {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--space-xs);
+  color: var(--color-text-muted);
+  text-decoration: none;
+  border-radius: var(--radius-md);
+  background: none;
+  border: none;
+  cursor: pointer;
+
+  &:hover {
+    color: var(--color-text);
+    background: var(--color-surface-alt);
+  }
+}
+
+.app-header__link--active {
+  color: var(--color-primary);
+  background: var(--color-surface-alt);
+}
+
+@media (width <= 640px) {
+  .app-header {
+    padding: var(--space-xs) var(--space-sm);
+    gap: var(--space-xs);
+    flex-wrap: wrap;
+  }
+
+  .app-header__center {
+    order: 10;
+    flex-basis: 100%;
+  }
+
+  .app-header__center:empty,
+  .app-header__center:not(:has(*)) {
+    display: none;
+  }
+
+  .app-header__logo span {
+    display: none;
+  }
+
+  .app-header__actions {
+    margin-left: auto;
+  }
+}

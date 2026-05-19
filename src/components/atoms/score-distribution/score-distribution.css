@@ -1,0 +1,81 @@
+/* Score distribution histogram with ancestry overlays */
+.score-dist {
+  width: 100%;
+  margin: calc(-1 * var(--space-sm)) 0;
+}
+
+.score-dist--empty {
+  display: none;
+}
+
+.score-dist__svg {
+  width: 100%;
+  height: auto;
+  display: block;
+}
+
+.score-dist__bars rect {
+  fill: var(--color-primary);
+  opacity: 0.2;
+}
+
+.score-dist__marker {
+  stroke: var(--color-warning);
+  stroke-width: 2;
+}
+
+.score-dist__emoji {
+  font-size: 12px;
+}
+
+.score-dist__legend {
+  font-size: 7px;
+  fill: var(--color-text-muted);
+  cursor: default;
+}
+
+.score-dist__leg {
+  cursor: pointer;
+}
+
+/* Hover: highlight one ancestry, dim others */
+.score-dist__svg:has(.score-dist__leg:hover) .score-dist__curve {
+  opacity: 0.15;
+  transition: opacity 0.15s;
+}
+
+.score-dist__svg:has(.score-dist__leg:hover) .score-dist__bars rect {
+  opacity: 0.08;
+}
+
+/* Match hovered legend to its curve by shared class */
+.score-dist__svg:has(.pop-NFE:hover) .pop-NFE.score-dist__curve,
+.score-dist__svg:has(.pop-FIN:hover) .pop-FIN.score-dist__curve,
+.score-dist__svg:has(.pop-AFR:hover) .pop-AFR.score-dist__curve,
+.score-dist__svg:has(.pop-EAS:hover) .pop-EAS.score-dist__curve,
+.score-dist__svg:has(.pop-SAS:hover) .pop-SAS.score-dist__curve,
+.score-dist__svg:has(.pop-AMR:hover) .pop-AMR.score-dist__curve,
+.score-dist__svg:has(.pop-ASJ:hover) .pop-ASJ.score-dist__curve,
+.score-dist__svg:has(.pop-MID:hover) .pop-MID.score-dist__curve {
+  opacity: 1;
+  stroke-width: 2.5;
+}
+
+/* Also highlight when hovering the curve itself */
+.score-dist__curve {
+  cursor: pointer;
+  transition: opacity 0.15s;
+}
+
+.score-dist__svg:has(.score-dist__curve:hover) .score-dist__curve {
+  opacity: 0.15;
+}
+
+.score-dist__svg:has(.score-dist__curve:hover) .score-dist__bars rect {
+  opacity: 0.08;
+}
+
+.score-dist__curve:hover {
+  opacity: 1 !important;
+  stroke-width: 2.5;
+}

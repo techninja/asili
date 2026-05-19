@@ -1,0 +1,118 @@
+/* Settings drawer — slides down from header */
+.settings-drawer__backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 200;
+  background: rgb(0 0 0 / 40%);
+  animation: sd-fade-in 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.settings-drawer {
+  position: fixed;
+  top: 0;
+  right: 0;
+  z-index: 201;
+  width: min(400px, 90vw);
+  max-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  background: var(--color-surface);
+  border-left: 1px solid var(--color-border);
+  box-shadow: var(--shadow-md);
+  animation: sd-slide-in 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.settings-drawer--closing .settings-drawer__backdrop {
+  animation: sd-fade-out 0.2s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+}
+
+.settings-drawer--closing .settings-drawer {
+  animation: sd-slide-out 0.2s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+}
+
+.settings-drawer__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--space-md) var(--space-lg);
+  border-bottom: 1px solid var(--color-border);
+
+  & h2 {
+    margin: 0;
+    font-size: var(--text-lg);
+  }
+}
+
+.settings-drawer__close {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--space-xs);
+  background: none;
+  border: none;
+  color: var(--color-text-muted);
+  cursor: pointer;
+  border-radius: var(--radius-md);
+
+  &:hover {
+    color: var(--color-text);
+    background: var(--color-surface-alt);
+  }
+}
+
+.settings-drawer__body {
+  flex: 1;
+  overflow-y: auto;
+  padding: var(--space-lg);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-lg);
+}
+
+.settings-drawer__section {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-sm);
+
+  & h3 {
+    margin: 0;
+    font-size: var(--text-base);
+    color: var(--color-text-muted);
+  }
+}
+
+.settings-drawer__section-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.settings-drawer__meta {
+  font-size: var(--text-sm);
+  color: var(--color-text-muted);
+  margin: 0;
+}
+
+@keyframes sd-fade-in {
+  from {
+    opacity: 0;
+  }
+}
+
+@keyframes sd-fade-out {
+  to {
+    opacity: 0;
+  }
+}
+
+@keyframes sd-slide-in {
+  from {
+    transform: translateX(100%);
+  }
+}
+
+@keyframes sd-slide-out {
+  to {
+    transform: translateX(100%);
+  }
+}

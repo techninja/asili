@@ -1,0 +1,442 @@
+{
+  "EFO_0004340": {
+    "emoji": "📊",
+    "trait_type": "quantitative",
+    "editorial_name": "body mass index",
+    "editorial_description": "A measure of body fat based on height and weight. Normal range is 18.5-24.9.",
+    "unit": "BMI",
+    "phenotype_mean": 27.4,
+    "phenotype_sd": 4.8,
+    "reference_population": "UK Biobank European"
+  },
+  "OBA_VT0001253": {
+    "emoji": "📏",
+    "trait_type": "quantitative",
+    "editorial_name": "body height",
+    "editorial_description": "Your height, influenced by genetics and nutrition during growth.",
+    "unit": "cm",
+    "phenotype_mean": 170,
+    "phenotype_sd": 10,
+    "reference_population": "NHANES"
+  },
+  "EFO_0004612": {
+    "emoji": "⬆️",
+    "trait_type": "quantitative",
+    "editorial_name": "HDL cholesterol level",
+    "editorial_description": "The level of 'good' cholesterol in blood, which helps remove other forms of cholesterol and reduce heart disease risk.",
+    "unit": "mg/dL",
+    "phenotype_mean": 55,
+    "phenotype_sd": 15,
+    "reference_population": "US adults"
+  },
+  "EFO_0004530": {
+    "emoji": "🧈",
+    "trait_type": "quantitative",
+    "editorial_name": "triglyceride level",
+    "editorial_description": "A type of fat in the blood that can increase heart disease risk when levels are too high.",
+    "unit": "mg/dL",
+    "phenotype_mean": 150,
+    "phenotype_sd": 90,
+    "reference_population": "US adults"
+  },
+  "EFO_0004574": {
+    "emoji": "🧪",
+    "trait_type": "quantitative",
+    "editorial_name": "total cholesterol measurement",
+    "editorial_description": "The total amount of cholesterol in your blood, including both good and bad types.",
+    "unit": "mg/dL",
+    "phenotype_mean": 200,
+    "phenotype_sd": 40,
+    "reference_population": "US adults"
+  },
+  "EFO_0006335": {
+    "emoji": "📈",
+    "trait_type": "quantitative",
+    "editorial_name": "systolic blood pressure",
+    "editorial_description": "The blood pressure when the heart contracts, the top number in a blood pressure reading.",
+    "unit": "mmHg",
+    "phenotype_mean": 120,
+    "phenotype_sd": 15,
+    "reference_population": "NHANES"
+  },
+  "EFO_0006336": {
+    "emoji": "📉",
+    "trait_type": "quantitative",
+    "editorial_name": "diastolic blood pressure",
+    "editorial_description": "The blood pressure when the heart relaxes between beats, the bottom number in a blood pressure reading.",
+    "unit": "mmHg",
+    "phenotype_mean": 80,
+    "phenotype_sd": 10,
+    "reference_population": "NHANES"
+  },
+  "EFO_0005106": {
+    "emoji": "🏋️",
+    "trait_type": "quantitative",
+    "editorial_name": "body composition measurement",
+    "editorial_description": "Measurements of body fat, muscle, and bone percentages.",
+    "unit": "%",
+    "phenotype_mean": 25,
+    "phenotype_sd": 8,
+    "reference_population": "Adults (mixed sex)"
+  },
+  "OBA_VT0000217": {
+    "emoji": "🦠",
+    "trait_type": "quantitative",
+    "editorial_name": "white blood cell count",
+    "editorial_description": "The number of white blood cells in your blood, important for fighting infections.",
+    "unit": "thousand/μL",
+    "phenotype_mean": 7,
+    "phenotype_sd": 2,
+    "reference_population": "Clinical reference"
+  },
+  "OBA_1000968": {
+    "emoji": "☀️",
+    "trait_type": "quantitative",
+    "editorial_name": "vitamin D level",
+    "editorial_description": "The amount of vitamin D in the body, important for bone health and immune function.",
+    "unit": "ng/mL",
+    "phenotype_mean": 25,
+    "phenotype_sd": 10,
+    "reference_population": "Clinical reference"
+  },
+  "EFO_0004541": {
+    "emoji": "🍬",
+    "trait_type": "quantitative",
+    "editorial_name": "HbA1c measurement",
+    "editorial_description": "A measure of average blood sugar levels over the past 2-3 months.",
+    "unit": "%",
+    "phenotype_mean": 5.4,
+    "phenotype_sd": 0.5,
+    "reference_population": "Non-diabetic adults"
+  },
+  "OBA_VT0000188": {
+    "emoji": "🍬",
+    "trait_type": "quantitative",
+    "editorial_name": "blood glucose level",
+    "editorial_description": "The amount of sugar (glucose) in your blood.",
+    "unit": "mg/dL",
+    "phenotype_mean": 95,
+    "phenotype_sd": 12,
+    "reference_population": "Fasting, non-diabetic"
+  },
+  "EFO_0006527": {
+    "emoji": "🚬",
+    "trait_type": "quantitative",
+    "editorial_name": "smoking status",
+    "editorial_description": "Whether a person currently smokes or has ever smoked tobacco.",
+    "unit": "binary",
+    "phenotype_mean": 0,
+    "phenotype_sd": 1,
+    "reference_population": "UK Biobank"
+  },
+  "OBA_1000840": {
+    "emoji": "🍺",
+    "trait_type": "quantitative",
+    "editorial_name": "alcohol consumption",
+    "editorial_description": "The amount and frequency of alcohol consumption.",
+    "unit": "drinks/week",
+    "phenotype_mean": 2,
+    "phenotype_sd": 3,
+    "reference_population": "UK Biobank"
+  },
+  "EFO_0004458": {
+    "emoji": "🔥",
+    "trait_type": "quantitative",
+    "editorial_name": "C-reactive protein level",
+    "editorial_description": "A marker of inflammation in the body.",
+    "unit": "mg/L",
+    "phenotype_mean": 2,
+    "phenotype_sd": 3,
+    "reference_population": "Healthy adults"
+  },
+  "EFO_0004338": {
+    "emoji": "⚖️",
+    "trait_type": "quantitative",
+    "editorial_name": "body weight",
+    "editorial_description": "Your body weight, influenced by genetics, diet, and lifestyle.",
+    "unit": "kg",
+    "phenotype_mean": 78.5,
+    "phenotype_sd": 16.2,
+    "reference_population": "UK Biobank European"
+  },
+  "EFO_0004343": {
+    "emoji": "📏",
+    "trait_type": "quantitative",
+    "editorial_name": "waist-hip ratio",
+    "editorial_description": "The ratio of waist to hip measurements, used to assess body fat distribution.",
+    "unit": "ratio",
+    "phenotype_mean": 0.87,
+    "phenotype_sd": 0.09,
+    "reference_population": "NHANES"
+  },
+  "OBA_1001085": {
+    "emoji": "📏",
+    "trait_type": "quantitative",
+    "editorial_name": "waist circumference",
+    "editorial_description": "The measurement around your waist, used to assess abdominal fat.",
+    "unit": "cm",
+    "phenotype_mean": 90,
+    "phenotype_sd": 15,
+    "reference_population": "NHANES"
+  },
+  "EFO_0007788": {
+    "emoji": "📏",
+    "trait_type": "quantitative",
+    "editorial_name": "BMI-adjusted waist-hip ratio",
+    "editorial_description": "Waist-to-hip ratio adjusted for body mass index, a more accurate measure of body fat distribution.",
+    "unit": "ratio",
+    "phenotype_mean": 0.87,
+    "phenotype_sd": 0.09,
+    "reference_population": "UK Biobank"
+  },
+  "OBA_1001087": {
+    "emoji": "💓",
+    "trait_type": "quantitative",
+    "editorial_name": "heart rate",
+    "editorial_description": "The number of heartbeats per minute.",
+    "unit": "beats/min",
+    "phenotype_mean": 70,
+    "phenotype_sd": 12,
+    "reference_population": "Clinical reference"
+  },
+  "EFO_0007825": {
+    "emoji": "👨‍🦲",
+    "trait_type": "quantitative",
+    "editorial_name": "male pattern baldness",
+    "editorial_description": "Hair loss pattern, typically on the crown and temples, strongly influenced by genetics and hormones.",
+    "unit": "pattern scale",
+    "phenotype_mean": 3,
+    "phenotype_sd": 2,
+    "reference_population": "Population average"
+  },
+  "EFO_0008328": {
+    "emoji": "🌅",
+    "trait_type": "quantitative",
+    "editorial_name": "chronotype",
+    "editorial_description": "Your natural preference for being active in the morning or evening, influenced by genetics.",
+    "unit": "score",
+    "phenotype_mean": 0,
+    "phenotype_sd": 1,
+    "reference_population": "UK Biobank"
+  },
+  "EFO_0007660": {
+    "emoji": "😰",
+    "trait_type": "quantitative",
+    "editorial_name": "neuroticism score",
+    "editorial_description": "A personality trait measuring emotional instability and tendency toward negative emotions.",
+    "unit": "score",
+    "phenotype_mean": 5,
+    "phenotype_sd": 2,
+    "reference_population": "UK Biobank"
+  },
+  "OBA_1000110": {
+    "emoji": "🦴",
+    "trait_type": "quantitative",
+    "editorial_name": "bone mineral density",
+    "editorial_description": "A measure of bone strength and density.",
+    "unit": "g/cm²",
+    "phenotype_mean": 1,
+    "phenotype_sd": 0.15,
+    "reference_population": "Clinical reference"
+  },
+  "EFO_0004620": {
+    "emoji": "💊",
+    "trait_type": "quantitative",
+    "editorial_name": "vitamin B12 level",
+    "editorial_description": "The level of vitamin B12 in blood, essential for brain function, nerve health, and red blood cell formation.",
+    "unit": "pg/mL",
+    "phenotype_mean": 450,
+    "phenotype_sd": 150,
+    "reference_population": "Clinical reference"
+  },
+  "EFO_0004531": {
+    "emoji": "💎",
+    "trait_type": "quantitative",
+    "editorial_name": "uric acid level",
+    "editorial_description": "The level of uric acid in blood, which can cause gout when elevated.",
+    "unit": "mg/dL",
+    "phenotype_mean": 5.5,
+    "phenotype_sd": 1.5,
+    "reference_population": "NHANES"
+  },
+  "EFO_0004703": {
+    "emoji": "🌺",
+    "trait_type": "quantitative",
+    "editorial_name": "age at menarche",
+    "editorial_description": "The age when a person has their first menstrual period.",
+    "unit": "years",
+    "phenotype_mean": 12.5,
+    "phenotype_sd": 1.3,
+    "reference_population": "European ancestry"
+  },
+  "EFO_0004704": {
+    "emoji": "🍂",
+    "trait_type": "quantitative",
+    "editorial_name": "age at menopause",
+    "editorial_description": "The age when menstrual periods permanently stop.",
+    "unit": "years",
+    "phenotype_mean": 50.5,
+    "phenotype_sd": 3.8,
+    "reference_population": "European ancestry"
+  },
+  "EFO_0004713": {
+    "emoji": "🫁",
+    "trait_type": "quantitative",
+    "editorial_name": "FEV/FVC ratio",
+    "editorial_description": "The ratio of forced expiratory volume to forced vital capacity, a measure of lung function.",
+    "unit": "ratio",
+    "phenotype_mean": 0.79,
+    "phenotype_sd": 0.07,
+    "reference_population": "Healthy adults"
+  },
+  "EFO_0004312": {
+    "emoji": "🫁",
+    "trait_type": "quantitative",
+    "editorial_name": "lung vital capacity",
+    "editorial_description": "The maximum amount of air you can exhale after taking the deepest breath possible.",
+    "unit": "liters",
+    "phenotype_mean": 4.5,
+    "phenotype_sd": 1,
+    "reference_population": "UK Biobank"
+  },
+  "EFO_0006925": {
+    "emoji": "🧬",
+    "trait_type": "quantitative",
+    "editorial_name": "lipoprotein(a) level",
+    "editorial_description": "The level of a specific cholesterol particle that increases heart disease risk when elevated.",
+    "unit": "mg/dL",
+    "phenotype_mean": 20,
+    "phenotype_sd": 25,
+    "reference_population": "Clinical reference"
+  },
+  "EFO_0004697": {
+    "emoji": "🌸",
+    "trait_type": "quantitative",
+    "editorial_name": "estradiol level",
+    "editorial_description": "The level of estradiol, a hormone important for reproductive health, bone strength, and cardiovascular health.",
+    "unit": "pg/mL",
+    "phenotype_mean": 100,
+    "phenotype_sd": 50,
+    "reference_population": "Clinical reference"
+  },
+  "EFO_0007777": {
+    "emoji": "🔥",
+    "trait_type": "quantitative",
+    "editorial_name": "basal metabolic rate",
+    "editorial_description": "The minimum energy your body needs at complete rest to maintain basic functions like breathing and circulation.",
+    "unit": "kcal/day",
+    "phenotype_mean": 1600,
+    "phenotype_sd": 300,
+    "reference_population": "Adults"
+  },
+  "EFO_0004587": {
+    "emoji": "🦠",
+    "trait_type": "quantitative",
+    "editorial_name": "lymphocyte count",
+    "editorial_description": "The number of lymphocytes (a type of white blood cell) in your blood, important for immune function.",
+    "unit": "thousand/μL",
+    "phenotype_mean": 2,
+    "phenotype_sd": 0.8,
+    "reference_population": "Clinical reference"
+  },
+  "EFO_0004842": {
+    "emoji": "🦠",
+    "trait_type": "quantitative",
+    "editorial_name": "eosinophil count",
+    "editorial_description": "The number of eosinophils (a type of white blood cell) in blood, elevated in allergies and parasitic infections.",
+    "unit": "cells/μL",
+    "phenotype_mean": 0.15,
+    "phenotype_sd": 0.1,
+    "reference_population": "Clinical reference"
+  },
+  "EFO_0005091": {
+    "emoji": "🦠",
+    "trait_type": "quantitative",
+    "editorial_name": "monocyte count",
+    "editorial_description": "The number of monocytes (a type of white blood cell) in blood, important for fighting infections.",
+    "unit": "cells/μL",
+    "phenotype_mean": 0.5,
+    "phenotype_sd": 0.2,
+    "reference_population": "Clinical reference"
+  },
+  "EFO_0006781": {
+    "emoji": "☕",
+    "trait_type": "quantitative",
+    "editorial_name": "coffee consumption",
+    "editorial_description": "How much coffee you tend to drink, influenced by genetics affecting caffeine metabolism and taste.",
+    "unit": "cups/day",
+    "phenotype_mean": 2,
+    "phenotype_sd": 1.5,
+    "reference_population": "UK Biobank"
+  },
+  "EFO_0004279": {
+    "emoji": "☀️",
+    "trait_type": "quantitative",
+    "editorial_name": "suntan response",
+    "editorial_description": "How easily and deeply your skin tans after sun exposure, influenced by genetics.",
+    "unit": "score",
+    "phenotype_mean": 3,
+    "phenotype_sd": 1,
+    "reference_population": "UK Biobank"
+  },
+  "EFO_0005035": {
+    "emoji": "🧠",
+    "trait_type": "quantitative",
+    "editorial_name": "hippocampal volume",
+    "editorial_description": "The size of the hippocampus, a brain region critical for memory and learning.",
+    "unit": "mm³",
+    "phenotype_mean": 3500,
+    "phenotype_sd": 500,
+    "reference_population": "UK Biobank"
+  },
+  "EFO_0007794": {
+    "emoji": "🚬",
+    "trait_type": "quantitative",
+    "editorial_name": "nicotine metabolite ratio",
+    "editorial_description": "The ratio of nicotine breakdown products, indicating how quickly your body metabolizes nicotine.",
+    "unit": "ratio",
+    "phenotype_mean": 0.4,
+    "phenotype_sd": 0.2,
+    "reference_population": "Clinical reference"
+  },
+  "EFO_0009102": {
+    "emoji": "👶",
+    "trait_type": "quantitative",
+    "editorial_name": "number of children",
+    "editorial_description": "The total number of children a person has had.",
+    "unit": "count",
+    "phenotype_mean": 2,
+    "phenotype_sd": 1.5,
+    "reference_population": "UK Biobank"
+  },
+  "EFO_0004695": {
+    "emoji": "👁️",
+    "trait_type": "quantitative",
+    "editorial_name": "intraocular pressure",
+    "editorial_description": "The fluid pressure inside the eye.",
+    "unit": "mmHg",
+    "phenotype_mean": 15,
+    "phenotype_sd": 3,
+    "reference_population": "Clinical reference"
+  },
+  "EFO_0004309": {
+    "emoji": "🩸",
+    "trait_type": "quantitative",
+    "editorial_name": "platelet count",
+    "editorial_description": "The number of platelets per unit volume in a sample of venous blood.",
+    "unit": "thousand/μL",
+    "phenotype_mean": 250,
+    "phenotype_sd": 60,
+    "reference_population": "Clinical reference"
+  },
+  "EFO_0004305": {
+    "emoji": "🔴",
+    "trait_type": "quantitative",
+    "editorial_name": "erythrocyte count",
+    "editorial_description": "The number of red blood cells per unit volume in a sample of venous blood.",
+    "unit": "million/μL",
+    "phenotype_mean": 4.7,
+    "phenotype_sd": 0.5,
+    "reference_population": "Clinical reference"
+  }
+}

@@ -121,7 +121,14 @@ declared in `src/index.html`.
     <script type="importmap">
       {
         "imports": {
-          "hybrids": "/vendor/hybrids/index.js"
+          "hybrids": "/vendor/hybrids/index.js",
+          "#store/": "/store/",
+          "#utils/": "/utils/",
+          "#atoms/": "/components/atoms/",
+          "#molecules/": "/components/molecules/",
+          "#organisms/": "/components/organisms/",
+          "#templates/": "/components/templates/",
+          "#pages/": "/pages/"
         }
       }
     </script>
@@ -139,6 +146,8 @@ declared in `src/index.html`.
 2. Import map resolves `'hybrids'` → `/vendor/hybrids/index.js`.
 3. Server serves the file from `src/vendor/hybrids/index.js`.
 4. Hybrids' internal imports use relative paths — they resolve naturally.
+5. `#prefix/` entries resolve cross-directory app imports without `../`.
+   For example, `import '#utils/formatDate.js'` resolves to `/utils/formatDate.js`.
 
 ### Rules
 

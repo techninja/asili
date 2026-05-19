@@ -1,0 +1,114 @@
+/**
+ * Score all pending traits for one individual via the worker pool.
+ * @module utils/score-individual
+ */
+
+import * as idb from '/packages/core/src/data-layer/idb.js';
+import { getTraitList } from '#utils/manifest.js';
+import { getIdleSession, initSession, scoreAll } from './worker-pool.js';
+import { S, notifyNow, markDone, markError, markAllError } from './queue-state.js';
+import { loadIndividualDNA } from './queue-loader.js';
+import { DATA_BASE } from '#utils/data-url.js';
+
+/** @param {string} individualId */
+export async function scoreIndividual(individualId) {
+  const session = getIdleSession();
+  if (!session) return;
+
+  S.currentScoringId = individualId;
+  S.currentTraitName = '';
+  S.currentChrDone = 0;
+  S.currentChrTotal = 0;
+  notifyNow();
+
+  try {
+    if (!session.ready) {
+      S.currentTraitName = 'Initializing DuckDB…';
+      notifyNow();
+      await initSession(session);
+    }
+    if (session.loadedDnaId !== individualId) {
+      S.currentTraitName = 'Loading DNA…';
+      notifyNow();
+      await loadIndividualDNA(session, individualId, ({ phase, done, total }) => {
+        if (phase === 'insert') {
+          S.currentTraitName = `Loading DNA… ${((done / total) * 100) | 0}%`;
+        } else {
+          S.currentTraitName = `Liftover chr ${done}/${total}…`;
+        }
+      });
+      session.loadedDnaId = individualId;
+    }
+  } catch (err) {
+    console.error(`Queue: failed to init/load for ${individualId}`, err.message);
+    markAllError(individualId, err.message);
+    session.loadedDnaId = '';
+    return;
+  }
+
+  const pendingSet = S.pendingByIndividual.get(individualId);
+  if (!pendingSet || pendingSet.size === 0) return;
+
+  const allTraits = await getTraitList();
+  const traitsToScore = allTraits.filter((t) => pendingSet.has(t.trait_id));
+  if (traitsToScore.length === 0) return;
+
+  if (!S.startMs) S.startMs = Date.now();
+
+  const retrySet = new Set();
+
+  try {
+    await scoreAll(session, traitsToScore, DATA_BASE, {
+      onProgress: ({ traitName, chrDone, chrTotal, variantsSoFar }) => {
+        S.currentTraitName = traitName;
+        S.currentChrDone = chrDone || 0;
+        S.currentChrTotal = chrTotal || 0;
+        if (variantsSoFar) S.liveVariants = variantsSoFar;
+      },
+      onTraitScored: async ({ traitId, result }) => {
+        await idb.put('results', `${individualId}:${traitId}`, {
+          ...result,
+          traitId,
+          calculatedAt: new Date().toISOString(),
+        });
+        markDone(individualId, traitId, result.totalMatches || 0);
+      },
+      onTraitError: ({ traitId }) => {
+        retrySet.add(traitId);
+      },
+    });
+  } catch (err) {
+    if (!S.paused && !S.needsReprioritize) {
+      console.error(`Queue: scoring batch error for ${individualId}`, err.message);
+    }
+  }
+
+  // Retry failed traits once
+  if (retrySet.size > 0 && !S.paused && !S.needsReprioritize) {
+    const retryTraits = allTraits.filter((t) => retrySet.has(t.trait_id));
+    try {
+      await scoreAll(session, retryTraits, DATA_BASE, {
+        onTraitScored: async ({ traitId, result }) => {
+          await idb.put('results', `${individualId}:${traitId}`, {
+            ...result,
+            traitId,
+            calculatedAt: new Date().toISOString(),
+          });
+          markDone(individualId, traitId, result.totalMatches || 0);
+        },
+        onTraitError: ({ traitId }) => markError(individualId, traitId),
+      });
+    } catch {
+      /* retry batch failed */
+    }
+  }
+
+  if (S.needsReprioritize) {
+    S.needsReprioritize = false;
+    session.loadedDnaId = '';
+  }
+  S.currentScoringId = '';
+  S.currentTraitName = '';
+  S.currentChrDone = 0;
+  S.currentChrTotal = 0;
+}

@@ -1,0 +1,124 @@
+.beta-view__header {
+  margin-bottom: var(--space-lg);
+}
+
+.beta-view__header-top {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+  flex-wrap: wrap;
+  position: relative;
+  z-index: 10;
+}
+
+.beta-view__logo {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+  text-decoration: none;
+  color: var(--color-text);
+  font-size: var(--text-xl);
+  font-weight: 600;
+}
+
+.beta-view__logo-img {
+  height: 2rem;
+}
+
+.beta-view__tag {
+  font-size: var(--text-sm);
+  padding: 2px var(--space-sm);
+  border-radius: var(--radius-sm);
+  background: var(--color-warning);
+  color: #000;
+  font-weight: 600;
+}
+
+.beta-view__selector {
+  display: flex;
+  gap: var(--space-xs);
+  flex-wrap: wrap;
+}
+
+.beta-view__ind-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-xs);
+  padding: var(--space-xs) var(--space-sm);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: var(--color-surface);
+  color: var(--color-text);
+  font: inherit;
+  font-size: var(--text-sm);
+  cursor: pointer;
+  white-space: nowrap;
+  flex-shrink: 0;
+  transition:
+    border-color 0.15s,
+    background 0.15s;
+}
+
+.beta-view__ind-btn:hover {
+  border-color: var(--color-primary);
+}
+
+.beta-view__ind-btn--active {
+  border-color: var(--color-primary);
+  background: var(--color-surface-alt);
+  font-weight: 600;
+}
+
+.beta-view__ind-btn--scoring {
+  border-color: var(--color-accent);
+}
+
+.beta-view__ind-progress {
+  font-size: var(--text-xs);
+  color: var(--color-text-muted);
+  font-variant-numeric: tabular-nums;
+}
+
+.beta-view__ind-btn--add:hover {
+  border-color: var(--color-warning);
+}
+
+.beta-view__ind-btn--add-active {
+  border-color: var(--color-warning);
+  background: var(--color-surface-alt);
+  font-weight: 600;
+  border-bottom-left-radius: 0;
+  border-bottom-right-radius: 0;
+  border-bottom-color: var(--color-surface-alt);
+  position: relative;
+  z-index: 21;
+}
+
+.beta-view__settings {
+  margin-left: auto;
+  text-decoration: none;
+  font-size: var(--text-xl);
+  opacity: 0.7;
+}
+
+.beta-view__settings:hover {
+  opacity: 1;
+}
+
+.beta-view__title {
+  font-size: var(--text-2xl);
+  margin: 0;
+  text-align: center;
+}
+
+.beta-view__sub {
+  color: var(--color-text-muted);
+  margin: 0;
+  text-align: center;
+}
+
+.beta-view__actions {
+  display: flex;
+  gap: var(--space-sm);
+  flex-wrap: wrap;
+}

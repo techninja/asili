@@ -1,0 +1,31 @@
+/* Tab bar for beta view */
+.beta-view__tabs {
+  display: flex;
+  gap: 0;
+}
+
+.beta-view__tab {
+  display: flex;
+  align-items: center;
+  gap: var(--space-xs);
+  padding: var(--space-sm) var(--space-md);
+  background: none;
+  border: none;
+  border-bottom: 2px solid transparent;
+  margin-bottom: -2px;
+  color: var(--color-text-muted);
+  font-size: var(--text-sm);
+  cursor: pointer;
+  transition:
+    color 0.15s,
+    border-color 0.15s;
+
+  &:hover {
+    color: var(--color-text);
+  }
+}
+
+.beta-view__tab--active {
+  color: var(--color-primary);
+  border-bottom-color: var(--color-primary);
+}

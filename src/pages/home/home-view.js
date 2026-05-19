@@ -3,27 +3,24 @@
  * @module pages/home
  */
 
-import { html, define } from 'hybrids';
-import '../../components/atoms/theme-toggle/theme-toggle.js';
-import '../../components/atoms/hero-canvas/hero-canvas.js';
+import { html, define, router } from 'hybrids';
+import '#atoms/theme-toggle/theme-toggle.js';
+import '#atoms/hero-canvas/hero-canvas.js';
+import { appHeader } from '#molecules/app-header/app-header.js';
+import { appFooter } from '#molecules/app-footer/app-footer.js';
+import BetaView from '#pages/beta/beta-view.js';
 
 export default define({
   tag: 'home-view',
+  [router.connect]: { url: '/', stack: [BetaView] },
   render: {
     value: () => html`
       <div class="coming-soon">
-        <header class="coming-soon__header">
-          <a href="/" class="coming-soon__logo">
-            <img src="/logo.svg" alt="" class="coming-soon__logo-img" />
-            <span>asili</span>
-          </a>
-          <div class="coming-soon__header-actions">
-            <a href="https://asili.dev" class="btn btn-ghost"
-              ><span class="coming-soon__back-text">← Back to </span>asili.dev</a
-            >
-            <theme-toggle></theme-toggle>
-          </div>
-        </header>
+        ${appHeader({
+          center: html`<a href="https://asili.dev" class="btn btn-ghost"
+            ><span class="coming-soon__back-text">← Back to </span>asili.dev</a
+          >`,
+        })}
 
         <main class="coming-soon__hero">
           <hero-canvas></hero-canvas>
@@ -90,13 +87,7 @@ export default define({
           </div>
         </section>
 
-        <footer class="coming-soon__footer">
-          <p>
-            © ${new Date().getFullYear()} Asili · AGPLv3 ·
-            <a href="https://asili.dev">asili.dev</a> ·
-            <a href="https://asili.dev/privacy">Privacy</a>
-          </p>
-        </footer>
+        ${appFooter()}
       </div>
     `,
     shadow: false,

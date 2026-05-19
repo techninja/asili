@@ -1,0 +1,111 @@
+/* Report tab — layout, header, sections */
+.report-tab {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-lg);
+}
+
+.report-tab__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+
+  & h2 {
+    margin: 0;
+    display: flex;
+    align-items: center;
+    gap: var(--space-sm);
+  }
+}
+
+.report-tab__stats {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: var(--space-sm);
+}
+
+.report-tab__stat {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  padding: var(--space-md);
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  text-align: center;
+}
+
+.report-tab__stat-val {
+  font-size: var(--text-xl);
+  font-weight: 800;
+}
+
+.report-tab__stat-label {
+  font-size: 0.7rem;
+  color: var(--color-text-muted);
+}
+
+.report-tab__section {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-sm);
+
+  & h3 {
+    margin: 0;
+    font-size: var(--text-base);
+    color: var(--color-text-muted);
+    display: flex;
+    align-items: center;
+    gap: var(--space-xs);
+  }
+}
+
+.report-tab__meta {
+  font-size: var(--text-sm);
+  color: var(--color-text-muted);
+  margin: 0;
+}
+
+.report-tab__table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: var(--text-sm);
+}
+
+.report-tab__table th {
+  text-align: left;
+  padding: var(--space-xs) var(--space-sm);
+  border-bottom: 2px solid var(--color-border);
+  color: var(--color-text-muted);
+}
+
+.report-tab__table td {
+  padding: var(--space-xs) var(--space-sm);
+  border-bottom: 1px solid var(--color-border);
+}
+
+.report-tab__trait-link {
+  color: inherit;
+  text-decoration: none;
+
+  &:hover {
+    color: var(--color-primary);
+  }
+}
+
+.report-tab__disclaimer {
+  font-size: var(--text-sm);
+  color: var(--color-warning);
+  font-style: italic;
+  margin: 0;
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-xs);
+}
+
+@media (width <= 640px) {
+  .report-tab__stats {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}

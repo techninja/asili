@@ -1,0 +1,5 @@
+{
+  "name": "Tier 2 - Self-Hosted Researcher",
+  "description": "Full Master Catalog. All traits including disease risk. Self-hosted only.",
+  "traits": ["*"]
+}

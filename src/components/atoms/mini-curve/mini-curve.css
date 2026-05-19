@@ -1,0 +1,36 @@
+.mini-curve-wrap {
+  width: 100%;
+}
+
+.mini-curve {
+  width: 100%;
+  height: auto;
+  display: block;
+}
+
+.mini-curve__marker {
+  cursor: pointer;
+  transition: opacity 0.15s;
+}
+
+.mini-curve__marker:hover {
+  opacity: 1 !important;
+}
+
+.mini-curve__marker:hover line {
+  stroke-width: 1.5;
+  stroke: var(--color-primary);
+  opacity: 0.8;
+}
+
+.mini-curve__marker:hover circle {
+  fill: var(--color-primary);
+  opacity: 1;
+  transform: scale(2);
+  transform-origin: center;
+}
+
+.mini-curve__marker:hover text {
+  opacity: 1;
+  font-size: 12px;
+}

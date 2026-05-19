@@ -1,0 +1,58 @@
+/* Radar chart — SVG polygon */
+.radar-chart {
+  display: flex;
+  justify-content: center;
+}
+
+.radar-chart__svg {
+  width: 100%;
+  max-width: 400px;
+  height: auto;
+}
+
+.radar-chart__ring {
+  fill: none;
+  stroke: var(--color-border);
+  stroke-width: 0.5;
+}
+
+.radar-chart__axis {
+  stroke: var(--color-border);
+  stroke-width: 0.5;
+  opacity: 0.5;
+}
+
+.radar-chart__outline {
+  fill: none;
+  stroke: var(--color-primary);
+  stroke-width: 2;
+  transition: all 0.3s ease;
+}
+
+.radar-chart__dot {
+  fill: var(--color-primary);
+  transition: all 0.3s ease;
+}
+
+.radar-chart__label {
+  font-size: 9px;
+  fill: var(--color-text-muted);
+}
+
+.radar-chart__ring-label {
+  font-size: 7px;
+  fill: var(--color-text-muted);
+  opacity: 0.6;
+}
+
+.radar-chart__empty {
+  color: var(--color-text-muted);
+  font-style: italic;
+}
+
+@media print {
+  .radar-chart__shape {
+    print-color-adjust: exact;
+    -webkit-print-color-adjust: exact;
+  }
+}

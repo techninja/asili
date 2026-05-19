@@ -1,0 +1,129 @@
+.beta-hero__showcase {
+  width: 100%;
+  max-width: 42rem;
+}
+
+.beta-hero__section-title {
+  font-size: var(--text-xl);
+  margin: 0 0 var(--space-lg);
+}
+
+.beta-hero__trait-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: var(--space-sm);
+  text-align: left;
+}
+
+.beta-hero__trait-preview {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+  padding: var(--space-sm) var(--space-md);
+  border-radius: var(--radius-md);
+  background: var(--color-surface-alt);
+  border: 1px solid var(--color-border);
+}
+
+.beta-hero__trait-emoji {
+  font-size: var(--text-xl);
+  flex-shrink: 0;
+}
+
+.beta-hero__trait-preview strong {
+  display: block;
+  font-size: var(--text-sm);
+}
+
+.beta-hero__trait-detail {
+  display: block;
+  font-size: var(--text-xs);
+  color: var(--color-text-muted);
+}
+
+.beta-hero__trait-count {
+  font-size: var(--text-sm);
+  color: var(--color-text-muted);
+  margin: var(--space-md) 0 0;
+}
+
+.beta-hero__trait-count a {
+  color: var(--color-primary);
+}
+
+.beta-hero__steps {
+  width: 100%;
+  max-width: 42rem;
+}
+
+.beta-hero__step-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: var(--space-lg);
+}
+
+.beta-hero__step {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-xs);
+}
+
+.beta-hero__step-num {
+  width: 2rem;
+  height: 2rem;
+  border-radius: 50%;
+  background: var(--color-primary);
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  font-size: var(--text-sm);
+}
+
+.beta-hero__step-emoji {
+  font-size: var(--text-2xl);
+}
+
+.beta-hero__step p {
+  font-size: var(--text-sm);
+  color: var(--color-text-muted);
+  margin: 0;
+  line-height: 1.5;
+}
+
+.beta-hero__privacy {
+  max-width: 36rem;
+  padding: var(--space-xl);
+  border-radius: var(--radius-lg);
+  background: var(--color-surface-alt);
+  border: 1px solid var(--color-border);
+}
+
+.beta-hero__privacy-text {
+  font-size: var(--text-sm);
+  color: var(--color-text-muted);
+  line-height: 1.7;
+  margin: 0;
+}
+
+.beta-hero__privacy-text a {
+  color: var(--color-primary);
+}
+
+@media (width <= 640px) {
+  .beta-hero__trait-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .beta-hero__step-grid {
+    grid-template-columns: 1fr;
+    gap: var(--space-md);
+  }
+
+  .beta-hero__step {
+    flex-direction: row;
+    text-align: left;
+  }
+}

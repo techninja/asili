@@ -1,0 +1,115 @@
+/* Upload panel — header drawer */
+.beta-view__upload-panel {
+  position: fixed;
+  top: var(--header-height, 3.5rem);
+  right: var(--space-lg);
+  z-index: 95;
+  width: min(28rem, calc(100vw - 2 * var(--space-lg)));
+  padding: var(--space-lg);
+  background: color-mix(in srgb, var(--color-surface) 85%, transparent);
+  backdrop-filter: blur(12px);
+  border: 1px solid var(--color-border);
+  border-top: none;
+  border-radius: 0 0 var(--radius-lg) var(--radius-lg);
+  box-shadow: var(--shadow-md);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-md);
+  animation: upload-slide-down 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.beta-view__upload-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 94;
+  background: transparent;
+
+  &::after {
+    content: '';
+    position: absolute;
+    inset: var(--header-height, 3.5rem) 0 0;
+    background: rgb(0 0 0 / 30%);
+  }
+}
+
+.beta-view__upload--closing .beta-view__upload-panel {
+  animation: upload-slide-up 0.2s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+}
+
+.beta-view__upload--closing .beta-view__upload-backdrop::after {
+  animation: upload-fade-out 0.2s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+}
+
+@keyframes upload-slide-down {
+  from {
+    transform: translateY(-100%);
+  }
+}
+
+@keyframes upload-slide-up {
+  to {
+    transform: translateY(-100%);
+  }
+}
+
+@keyframes upload-fade-in {
+  from {
+    opacity: 0;
+  }
+}
+
+@keyframes upload-fade-out {
+  to {
+    opacity: 0;
+  }
+}
+
+/* Upload inline states */
+.beta-view__status {
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-md);
+}
+
+.beta-view__spinner {
+  font-size: 3rem;
+  animation: spin 2s linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.beta-view__error {
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-sm);
+  padding: var(--space-lg);
+}
+
+.beta-view__error-icon {
+  font-size: 2rem;
+  margin: 0;
+}
+
+.beta-view__error-msg {
+  color: var(--color-danger);
+  margin: 0;
+  max-width: 24rem;
+}
+
+@media (width <= 640px) {
+  .beta-view__upload-panel {
+    right: 0;
+    left: 0;
+    width: auto;
+    border-radius: 0;
+  }
+}

@@ -10,7 +10,10 @@
     "dev": "node --watch --env-file=.env --env-file=.env.local src/server.js",
     "build": "node scripts/build.js",
     "postinstall": "node scripts/setup.js",
-    "spec": "clearstack"
+    "spec": "clearstack",
+    "traits": "node scripts/traits.js",
+    "deploy:data": "node --env-file=.env --env-file=.env.local scripts/deploy-data.js",
+    "deploy:data:small": "node --env-file=.env --env-file=.env.local scripts/deploy-data.js --small"
   },
   "keywords": [
     "genomics",
@@ -23,13 +26,13 @@
   "author": "techninja (James Todd)",
   "license": "AGPL-3.0-or-later",
   "engines": {
-    "node": ">=24",
+    "node": ">=22",
     "pnpm": ">=9"
   },
-  "packageManager": "pnpm@9.15.4",
+  "packageManager": "pnpm@10.33.0+sha512.10568bb4a6afb58c9eb3630da90cc9516417abebd3fabbe6739f0ae795728da1491e9db5a544c76ad8eb7570f5c4bb3d6c637b2cb41bfdcdb47fa823c8649319",
   "devDependencies": {
     "@open-wc/testing": "^4.0.0",
-    "@techninja/clearstack": "^0.3.7",
+    "@techninja/clearstack": "^0.3.32",
     "@types/node": "^22.0.0",
     "@web/test-runner": "^0.20.0",
     "@web/test-runner-playwright": "^0.11.0",
@@ -46,6 +49,7 @@
   },
   "main": "src/server.js",
   "dependencies": {
+    "@duckdb/duckdb-wasm": "1.33.1-dev44.0",
     "express": "^5.2.1",
     "hybrids": "^9.1.22",
     "lucide-static": "^1.7.0"

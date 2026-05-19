@@ -1,0 +1,99 @@
+/* Trait detail helper section styles — bars, upsell, nodata */
+.trait-detail__balance-bar {
+  height: 12px;
+  background: var(--color-success);
+  border-radius: var(--radius-md);
+  overflow: hidden;
+}
+
+.trait-detail__balance-risk {
+  height: 100%;
+  background: var(--color-danger);
+  transition: width 0.3s ease;
+}
+
+.trait-detail__coverage-bar {
+  height: 12px;
+  background: var(--color-surface-alt);
+  border-radius: var(--radius-md);
+  overflow: hidden;
+}
+
+.trait-detail__coverage-fill {
+  height: 100%;
+  background: var(--color-info);
+  transition: width 0.3s ease;
+}
+
+.trait-detail__grid--wide {
+  grid-column: 1 / -1;
+}
+
+.trait-detail__score-hero {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  text-align: center;
+  gap: var(--space-sm);
+  padding: var(--space-lg);
+  background: linear-gradient(135deg, var(--color-surface) 0%, var(--color-surface-alt) 100%);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+}
+
+.trait-detail__score-stats,
+.trait-detail__score-meta {
+  justify-content: center;
+}
+
+.trait-detail__score-hero-badge {
+  position: absolute;
+  top: var(--space-sm);
+  right: var(--space-sm);
+  cursor: help;
+}
+
+.trait-detail__score-hero .mini-curve-wrap {
+  width: 100%;
+  align-self: stretch;
+}
+
+.trait-detail__score-stats {
+  display: flex;
+  align-items: baseline;
+  gap: var(--space-sm);
+  flex-wrap: wrap;
+  justify-content: center;
+}
+
+.trait-detail__score-meta {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+  flex-wrap: wrap;
+  justify-content: center;
+}
+
+.trait-detail__r2-note {
+  font-size: var(--text-xs);
+  color: var(--color-text-muted);
+  margin: 0;
+  text-align: center;
+}
+
+.trait-detail__percentile {
+  font-size: var(--text-2xl);
+  font-weight: 800;
+  line-height: 1;
+}
+
+.trait-detail__pct-label {
+  font-size: var(--text-sm);
+  color: var(--color-text-muted);
+}
+
+.trait-detail__pred {
+  font-size: var(--text-sm);
+  color: var(--color-text-muted);
+}

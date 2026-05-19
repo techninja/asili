@@ -1,0 +1,124 @@
+.trait-detail__breadcrumb {
+  display: flex;
+  align-items: center;
+  gap: var(--space-xs);
+  font-size: var(--text-sm);
+}
+
+.trait-detail__breadcrumb-back {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-xs);
+  color: var(--color-primary);
+  text-decoration: none;
+  font-weight: 500;
+  padding: var(--space-xs);
+  margin: calc(-1 * var(--space-xs)) 0;
+  border-radius: var(--radius-md);
+
+  &:hover {
+    background: var(--color-surface-alt);
+  }
+
+  @media (width <= 640px) {
+    min-height: 2.75rem;
+  }
+}
+
+.trait-detail__breadcrumb-sep {
+  color: var(--color-text-muted);
+  opacity: 0.5;
+  flex-shrink: 0;
+}
+
+.trait-detail__breadcrumb-current {
+  color: var(--color-text-muted);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.trait-detail__grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--space-lg);
+
+  @media (width <= 640px) {
+    grid-template-columns: 1fr;
+  }
+}
+
+.trait-detail__section {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-sm);
+  padding: var(--space-md);
+  background: linear-gradient(135deg, var(--color-surface) 0%, var(--color-surface-alt) 100%);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+
+  & h2 {
+    font-size: var(--text-base);
+    margin: 0;
+    color: var(--color-text-muted);
+  }
+}
+
+.trait-detail__value {
+  font-size: var(--text-lg);
+  margin: 0;
+}
+
+.trait-detail__meta {
+  font-size: var(--text-sm);
+  color: var(--color-text-muted);
+  margin: 0;
+
+  & a {
+    color: var(--color-primary);
+    text-decoration: none;
+
+    &:hover {
+      text-decoration: underline;
+    }
+  }
+
+  & app-icon {
+    vertical-align: -0.1em;
+    opacity: 0.6;
+  }
+}
+
+.trait-detail__section-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-sm);
+
+  & h2 {
+    margin: 0;
+  }
+}
+
+.trait-detail__pgs-link {
+  font-size: var(--text-sm);
+  font-family: var(--font-mono);
+  color: var(--color-primary);
+  text-decoration: none;
+  white-space: nowrap;
+
+  &:hover {
+    text-decoration: underline;
+  }
+}
+
+.trait-detail__help-link {
+  color: var(--color-text-muted);
+  opacity: 0.6;
+  transition: opacity 0.15s;
+
+  &:hover {
+    opacity: 1;
+    color: var(--color-primary);
+  }
+}

@@ -1,0 +1,49 @@
+.beta-view__scoring-panel {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-xs);
+}
+
+.beta-view__scoring-bars {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.beta-view__scoring-bar {
+  height: 6px;
+  background: var(--color-surface-alt);
+  border-radius: 3px;
+  overflow: hidden;
+}
+
+.beta-view__scoring-bar--chr {
+  height: 6px;
+}
+
+.beta-view__scoring-fill {
+  height: 100%;
+  background: var(--color-primary);
+  transition: width 0.3s ease;
+}
+
+.beta-view__scoring-fill--chr {
+  height: 100%;
+  background: var(--color-accent);
+  transition: width 0.2s ease;
+}
+
+.beta-view__scoring {
+  font-size: var(--text-sm);
+  color: var(--color-text-muted);
+  font-variant-numeric: tabular-nums;
+  margin: 0;
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+  flex-wrap: wrap;
+}
+
+.beta-view__scoring--done {
+  color: var(--color-success);
+}
