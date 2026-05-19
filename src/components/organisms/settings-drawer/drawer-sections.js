@@ -4,7 +4,15 @@
  */
 
 import { html } from 'hybrids';
-import { handleDelete, handleRescore, rescoreAll, handleAutoScore, handleMemory, handleAncestry, handleUnits } from './drawer-handlers.js';
+import {
+  handleDelete,
+  handleRescore,
+  rescoreAll,
+  handleAutoScore,
+  handleMemory,
+  handleAncestry,
+  handleUnits,
+} from './drawer-handlers.js';
 
 export { dangerSection, footerSection } from './drawer-danger.js';
 

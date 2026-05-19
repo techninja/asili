@@ -4,15 +4,12 @@
  * Uses Number() for all aggregate values to handle DuckDB BigInt returns.
  * @module packages/core/src/duckdb/unified-source
  */
-
 import * as ddb from './adapter.js';
-
+import { accumulate } from './accumulate.js';
 /** @type {string[]} */
 let chrFiles = [];
 
-/** Table names start with _ (from loadGenotypedDNA), file names get quoted */
 const ref = (name) => name.startsWith('_') ? name : `'${name}'`;
-
 /**
  * Set the chromosome parquet files for unified scoring.
  * @param {string[]} files - Virtual filenames of registered chromosome parquets
@@ -20,10 +17,7 @@ const ref = (name) => name.startsWith('_') ? name : `'${name}'`;
 export async function loadUnifiedDNA(files) {
   chrFiles = files;
 }
-
 /** @param {*} v @returns {number} */
-const n = (v) => Number(v);
-
 /**
  * Score a trait by JOINing per-chromosome trait packs against DNA chromosomes.
  * @param {Map<string, string>} traitChrFiles - chr number → registered trait file name
@@ -37,7 +31,6 @@ export async function scoreUnifiedChrPacks(traitChrFiles, onChr) {
   const chrTot = [];
   let matchedSoFar = 0;
   const total = chrFiles.length;
-
   for (let ci = 0; ci < total; ci++) {
     if (onChr) onChr(ci, total, matchedSoFar);
     const dnaChr = chrFiles[ci];
@@ -124,35 +117,13 @@ export async function scoreUnifiedChrPacks(traitChrFiles, onChr) {
   }
   return { pgsAggregates: [...pgsAgg.values()], chrCoverage: chrCov, chrTotals: chrTot };
 }
-
-/** @param {Map} map @param {object} r */
-function accumulate(map, r) {
-  const pid = r.pgs_id, e = map.get(pid);
-  if (e) {
-    e.raw_score += n(r.raw_score); e.matched_variants += n(r.matched_variants);
-    e.imputed_variants += n(r.imputed_variants); e.genotyped_variants += n(r.genotyped_variants);
-    e.positive_count += n(r.pos_count); e.positive_sum += n(r.pos_sum);
-    e.negative_count += n(r.neg_count); e.negative_sum += n(r.neg_sum);
-    e.weight_sum_squared += n(r.wsq);
-    e._shrinkageSum += n(r.avg_shrinkage) * n(r.matched_variants);
-  } else {
-    map.set(pid, {
-      pgs_id: pid, raw_score: n(r.raw_score),
-      matched_variants: n(r.matched_variants), imputed_variants: n(r.imputed_variants),
-      genotyped_variants: n(r.genotyped_variants),
-      positive_count: n(r.pos_count), positive_sum: n(r.pos_sum),
-      negative_count: n(r.neg_count), negative_sum: n(r.neg_sum),
-      weight_sum_squared: n(r.wsq),
-      _shrinkageSum: n(r.avg_shrinkage) * n(r.matched_variants),
-    });
-  }
-}
-
-
-/** @returns {string[]} Current chromosome files. */
+/**
+ *
+ */
 export function getChrFiles() { return chrFiles; }
-
-/** Reset chromosome files and drop them from DuckDB. */
+/**
+ *
+ */
 export async function resetUnifiedDNA() {
   for (const f of chrFiles) {
     try { await ddb.dropFile(f); } catch { /* may not exist */ }

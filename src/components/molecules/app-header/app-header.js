@@ -39,13 +39,19 @@ export function appHeader({ onSettings, center, badge, trailing } = {}) {
 }
 
 let measured = false;
+/**
+ *
+ */
 function initHeaderObserver() {
   if (measured) return;
   const el = document.querySelector('.app-header');
   if (!el) return;
   measured = true;
   const update = () => {
-    document.documentElement.style.setProperty('--header-height', `${Math.round(el.offsetHeight)}px`);
+    document.documentElement.style.setProperty(
+      '--header-height',
+      `${Math.round(/** @type {HTMLElement} */ (el).offsetHeight)}px`,
+    );
   };
   update();
   window.addEventListener('resize', update);

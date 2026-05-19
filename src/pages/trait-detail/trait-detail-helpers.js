@@ -98,3 +98,30 @@ export function chrCoverageSection(r) {
     </section>
   `;
 }
+
+const SOURCE_LABELS = { traits: 'Traits', table: 'Table', report: 'Report' };
+
+/** Get the label for the source tab the user came from. */
+export function sourceLabel() {
+  const source = sessionStorage.getItem('asili-source-tab') || 'traits';
+  return SOURCE_LABELS[source] || 'Traits';
+}
+
+/** @param {object} t */
+export function coverStyle(t) {
+  if (!t?.cover_image?.thumb) return {};
+  return {
+    'background-image': `linear-gradient(to top, rgba(0,0,0,0.8) 0%, rgba(0,0,0,0.15) 50%, transparent 100%), url(${t.cover_image.thumb})`,
+    'background-size': 'cover',
+    'background-position': 'center',
+  };
+}
+
+/** @param {object} t */
+export function coverAttribution(t) {
+  if (!t?.cover_image?.photographer) return html``;
+  const url = `https://unsplash.com/@${t.cover_image.photographer_username}?utm_source=asili&utm_medium=referral`;
+  return html`<a href="${url}" target="_blank" rel="noopener" class="trait-detail__attribution"
+    >📷 ${t.cover_image.photographer}</a
+  >`;
+}

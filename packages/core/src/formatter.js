@@ -93,7 +93,7 @@ export function formatTraitValue(value, unit) {
   // Custom formatter (e.g. feet/inches)
   if (conv?.custom) return conv.custom(value);
 
-  let displayValue = conv ? value * conv.factor : value;
+  const displayValue = conv ? value * conv.factor : value;
   const spec = UNIT_MAP[unit];
   const decimals = conv?.decimals ?? spec?.decimals ?? 2;
   const suffix = conv?.suffix ?? spec?.suffix ?? unit ?? '';

@@ -25,6 +25,7 @@ import { scoredContent } from './trait-detail-sections.js';
 import { unscoredContent } from './trait-detail-unscored.js';
 import { scoreHero } from './trait-detail-hero.js';
 import { initView, handleSwitch } from './trait-detail-init.js';
+import { sourceLabel, coverStyle, coverAttribution } from './trait-detail-helpers.js';
 
 const TraitDetail = define({
   tag: 'trait-detail-view',
@@ -77,14 +78,18 @@ const TraitDetail = define({
                 <app-icon name="arrow-left"></app-icon>
                 ${sourceLabel()}
               </a>
-              <span class="trait-detail__breadcrumb-sep"><app-icon name="chevron-right" size="sm"></app-icon></span>
+              <span class="trait-detail__breadcrumb-sep"
+                ><app-icon name="chevron-right" size="sm"></app-icon
+              ></span>
               <span class="trait-detail__breadcrumb-current">${emoji} ${name}</span>
             </nav>
           </div>
           <main class="app-layout__content">
             <div class="trait-detail__hero">
               <div
-                class="trait-detail__identity ${trait?.cover_image ? 'trait-detail__identity--cover' : ''}"
+                class="trait-detail__identity ${trait?.cover_image
+                  ? 'trait-detail__identity--cover'
+                  : ''}"
                 style="${coverStyle(trait)}"
               >
                 <span class="trait-detail__hero-emoji">${emoji}</span>
@@ -120,34 +125,3 @@ const TraitDetail = define({
 });
 
 export default TraitDetail;
-
-const SOURCE_LABELS = { traits: 'Traits', table: 'Table', report: 'Report' };
-
-/** Get the label for the source tab the user came from. */
-function sourceLabel() {
-  const source = sessionStorage.getItem('asili-source-tab') || 'traits';
-  return SOURCE_LABELS[source] || 'Traits';
-}
-
-/** @param {object} t */
-function coverStyle(t) {
-  if (!t?.cover_image?.thumb) return {};
-  return {
-    'background-image': `linear-gradient(to top, rgba(0,0,0,0.8) 0%, rgba(0,0,0,0.15) 50%, transparent 100%), url(${t.cover_image.thumb})`,
-    'background-size': 'cover',
-    'background-position': 'center',
-  };
-}
-
-/** @param {object} t */
-function coverAttribution(t) {
-  if (!t?.cover_image?.photographer) return html``;
-  const url = `https://unsplash.com/@${t.cover_image.photographer_username}?utm_source=asili&utm_medium=referral`;
-  return html`<a
-    href="${url}"
-    target="_blank"
-    rel="noopener"
-    class="trait-detail__attribution"
-    >📷 ${t.cover_image.photographer}</a
-  >`;
-}

@@ -15,7 +15,11 @@ export function scoreHero(r, t, fd, indEmoji) {
   const det = r.bestPGS && r.pgsDetails?.[r.bestPGS];
   const predictedValue = computeDisplayValue(r, t, det);
   const fmt = predictedValue !== null ? formatTraitValue(predictedValue, t?.unit) : null;
-  const markers = (Array.isArray(fd) ? fd : []).map((f) => ({ e: f.emoji || '👤', p: Math.round(f.percentile || 0), n: f.name || '' }));
+  const markers = (Array.isArray(fd) ? fd : []).map((f) => ({
+    e: f.emoji || '👤',
+    p: Math.round(f.percentile || 0),
+    n: f.name || '',
+  }));
   const interp = interpretLine(r, t);
   const r2 = det?.performanceMetric;
   const cov = det?.coverage || 0;
@@ -34,9 +38,10 @@ export function scoreHero(r, t, fd, indEmoji) {
         <span class="trait-detail__percentile">${fmtPct(r.percentile || 0)}</span>
         <span class="trait-detail__pct-label">percentile</span>
       </div>
-      ${fmt && t?.value_display !== 'percentile_only' ? html`<span class="trait-detail__pred">${fmt.display}</span>` : html``}
-      ${interp}
-      ${r2 ? predictiveNote(r2) : html``}
+      ${fmt && t?.value_display !== 'percentile_only'
+        ? html`<span class="trait-detail__pred">${fmt.display}</span>`
+        : html``}
+      ${interp} ${r2 ? predictiveNote(r2) : html``}
     </section>
   `;
 }
@@ -65,7 +70,8 @@ function confidenceTooltip(level, r2, coverage) {
   if (r2) parts.push(`R²: ${(r2 * 100).toFixed(1)}% predictive accuracy`);
   if (coverage) parts.push(`Coverage: ${Math.round(coverage * 100)}% of variants matched`);
   if (level === 'high') parts.push('Strong data quality across all metrics');
-  else if (level === 'medium') parts.push('Moderate data — some variants missing or lower study power');
+  else if (level === 'medium')
+    parts.push('Moderate data — some variants missing or lower study power');
   else if (level === 'low') parts.push('Limited data — interpret with caution');
   return parts.join('\n');
 }
@@ -97,7 +103,9 @@ function interpretLine(r, t) {
   if (!text) return html``;
   const dir = si.direction || 'neutral';
   let cls = 'trait-detail__interp--neutral';
-  if (dir === 'higher_better') cls = positive ? 'trait-detail__interp--good' : 'trait-detail__interp--caution';
-  else if (dir === 'lower_better') cls = positive ? 'trait-detail__interp--caution' : 'trait-detail__interp--good';
+  if (dir === 'higher_better')
+    cls = positive ? 'trait-detail__interp--good' : 'trait-detail__interp--caution';
+  else if (dir === 'lower_better')
+    cls = positive ? 'trait-detail__interp--caution' : 'trait-detail__interp--good';
   return html`<p class="trait-detail__interp ${cls}">Your score suggests ${text}</p>`;
 }

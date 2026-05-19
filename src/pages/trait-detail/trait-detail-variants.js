@@ -66,7 +66,9 @@ function variantRow(v) {
     </td>
     <td class="trait-detail__var-geno">${geno}</td>
     <td>${v.effectAllele}</td>
-    <td class="trait-detail__var-impact" style="${{ color: impactCol }}" title="${tip}">${c >= 0 ? '+' : ''}${c.toFixed(4)}</td>
+    <td class="trait-detail__var-impact" style="${{ color: impactCol }}" title="${tip}">
+      ${c >= 0 ? '+' : ''}${c.toFixed(4)}
+    </td>
   </tr>`;
 }
 

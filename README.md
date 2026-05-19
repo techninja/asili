@@ -9,21 +9,28 @@
 
 <p align="center">
   <a href="https://asili.dev">Website</a> ·
-  <a href="https://app.asili.dev">App (coming soon)</a> ·
+  <a href="https://app.asili.dev/beta">App (beta)</a> ·
   <a href="docs/app-spec/">Specification</a>
 </p>
 
 ---
 
-## 🚧 Closed for Input — Rebuild in Progress
+## 🧬 Beta Launch
 
-This repo is being built from spec. The full application specification lives in
-[`docs/app-spec/`](docs/app-spec/) and was validated in the
-[asili-lab](https://github.com/techninja/asili-lab) experimental repo across
-3 individuals × 647 traits.
+The frontend scoring app is live at [app.asili.dev/beta](https://app.asili.dev/beta).
+Upload your DNA file and explore polygenic risk scores for 64 traits — entirely
+in your browser. No server, no accounts, no data leaves your device.
 
-**Contributions and issues are not being accepted until the rebuild is complete.**
-Watch the repo or check [app.asili.dev](https://app.asili.dev) for progress.
+**Currently shipping:**
+
+- 64 traits scored against published PGS Catalog data
+- 8 individuals tested simultaneously
+- Quantitative predicted values (BMI, height, blood markers, etc.)
+- Metric/imperial unit switching
+
+**Next phase:** Rebuild of the [asili-lab](https://github.com/techninja/asili-lab)
+data pipeline to expand from 64 to 647+ traits, improve normalization parameters,
+and add ancestry-specific reference populations.
 
 ---
 
@@ -34,16 +41,18 @@ Asili is a free, open-source app where you upload your consumer DNA file
 traits — entirely in your browser. No server, no accounts, no data leaves
 your device.
 
-### Working Features
+### Features
 
-- **Upload & parse** — drag-and-drop DNA files with auto-format detection (23andMe, AncestryDNA, MyHeritage, FTDNA, VCF)
+- **Upload & parse** — drag-and-drop DNA files with auto-format detection (23andMe, AncestryDNA, MyHeritage, FTDNA, VCF, .asili imputed)
 - **Emoji avatar builder** — pick gender, skin tone, and style for each individual
-- **DuckDB WASM scoring** — scores variants against published GWAS data client-side in a Web Worker with abort support
-- **Trait grid** — search, sort (name/percentile/confidence), filter by category, grouped with persistent collapse state
-- **Trait detail** — percentile bar, PGS comparison table, risk/protective balance, coverage indicator, family comparison
-- **Family comparison** — upload multiple family members and compare side by side
+- **DuckDB WASM scoring** — scores variants against published GWAS data client-side with pause/resume and progress tracking
+- **Trait grid** — search, sort (name/percentile/confidence), filter by category
+- **Trait detail** — bell curve with family comparison, top contributing variants waterfall, PGS quality breakdown
+- **Predicted values** — quantitative output (e.g. "BMI: 24.3 kg/m²") computed from z-scores and population references
+- **Family comparison** — upload multiple family members, compare side by side on every trait
 - **Printable reports** — category radar chart, top elevated/below average traits
-- **Settings** — export/import/clear-all data
+- **Floating scoring bar** — persistent progress indicator with pause/resume across all views
+- **Settings** — export/import/clear-all data, ancestry normalization, metric/imperial units
 - **Zero data collection** — no analytics, no cookies, no tracking
 - **IndexedDB persistence** — results survive page reloads
 
@@ -52,20 +61,17 @@ your device.
 ```
 src/
 ├── components/
-│   ├── atoms/          # percentile-bar, confidence-badge, theme-toggle, etc.
-│   ├── molecules/      # trait-card, upload-zone, emoji-builder, pgs-table, etc.
-│   └── organisms/      # trait-grid, radar-chart
+│   ├── atoms/          # mini-curve, confidence-badge, aqs-breakdown, speedometer
+│   ├── molecules/      # trait-card, upload-zone, emoji-builder, floating-bar
+│   └── organisms/      # trait-grid, data-table, radar-chart, scoring-screen
 ├── pages/
-│   ├── home/           # Landing page
+│   ├── home/           # Landing page (app.asili.dev)
 │   ├── beta/           # Main app view (individual switcher + trait grid)
-│   ├── trait-detail/   # Single trait deep-dive
-│   ├── report/         # Printable genomic report
-│   └── settings/       # Data management
-├── store/              # AppState (Hybrids store, localStorage-backed)
-├── workers/            # scoring-worker.js (DuckDB WASM)
-├── utils/              # manifest, scoring, categories, formatDate
+│   └── trait-detail/   # Single trait deep-dive
+├── store/              # AppState (localStorage-backed)
+├── utils/              # scoring queue, manifest, categories, storage
 ├── router/             # Hybrids router shell
-└── styles/             # Design tokens, reset, shared CSS
+└── styles/             # Design tokens, layout, transitions
 ```
 
 ## Tech Stack
@@ -86,8 +92,7 @@ src/
 pnpm install
 pnpm run dev          # Start dev server
 pnpm test             # Run browser tests (web-test-runner)
-node --test            # Run node tests
-pnpm spec check all   # Spec compliance checker (9 checks)
+node --test           # Run node tests
 ```
 
 ## Privacy
@@ -96,6 +101,14 @@ pnpm spec check all   # Spec compliance checker (9 checks)
 - **Browser-only processing** — all scoring runs locally via DuckDB WASM
 - **Open source** — full transparency in how your data is processed
 - **Your data, your device** — results stay in your browser's IndexedDB
+
+## Roadmap
+
+- [x] Frontend scoring rebuild (this repo)
+- [ ] Pipeline rebuild — expand to 647+ traits
+- [ ] Ancestry-specific normalization improvements
+- [ ] Imputation service rebuild (impute.asili.dev)
+- [ ] Public launch at app.asili.dev root
 
 ## License
 

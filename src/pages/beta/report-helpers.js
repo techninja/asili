@@ -29,8 +29,14 @@ export function traitTable(traits) {
           const cov = det?.coverage ? Math.round(det.coverage * 100) : 0;
           const href = router.url(TraitDetailView, { traitId: t.trait_id });
           return html`<tr>
-            <td><a href="${href}" class="report-tab__trait-link"
-              onclick="${() => sessionStorage.setItem('asili-source-tab', 'report')}">${t.emoji || '🧬'} ${t.name}</a></td>
+            <td>
+              <a
+                href="${href}"
+                class="report-tab__trait-link"
+                onclick="${() => sessionStorage.setItem('asili-source-tab', 'report')}"
+                >${t.emoji || '🧬'} ${t.name}</a
+              >
+            </td>
             <td>${Math.round(r?.percentile || 0)}th</td>
             <td>${fmt?.display || '—'}</td>
             <td>${cov}%</td>

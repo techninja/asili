@@ -10,12 +10,7 @@ import { html, define, dispatch } from 'hybrids';
 // @ts-ignore
 import '#atoms/app-icon/app-icon.js';
 import { subscribe, getState } from '#utils/queue-state.js';
-import {
-  handlePause,
-  handleResume,
-  handleResumePermission,
-} from '#pages/beta/scoring-controller.js';
-import { getImputedNeedingReupload } from '#utils/scoring-queue.js';
+import { handlePause, handleResume } from '#pages/beta/scoring-controller.js';
 
 const ACTIVE_STATES = new Set(['scoring', 'paused', 'init', 'blocked']);
 
@@ -53,6 +48,9 @@ export default define({
   },
 });
 
+/**
+ *
+ */
 function scoringContent(host, state, status) {
   if (status === 'paused') {
     return html`<div class="floating-bar__section">
@@ -76,19 +74,28 @@ function scoringContent(host, state, status) {
           <div class="floating-bar__fill" style="${{ width: `${pct}%` }}"></div>
         </div>
         <span class="floating-bar__stats">
-          ${trait ? html`${trait} · ` : html``}${state.done}/${state.total}${rate ? html` · ${rate}` : html``}${eta ? html` · ${eta}` : html``}
+          ${trait ? html`${trait} · ` : html``}${state.done}/${state.total}${rate
+            ? html` · ${rate}`
+            : html``}${eta ? html` · ${eta}` : html``}
         </span>
       </div>
       <button class="floating-bar__action" onclick="${() => handlePause()}" title="Pause">
         <app-icon name="pause"></app-icon>
       </button>
-      <button class="floating-bar__action" onclick="${(h) => dispatch(h, 'focus-mode', { bubbles: true })}" title="Focus mode">
+      <button
+        class="floating-bar__action"
+        onclick="${(h) => dispatch(h, 'focus-mode', { bubbles: true })}"
+        title="Focus mode"
+      >
         <app-icon name="maximize"></app-icon>
       </button>
     </div>
   `;
 }
 
+/**
+ *
+ */
 function pagerContent(prevHref, nextHref) {
   return html`
     <div class="floating-bar__pager">

@@ -16,7 +16,10 @@ export async function validateAsili(file) {
   const magic = new Uint8Array(await file.slice(257, 263).arrayBuffer());
   const magicStr = String.fromCharCode(...magic);
   if (!magicStr.startsWith('ustar')) {
-    return { ok: false, error: 'Not a valid .asili archive — expected a tar file, got a different format' };
+    return {
+      ok: false,
+      error: 'Not a valid .asili archive — expected a tar file, got a different format',
+    };
   }
 
   const entries = [];
@@ -31,7 +34,10 @@ export async function validateAsili(file) {
       const sizeStr = dec.decode(h.slice(124, 136)).replace(/\0/g, '').trim();
       const size = parseInt(sizeStr, 8);
       if (isNaN(size) || size < 0) {
-        return { ok: false, error: 'Corrupt archive — invalid entry size. Re-download recommended.' };
+        return {
+          ok: false,
+          error: 'Corrupt archive — invalid entry size. Re-download recommended.',
+        };
       }
       const dataEnd = off + 512 + size;
       if (dataEnd > file.size) {
@@ -89,7 +95,8 @@ export async function validateAsili(file) {
 
   // Compute genotypedVariants/imputedVariants from per-chr data if missing at top level
   if (!manifest.genotypedVariants && manifest.chromosomes) {
-    let geno = 0, imp = 0;
+    let geno = 0,
+      imp = 0;
     for (const chr of Object.values(manifest.chromosomes)) {
       geno += chr.genotyped_count || 0;
       imp += chr.imputed_count || 0;

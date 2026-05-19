@@ -24,9 +24,10 @@
 }
 
 .mini-curve__marker:hover circle {
-  r: 3;
   fill: var(--color-primary);
   opacity: 1;
+  transform: scale(2);
+  transform-origin: center;
 }
 
 .mini-curve__marker:hover text {

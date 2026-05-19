@@ -71,5 +71,8 @@
 }
 
 @keyframes aqs-fade-in {
-  from { opacity: 0; transform: translateY(-4px); }
+  from {
+    opacity: 0;
+    transform: translateY(-4px);
+  }
 }

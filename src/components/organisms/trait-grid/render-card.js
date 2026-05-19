@@ -45,14 +45,19 @@ export function renderCard(t, rc, scoring) {
   const r = results[t.trait_id];
   const det = r?.bestPGS && r?.pgsDetails?.[r.bestPGS];
   const displayValue = computeCardValue(r, t, det);
-  const fmt = displayValue !== null && t.value_display !== 'percentile_only'
-    ? formatTraitValue(displayValue, t.unit) : null;
+  const fmt =
+    displayValue !== null && t.value_display !== 'percentile_only'
+      ? formatTraitValue(displayValue, t.unit)
+      : null;
   const markers = showFamily ? familyCache[t.trait_id] : null;
   const markersJson = markers?.length ? JSON.stringify(markers) : '';
   const cov = det?.coverage ?? 0;
   return html`
-    <a href="${router.url(TraitDetailView, { traitId: t.trait_id })}" class="trait-grid__link"
-      onclick="${() => sessionStorage.setItem('asili-source-tab', 'traits')}">
+    <a
+      href="${router.url(TraitDetailView, { traitId: t.trait_id })}"
+      class="trait-grid__link"
+      onclick="${() => sessionStorage.setItem('asili-source-tab', 'traits')}"
+    >
       <trait-card
         emoji="${t.emoji || '\u{1F9EC}'}"
         name="${t.name}"

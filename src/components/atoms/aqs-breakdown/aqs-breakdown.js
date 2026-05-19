@@ -29,7 +29,9 @@ export default define({
               (b, i) => html`
                 <div
                   class="aqs__row ${activeRow === i ? 'aqs__row--active' : ''}"
-                  onclick="${(host) => { host.activeRow = host.activeRow === i ? -1 : i; }}"
+                  onclick="${(host) => {
+                    host.activeRow = host.activeRow === i ? -1 : i;
+                  }}"
                 >
                   <span class="aqs__label">${b.label}</span>
                   <div class="aqs__bar">
@@ -40,9 +42,7 @@ export default define({
                   </div>
                   <span class="aqs__val">${b.score.toFixed(1)}</span>
                 </div>
-                ${activeRow === i
-                  ? html`<div class="aqs__tooltip">${b.desc}</div>`
-                  : html``}
+                ${activeRow === i ? html`<div class="aqs__tooltip">${b.desc}</div>` : html``}
               `,
             )}
           </div>
@@ -111,9 +111,10 @@ function computeBars(d) {
       label: 'Signal',
       max: 10,
       score: signal,
-      desc: signal === 0 && d.z !== null && Math.abs(d.z) > 5
-        ? 'Z-score exceeds 5σ — likely indicates incompatible statistics rather than genuine extreme risk. Score penalized to 0.'
-        : 'How informative this result is for you specifically. Scores closer to average (z≈0) are less informative than those further out.',
+      desc:
+        signal === 0 && d.z !== null && Math.abs(d.z) > 5
+          ? 'Z-score exceeds 5σ — likely indicates incompatible statistics rather than genuine extreme risk. Score penalized to 0.'
+          : 'How informative this result is for you specifically. Scores closer to average (z≈0) are less informative than those further out.',
     },
   ];
 }

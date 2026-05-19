@@ -38,7 +38,6 @@
   white-space: nowrap;
 }
 
-
 .trait-detail__grid {
   display: grid;
   grid-template-columns: 1fr 1fr;
@@ -89,7 +88,6 @@
     opacity: 0.6;
   }
 }
-
 
 .trait-detail__section-header {
   display: flex;
