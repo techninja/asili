@@ -34,6 +34,10 @@ cpSync(resolve(ROOT, 'src'), DIST, {
   filter: (src) => !src.includes('/data/') && !src.endsWith('/data'),
 });
 
+// Copy packages/ for runtime imports
+console.log('→ Copying packages/ → dist/packages/');
+cpSync(resolve(ROOT, 'packages'), resolve(DIST, 'packages'), { recursive: true });
+
 // Inject deploy hash into index.html for cache busting
 console.log(`→ Injecting deploy hash: ${HASH}`);
 const indexPath = resolve(DIST, 'index.html');
