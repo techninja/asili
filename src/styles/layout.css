@@ -1,0 +1,34 @@
+/* App layout — shared shell structure for all app views */
+.app-layout {
+  min-height: 100vh;
+}
+
+.app-layout__sub-header {
+  position: sticky;
+  top: var(--header-height, 3.5rem);
+  z-index: 90;
+  background: color-mix(in srgb, var(--color-bg) 90%, transparent);
+  backdrop-filter: blur(8px);
+  margin-top: -1px;
+}
+
+.app-layout__sub-header-inner {
+  max-width: var(--max-width);
+  margin: 0 auto;
+  width: 100%;
+  padding: 0 var(--space-lg);
+  border-bottom: 2px solid var(--color-border);
+  min-height: 2.5rem;
+  display: flex;
+  align-items: center;
+}
+
+.app-layout__content {
+  max-width: var(--max-width);
+  margin: 0 auto;
+  padding: var(--space-lg);
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-lg);
+}

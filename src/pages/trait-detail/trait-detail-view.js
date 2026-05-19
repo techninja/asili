@@ -15,6 +15,8 @@ import '#molecules/pgs-table/pgs-table.js';
 import '#molecules/family-compare/family-compare.js';
 // @ts-ignore
 import '#molecules/individual-switcher/individual-switcher.js';
+// @ts-ignore
+import '#molecules/floating-bar/floating-bar.js';
 import { results } from '#pages/beta/results-store.js';
 import { appHeader } from '#molecules/app-header/app-header.js';
 import { appFooter } from '#molecules/app-footer/app-footer.js';
@@ -52,7 +54,7 @@ const TraitDetail = define({
       const emoji = trait?.emoji || '🧬';
 
       return html`
-        <div class="trait-detail">
+        <div class="app-layout">
           ${appHeader({
             badge: 'beta',
             onSettings: () => toggleSettings(),
@@ -60,14 +62,26 @@ const TraitDetail = define({
               activeId="${host.activeId}"
               onswitch-individual="${handleSwitch}"
             ></individual-switcher>`,
-            trailing: pagerButtons(trait),
+            trailing: html`<a
+              href="/beta"
+              class="app-header__link"
+              title="Add individual"
+              onclick="${() => sessionStorage.setItem('asili-open-upload', '1')}"
+            >
+              <app-icon name="user-plus"></app-icon>
+            </a>`,
           })}
-          <div class="beta-view__tabs">
-            <a href="/beta" class="beta-view__tab beta-view__tab--active">
-              <app-icon name="arrow-left"></app-icon> Traits
-            </a>
+          <div class="app-layout__sub-header">
+            <nav class="app-layout__sub-header-inner trait-detail__breadcrumb">
+              <a href="/beta" class="trait-detail__breadcrumb-back">
+                <app-icon name="arrow-left"></app-icon>
+                ${sourceLabel()}
+              </a>
+              <span class="trait-detail__breadcrumb-sep"><app-icon name="chevron-right" size="sm"></app-icon></span>
+              <span class="trait-detail__breadcrumb-current">${emoji} ${name}</span>
+            </nav>
           </div>
-          <main class="trait-detail__main">
+          <main class="app-layout__content">
             <div class="trait-detail__hero">
               <div
                 class="trait-detail__identity ${trait?.cover_image ? 'trait-detail__identity--cover' : ''}"
@@ -94,6 +108,10 @@ const TraitDetail = define({
               : unscoredContent(trait)}
           </main>
           ${appFooter()}
+          <floating-bar
+            prevHref="${trait?._prev ? router.url(TraitDetail, { traitId: trait._prev }) : ''}"
+            nextHref="${trait?._next ? router.url(TraitDetail, { traitId: trait._next }) : ''}"
+          ></floating-bar>
         </div>
       `;
     },
@@ -101,40 +119,21 @@ const TraitDetail = define({
   },
 });
 
-/**
- *
- */
-function pagerButtons(trait) {
-  if (!trait?._prev && !trait?._next) return html``;
-  return html`<div class="trait-detail__pager">
-    ${trait._prev
-      ? html`<a
-          href="${router.url(TraitDetail, { traitId: trait._prev })}"
-          class="trait-detail__pager-btn"
-          title="Previous trait"
-        >
-          <app-icon name="step-back"></app-icon
-        ></a>`
-      : html``}
-    ${trait._next
-      ? html`<a
-          href="${router.url(TraitDetail, { traitId: trait._next })}"
-          class="trait-detail__pager-btn"
-          title="Next trait"
-        >
-          <app-icon name="step-forward"></app-icon
-        ></a>`
-      : html``}
-  </div>`;
-}
-
 export default TraitDetail;
+
+const SOURCE_LABELS = { traits: 'Traits', table: 'Table', report: 'Report' };
+
+/** Get the label for the source tab the user came from. */
+function sourceLabel() {
+  const source = sessionStorage.getItem('asili-source-tab') || 'traits';
+  return SOURCE_LABELS[source] || 'Traits';
+}
 
 /** @param {object} t */
 function coverStyle(t) {
   if (!t?.cover_image?.thumb) return {};
   return {
-    'background-image': `linear-gradient(to top, rgba(0,0,0,0.85) 0%, rgba(0,0,0,0.3) 100%), url(${t.cover_image.thumb})`,
+    'background-image': `linear-gradient(to top, rgba(0,0,0,0.8) 0%, rgba(0,0,0,0.15) 50%, transparent 100%), url(${t.cover_image.thumb})`,
     'background-size': 'cover',
     'background-position': 'center',
   };

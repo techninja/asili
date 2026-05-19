@@ -6,6 +6,7 @@
 
 import { registerBuffer, dropFile } from '/packages/core/src/duckdb/adapter.js';
 import { parseTar } from './score-trait.js';
+import { DATA_BASE } from '#utils/data-url.js';
 
 /** @type {Map<string, string>|null} */
 let cache = null;
@@ -17,7 +18,7 @@ let cache = null;
  */
 export async function loadLiftover() {
   if (cache) return cache;
-  const resp = await fetch(`${window.location.origin}/data/hg19map.asili`);
+  const resp = await fetch(`${DATA_BASE}/hg19map.asili`);
   if (!resp.ok) {
     console.warn('No hg19map.asili — scoring without liftover');
     cache = new Map();

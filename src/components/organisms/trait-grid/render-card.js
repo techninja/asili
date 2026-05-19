@@ -43,13 +43,16 @@ export function hasFamilyScore(traitId) {
 /** @param {object} t @param {number} rc @param {boolean} scoring */
 export function renderCard(t, rc, scoring) {
   const r = results[t.trait_id];
-  const fmt =
-    r?.value !== null && r?.value !== undefined ? formatTraitValue(r.value, t.unit) : null;
+  const det = r?.bestPGS && r?.pgsDetails?.[r.bestPGS];
+  const displayValue = computeCardValue(r, t, det);
+  const fmt = displayValue !== null && t.value_display !== 'percentile_only'
+    ? formatTraitValue(displayValue, t.unit) : null;
   const markers = showFamily ? familyCache[t.trait_id] : null;
   const markersJson = markers?.length ? JSON.stringify(markers) : '';
-  const cov = r?.pgsDetails?.[r?.bestPGS]?.coverage ?? 0;
+  const cov = det?.coverage ?? 0;
   return html`
-    <a href="${router.url(TraitDetailView, { traitId: t.trait_id })}" class="trait-grid__link">
+    <a href="${router.url(TraitDetailView, { traitId: t.trait_id })}" class="trait-grid__link"
+      onclick="${() => sessionStorage.setItem('asili-source-tab', 'traits')}">
       <trait-card
         emoji="${t.emoji || '\u{1F9EC}'}"
         name="${t.name}"
@@ -110,4 +113,12 @@ export async function loadFamilyCache() {
   } catch (e) {
     console.error('loadFamilyCache:', e);
   }
+}
+
+/** Compute display value from stored result or retroactively from z-score. */
+function computeCardValue(r, t, det) {
+  if (r?.value !== null && r?.value !== undefined) return r.value;
+  if (!det?.zScore || !t?.phenotype_mean || !t?.phenotype_sd) return null;
+  const r2 = det.performanceMetric || 0.05;
+  return t.phenotype_mean + det.zScore * Math.sqrt(r2) * t.phenotype_sd;
 }

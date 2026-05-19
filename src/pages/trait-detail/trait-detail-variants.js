@@ -33,8 +33,8 @@ export function topVariantsSection(r, indEmoji) {
               <tr>
                 <th>Variant</th>
                 <th title="Your genotype">${em}</th>
-                <th>🎯</th>
-                <th>Weight</th>
+                <th title="Effect allele">Effect</th>
+                <th title="Impact on your score">Impact</th>
               </tr>
             </thead>
             <tbody>
@@ -58,14 +58,15 @@ function variantRow(v) {
     : `https://genome.ucsc.edu/cgi-bin/hgTracks?db=hg38&position=chr${parts[0]}:${parts[1]}`;
   const geno = v.genotype || '—';
   const c = v.contribution;
-  const tip = `${v.effectWeight >= 0 ? '+' : ''}${v.effectWeight.toFixed(6)} × ${v.dosage.toFixed(2)} dosage`;
+  const impactCol = c >= 0 ? 'var(--color-danger)' : 'var(--color-success)';
+  const tip = `Weight: ${v.effectWeight >= 0 ? '+' : ''}${v.effectWeight.toFixed(6)} × ${v.dosage.toFixed(2)} dosage${v.imputed ? ' (imputed)' : ''}`;
   return html`<tr>
     <td>
       <a href="${link}" target="_blank" rel="noopener" class="trait-detail__var-link">${display}</a>
     </td>
     <td class="trait-detail__var-geno">${geno}</td>
     <td>${v.effectAllele}</td>
-    <td title="${tip}">${c >= 0 ? '+' : ''}${c.toFixed(4)}</td>
+    <td class="trait-detail__var-impact" style="${{ color: impactCol }}" title="${tip}">${c >= 0 ? '+' : ''}${c.toFixed(4)}</td>
   </tr>`;
 }
 

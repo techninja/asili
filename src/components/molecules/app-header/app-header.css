@@ -82,11 +82,17 @@
   .app-header {
     padding: var(--space-xs) var(--space-sm);
     gap: var(--space-xs);
+    flex-wrap: wrap;
   }
 
   .app-header__center {
     order: 10;
     flex-basis: 100%;
+  }
+
+  .app-header__center:empty,
+  .app-header__center:not(:has(*)) {
+    display: none;
   }
 
   .app-header__logo span {

@@ -3,6 +3,8 @@
  * @module utils/manifest
  */
 
+import { DATA_BASE } from '#utils/data-url.js';
+
 /** @type {object|null} */
 let cache = null;
 
@@ -14,7 +16,7 @@ let pending = null;
  * @param {string} [url]
  * @returns {Promise<object>}
  */
-export function loadManifest(url = '/data/trait_manifest.json') {
+export function loadManifest(url = `${DATA_BASE}/trait_manifest.json`) {
   if (cache) return Promise.resolve(cache);
   if (pending) return pending;
   pending = fetch(url)
@@ -63,7 +65,7 @@ const detailCache = new Map();
 export async function getPgsDetail(pgsId) {
   if (detailCache.has(pgsId)) return detailCache.get(pgsId);
   try {
-    const r = await fetch(`/data/pgs_detail/${pgsId}.json`);
+    const r = await fetch(`${DATA_BASE}/pgs_detail/${pgsId}.json`);
     if (!r.ok) return null;
     const data = await r.json();
     detailCache.set(pgsId, data);

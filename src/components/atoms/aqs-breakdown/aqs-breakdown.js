@@ -1,6 +1,6 @@
 /**
  * AQS breakdown — Asili Quality Score visualization with speedometer
- * and component bar breakdown with explanations.
+ * and component bar breakdown. Rows are tappable to show explanations.
  * @module components/atoms/aqs-breakdown
  */
 
@@ -14,8 +14,9 @@ const MIN_VARIANTS = 8;
 export default define({
   tag: 'aqs-breakdown',
   data: '',
+  activeRow: -1,
   render: {
-    value: ({ data }) => {
+    value: ({ data, activeRow }) => {
       if (!data) return html``;
       const d = JSON.parse(data);
       const bars = computeBars(d);
@@ -25,8 +26,11 @@ export default define({
           <speed-meter value="${total}" label="/ 100"></speed-meter>
           <div class="aqs__bars">
             ${bars.map(
-              (b) => html`
-                <div class="aqs__row" title="${b.desc}">
+              (b, i) => html`
+                <div
+                  class="aqs__row ${activeRow === i ? 'aqs__row--active' : ''}"
+                  onclick="${(host) => { host.activeRow = host.activeRow === i ? -1 : i; }}"
+                >
                   <span class="aqs__label">${b.label}</span>
                   <div class="aqs__bar">
                     <div
@@ -36,6 +40,9 @@ export default define({
                   </div>
                   <span class="aqs__val">${b.score.toFixed(1)}</span>
                 </div>
+                ${activeRow === i
+                  ? html`<div class="aqs__tooltip">${b.desc}</div>`
+                  : html``}
               `,
             )}
           </div>
@@ -66,43 +73,47 @@ function computeBars(d) {
       label: 'R² accuracy',
       max: 35,
       score: r2 * 35 * cp,
-      desc: 'How well this PGS predicts the trait in published studies (R² × 35)',
+      desc: 'How well this PGS predicts the trait in published studies. Higher R² means the score explains more of the trait variation in real populations.',
     },
     {
       label: 'Validation',
       max: 15,
       score: hasR2 ? Math.min(r2 / 0.44, 1) * 15 : 0,
-      desc: 'Whether the PGS has a validated R² above the default threshold',
+      desc: 'Whether this PGS was independently tested in a separate cohort study. Validated scores are more trustworthy than unvalidated ones.',
     },
     {
       label: 'Reliability',
       max: 15,
       score: gRatio * coverage * 15,
-      desc: 'Proportion of directly genotyped variants × coverage',
+      desc: 'How much of your score comes from directly genotyped variants vs. statistical estimates (imputation). Direct genotypes are more reliable per-variant.',
     },
     {
       label: 'Coverage',
       max: 10,
       score: coverage * 10,
-      desc: 'Percentage of PGS variants found in your DNA data',
+      desc: `${Math.round(coverage * 100)}% of the variants this PGS needs were found in your DNA data. Higher coverage means a more complete picture.`,
     },
     {
       label: 'Sample size',
       max: 10,
       score: Math.min(Math.log10(ratio) / 3.1, 1) * 10,
-      desc: 'How many variants were matched (log scale, more = better)',
+      desc: `${d.matched.toLocaleString()} variants matched. More matched variants generally means a more stable, reliable score.`,
     },
     {
       label: 'Normalization',
       max: 5,
       score: d.hasNorm ? 5 : 2.5,
-      desc: 'Whether population-level statistics are available for z-score calculation',
+      desc: d.hasNorm
+        ? 'Population statistics are available, allowing accurate percentile calculation.'
+        : 'Using theoretical estimates for percentile calculation — less precise than empirical data.',
     },
     {
       label: 'Signal',
       max: 10,
       score: signal,
-      desc: 'Strength of the genetic signal — higher z-scores indicate clearer results',
+      desc: signal === 0 && d.z !== null && Math.abs(d.z) > 5
+        ? 'Z-score exceeds 5σ — likely indicates incompatible statistics rather than genuine extreme risk. Score penalized to 0.'
+        : 'How informative this result is for you specifically. Scores closer to average (z≈0) are less informative than those further out.',
     },
   ];
 }

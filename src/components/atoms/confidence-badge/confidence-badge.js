@@ -7,10 +7,10 @@
 import { html, define } from 'hybrids';
 
 const LABELS = {
-  high: 'High',
-  medium: 'Medium',
-  low: 'Low',
-  insufficient: 'Insufficient',
+  high: 'High confidence',
+  medium: 'Medium confidence',
+  low: 'Low confidence',
+  insufficient: 'Insufficient data',
   none: 'No data',
 };
 

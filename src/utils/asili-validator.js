@@ -12,15 +12,27 @@ export async function validateAsili(file) {
   if (file.size < 1024)
     return { ok: false, error: 'File too small — may be corrupted or truncated' };
 
+  // Validate tar magic before attempting to parse
+  const magic = new Uint8Array(await file.slice(257, 263).arrayBuffer());
+  const magicStr = String.fromCharCode(...magic);
+  if (!magicStr.startsWith('ustar')) {
+    return { ok: false, error: 'Not a valid .asili archive — expected a tar file, got a different format' };
+  }
+
   const entries = [];
   try {
     const dec = new TextDecoder();
     let off = 0;
-    while (off + 512 <= file.size) {
+    const maxEntries = 50; // .asili files have ~25 entries max (manifest + 22 chr + X/Y/MT)
+    while (off + 512 <= file.size && entries.length < maxEntries) {
       const h = new Uint8Array(await file.slice(off, off + 512).arrayBuffer());
       const name = dec.decode(h.slice(0, 100)).replace(/\0/g, '').trim();
       if (!name) break;
-      const size = parseInt(dec.decode(h.slice(124, 136)).replace(/\0/g, '').trim(), 8) || 0;
+      const sizeStr = dec.decode(h.slice(124, 136)).replace(/\0/g, '').trim();
+      const size = parseInt(sizeStr, 8);
+      if (isNaN(size) || size < 0) {
+        return { ok: false, error: 'Corrupt archive — invalid entry size. Re-download recommended.' };
+      }
       const dataEnd = off + 512 + size;
       if (dataEnd > file.size) {
         return {

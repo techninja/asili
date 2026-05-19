@@ -13,6 +13,7 @@ import { fetchTopVariants } from '/packages/core/src/duckdb/top-variants.js';
 import { finalize } from '/packages/core/src/scorer.js';
 import { loadManifest } from '#utils/manifest.js';
 import { get as storageGet } from '#utils/storage.js';
+import { DATA_BASE } from '#utils/data-url.js';
 
 /** @type {Record<string, object>|null} */
 let normCache = null;
@@ -22,7 +23,7 @@ export async function getNormParams() {
   if (normCache) return normCache;
   normCache = {};
   try {
-    const resp = await fetch(`${window.location.origin}/data/pgs_norm_params.json?v=${Date.now()}`);
+    const resp = await fetch(`${DATA_BASE}/pgs_norm_params.json?v=${Date.now()}`);
     if (!resp.ok) throw new Error(`${resp.status}`);
     const raw = await resp.json();
     for (const [id, v] of Object.entries(raw)) {
@@ -97,8 +98,8 @@ export async function scoreUnifiedTrait(url, t, onProgress) {
     const normParams = await getNormParams();
     const result = finalize(buildScoredMaps(pgsAggregates, chrCoverage, chrTotals), normParams, {
       traitType: t.trait_type,
-      phenotypeMean: null,
-      phenotypeSd: null,
+      phenotypeMean: t.phenotype_mean ?? null,
+      phenotypeSd: t.phenotype_sd ?? null,
     });
     // Fetch top variants for the best PGS while trait files are still loaded
     if (result.bestPGS) {

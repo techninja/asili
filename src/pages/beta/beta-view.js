@@ -14,7 +14,7 @@ import '#molecules/individual-setup/individual-setup.js';
 import '#organisms/trait-grid/trait-grid.js';
 // @ts-ignore
 import '#organisms/scoring-screen/scoring-screen.js';
-import { individualSelector, appContent, uploadContent, uploadPanel } from './beta-render.js';
+import { individualSelector, appSubHeader, appContent, uploadContent, uploadPanel } from './beta-render.js';
 import { loadResults, clearResults } from './results-store.js';
 import { initQueue, switchIndividual } from './scoring-controller.js';
 import { handleSwitch, closeOrToggleUpload, cancelSetup } from './beta-actions.js';
@@ -24,6 +24,8 @@ import { toggleSettings } from '#utils/settings-toggle.js';
 import TraitDetailView from '#pages/trait-detail/trait-detail-view.js';
 // @ts-ignore
 import '#organisms/settings-drawer/settings-drawer.js';
+// @ts-ignore
+import '#molecules/floating-bar/floating-bar.js';
 
 export default define({
   tag: 'beta-view',
@@ -59,7 +61,16 @@ export default define({
   scoringScreen: { value: false, connect: () => {} },
   showUpload: { value: false, connect: () => {} },
   closingUpload: false,
-  activeTab: 'traits',
+  activeTab: {
+    value: 'traits',
+    observe(host, val) {
+      sessionStorage.setItem('asili-source-tab', val);
+    },
+    connect(host) {
+      const saved = sessionStorage.getItem('asili-source-tab');
+      if (saved && ['traits', 'table', 'report'].includes(saved)) host.activeTab = saved;
+    },
+  },
   _variants: { value: [], connect: () => {} },
   _manifest: { value: '', connect: () => {} },
   _init: {
@@ -67,6 +78,10 @@ export default define({
     connect: (host, _key, invalidate) => {
       initApp(host).then(() => {
         invalidate();
+        if (sessionStorage.getItem('asili-open-upload')) {
+          sessionStorage.removeItem('asili-open-upload');
+          host.showUpload = true;
+        }
         requestAnimationFrame(() => {
           if (host.activeId) switchIndividual(host, host.activeId);
         });
@@ -84,6 +99,10 @@ export default define({
           host.resultCount = 0;
           host.scoringStatus = '';
           initQueue(host);
+        } else {
+          // Clear results for non-active individual (will score when switched to)
+          const dl = await import('/packages/core/src/data-layer/create.js').then(m => m.getDataLayer());
+          await dl.clearResults(id);
         }
       };
       window.addEventListener('asili-rescore', rescore);
@@ -99,7 +118,7 @@ export default define({
       const hasData = list.length > 0;
       const showPanel = hasData && (host.showUpload || host.parseStatus);
       return html`
-        <div class="beta-view">
+        <div class="app-layout">
           ${appHeader({
             badge: 'beta',
             onSettings: (h) => {
@@ -117,8 +136,9 @@ export default define({
                 </button>`
               : html``,
           })}
+          ${hasData ? appSubHeader(host) : html``}
           ${showPanel || host.closingUpload ? uploadPanel(host, cancelSetup) : html``}
-          <main class="beta-view__main">
+          <main class="app-layout__content">
             ${hasData ? appContent(host) : uploadContent(host, cancelSetup)}
           </main>
           ${appFooter()}
@@ -132,12 +152,21 @@ export default define({
             rate="${host._scoringRate}"
             eta="${host._scoringEta}"
           ></scoring-screen>
+          <floating-bar
+            onfocus-mode="${openScoringScreen}"
+          ></floating-bar>
         </div>
       `;
     },
     shadow: false,
   },
 });
+
+/** @param {object} host */
+function openScoringScreen(host) {
+  host.scoringScreen = true;
+  document.documentElement.requestFullscreen?.().catch(() => {});
+}
 
 /** @param {object} host */
 async function initApp(host) {

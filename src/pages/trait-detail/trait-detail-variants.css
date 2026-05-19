@@ -22,11 +22,15 @@
 
 .trait-detail__var-wf-layer {
   position: absolute;
-  inset: 0;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
   z-index: 0;
   pointer-events: none;
   display: flex;
   flex-direction: column;
+  padding-top: calc(1.75rem + 2px); /* offset for thead height + alignment */
 }
 
 .trait-detail__var-wf-zero {
@@ -83,6 +87,11 @@
   font-family: var(--font-mono);
   font-size: 0.75rem;
   background: transparent;
+  line-height: 1.4;
+}
+
+.trait-detail__var-table tbody tr {
+  border-bottom: 1px solid color-mix(in srgb, var(--color-border) 50%, transparent);
 }
 
 .trait-detail__var-link {
@@ -97,4 +106,8 @@
 .trait-detail__var-geno {
   font-weight: 600;
   color: var(--color-accent);
+}
+
+.trait-detail__var-impact {
+  font-weight: 600;
 }

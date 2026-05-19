@@ -11,7 +11,9 @@
     "build": "node scripts/build.js",
     "postinstall": "node scripts/setup.js",
     "spec": "clearstack",
-    "traits": "node scripts/traits.js"
+    "traits": "node scripts/traits.js",
+    "deploy:data": "node --env-file=.env --env-file=.env.local scripts/deploy-data.js",
+    "deploy:data:small": "node --env-file=.env --env-file=.env.local scripts/deploy-data.js --small"
   },
   "keywords": [
     "genomics",

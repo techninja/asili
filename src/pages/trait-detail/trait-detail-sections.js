@@ -107,7 +107,12 @@ function aqsSection(det, totalVars) {
   });
   return html`
     <section class="trait-detail__section">
-      <h2><app-icon name="sparkles"></app-icon> Asili Quality Score</h2>
+      <div class="trait-detail__section-header">
+        <h2><app-icon name="sparkles"></app-icon> Asili Quality Score</h2>
+        <a href="https://asili.dev/quality" target="_blank" rel="noopener" class="trait-detail__help-link" title="How is this calculated?">
+          <app-icon name="help-circle" size="sm"></app-icon>
+        </a>
+      </div>
       <aqs-breakdown data="${data}"></aqs-breakdown>
     </section>
   `;

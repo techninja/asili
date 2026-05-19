@@ -1,9 +1,9 @@
 /* Upload panel — header drawer */
 .beta-view__upload-panel {
   position: fixed;
-  top: 3.5rem;
+  top: var(--header-height, 3.5rem);
   right: var(--space-lg);
-  z-index: 150;
+  z-index: 95;
   width: min(28rem, calc(100vw - 2 * var(--space-lg)));
   padding: var(--space-lg);
   background: color-mix(in srgb, var(--color-surface) 85%, transparent);
@@ -22,13 +22,13 @@
 .beta-view__upload-backdrop {
   position: fixed;
   inset: 0;
-  z-index: 101;
+  z-index: 94;
   background: transparent;
 
   &::after {
     content: '';
     position: absolute;
-    inset: 3.5rem 0 0;
+    inset: var(--header-height, 3.5rem) 0 0;
     background: rgb(0 0 0 / 30%);
   }
 }
@@ -43,15 +43,13 @@
 
 @keyframes upload-slide-down {
   from {
-    transform: translateY(-1rem);
-    opacity: 0;
+    transform: translateY(-100%);
   }
 }
 
 @keyframes upload-slide-up {
   to {
-    transform: translateY(-1rem);
-    opacity: 0;
+    transform: translateY(-100%);
   }
 }
 

@@ -4,7 +4,6 @@
  */
 
 import { html } from 'hybrids';
-import { scoringBanner } from './scoring-banner.js';
 import { heroContent } from './beta-hero.js';
 import '#pages/beta/beta-report.js';
 // @ts-ignore
@@ -44,23 +43,30 @@ const TABS = [
 ];
 
 /** @param {object} host */
+export function appSubHeader(host) {
+  return html`
+    <div class="app-layout__sub-header">
+      <div class="app-layout__sub-header-inner beta-view__tabs">
+        ${TABS.map(
+          (t) => html`
+            <button
+              class="beta-view__tab ${host.activeTab === t.id ? 'beta-view__tab--active' : ''}"
+              onclick="${(h) => {
+                h.activeTab = t.id;
+              }}"
+            >
+              <app-icon name="${t.icon}"></app-icon> ${t.label}
+            </button>
+          `,
+        )}
+      </div>
+    </div>
+  `;
+}
+
+/** @param {object} host */
 export function appContent(host) {
   return html`
-    ${scoringBanner(host)}
-    <div class="beta-view__tabs">
-      ${TABS.map(
-        (t) => html`
-          <button
-            class="beta-view__tab ${host.activeTab === t.id ? 'beta-view__tab--active' : ''}"
-            onclick="${(h) => {
-              h.activeTab = t.id;
-            }}"
-          >
-            <app-icon name="${t.icon}"></app-icon> ${t.label}
-          </button>
-        `,
-      )}
-    </div>
     ${host.activeTab === 'traits' ? traitsTab(host) : html``}
     ${host.activeTab === 'table' ? tableTab(host) : html``}
     ${host.activeTab === 'report'

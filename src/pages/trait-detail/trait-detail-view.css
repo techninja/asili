@@ -1,39 +1,43 @@
-.trait-detail {
-  min-height: 100vh;
-  display: flex;
-  flex-direction: column;
-}
-
-.trait-detail__main {
-  max-width: var(--max-width);
-  margin: 0 auto;
-  padding: var(--space-lg) var(--space-lg) var(--space-lg);
-  flex: 1;
-  width: 100%;
-}
-
-.trait-detail__sub-nav {
+.trait-detail__breadcrumb {
   display: flex;
   align-items: center;
-  gap: var(--space-md);
-  max-width: var(--max-width);
-  margin: 0 auto;
-  padding: var(--space-sm) var(--space-lg);
-  width: 100%;
+  gap: var(--space-xs);
+  font-size: var(--text-sm);
 }
 
-.trait-detail__back {
+.trait-detail__breadcrumb-back {
   display: inline-flex;
   align-items: center;
   gap: var(--space-xs);
-  color: var(--color-text-muted);
+  color: var(--color-primary);
   text-decoration: none;
-  font-size: var(--text-sm);
+  font-weight: 500;
+  padding: var(--space-xs);
+  margin: calc(-1 * var(--space-xs)) 0;
+  border-radius: var(--radius-md);
 
   &:hover {
-    color: var(--color-primary);
+    background: var(--color-surface-alt);
+  }
+
+  @media (width <= 640px) {
+    min-height: 2.75rem;
   }
 }
+
+.trait-detail__breadcrumb-sep {
+  color: var(--color-text-muted);
+  opacity: 0.5;
+  flex-shrink: 0;
+}
+
+.trait-detail__breadcrumb-current {
+  color: var(--color-text-muted);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 
 .trait-detail__grid {
   display: grid;
@@ -86,29 +90,6 @@
   }
 }
 
-.trait-detail__pager {
-  display: flex;
-  gap: var(--space-sm);
-}
-
-.trait-detail__pager-btn {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 2.5rem;
-  height: 2.5rem;
-  border-radius: var(--radius-md);
-  color: var(--color-text-muted);
-  font-size: var(--text-xl);
-  transition:
-    color 0.2s,
-    background 0.2s;
-
-  &:hover {
-    color: var(--color-text);
-    background: var(--color-surface-alt);
-  }
-}
 
 .trait-detail__section-header {
   display: flex;
@@ -130,5 +111,16 @@
 
   &:hover {
     text-decoration: underline;
+  }
+}
+
+.trait-detail__help-link {
+  color: var(--color-text-muted);
+  opacity: 0.6;
+  transition: opacity 0.15s;
+
+  &:hover {
+    opacity: 1;
+    color: var(--color-primary);
   }
 }

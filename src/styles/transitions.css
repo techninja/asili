@@ -34,6 +34,26 @@
   animation: none;
 }
 
+/* Sub-header stays fixed during transition */
+.app-layout__sub-header {
+  view-transition-name: sub-header;
+}
+
+::view-transition-old(sub-header),
+::view-transition-new(sub-header) {
+  animation: none;
+}
+
+/* Floating bar stays fixed during transition */
+.floating-bar {
+  view-transition-name: floating-bar;
+}
+
+::view-transition-old(floating-bar),
+::view-transition-new(floating-bar) {
+  animation: none;
+}
+
 /* Overlap pages slightly to eliminate gap */
 @keyframes vt-push-in-right {
   from {

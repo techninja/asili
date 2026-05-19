@@ -96,7 +96,8 @@ function cellContent(c, r) {
   const v = cellVal(c, r);
   if (c.id === 'name' && r._traitId) {
     const href = router.url(TraitDetailView, { traitId: r._traitId });
-    return html`<a href="${href}" class="data-table__trait-link">${v}</a>`;
+    return html`<a href="${href}" class="data-table__trait-link"
+      onclick="${() => sessionStorage.setItem('asili-source-tab', 'table')}">${v}</a>`;
   }
   return v;
 }

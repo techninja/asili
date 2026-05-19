@@ -10,3 +10,5 @@ data/db.json
 dist/
 .wrangler
 data_out/
+
+.deploy-manifest.json

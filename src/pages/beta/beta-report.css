@@ -85,6 +85,15 @@
   border-bottom: 1px solid var(--color-border);
 }
 
+.report-tab__trait-link {
+  color: inherit;
+  text-decoration: none;
+
+  &:hover {
+    color: var(--color-primary);
+  }
+}
+
 .report-tab__disclaimer {
   font-size: var(--text-sm);
   color: var(--color-warning);

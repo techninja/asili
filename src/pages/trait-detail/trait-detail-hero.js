@@ -12,11 +12,19 @@ import '#atoms/confidence-badge/confidence-badge.js';
 
 /** Score hero — large bell curve with family markers for the top-right. */
 export function scoreHero(r, t, fd, indEmoji) {
-  const fmt = r.value !== null && r.value !== undefined ? formatTraitValue(r.value, t?.unit) : null;
-  const markers = (Array.isArray(fd) ? fd : []).map((f) => ({ e: f.emoji || '👤', p: Math.round(f.percentile || 0) }));
+  const det = r.bestPGS && r.pgsDetails?.[r.bestPGS];
+  const predictedValue = computeDisplayValue(r, t, det);
+  const fmt = predictedValue !== null ? formatTraitValue(predictedValue, t?.unit) : null;
+  const markers = (Array.isArray(fd) ? fd : []).map((f) => ({ e: f.emoji || '👤', p: Math.round(f.percentile || 0), n: f.name || '' }));
   const interp = interpretLine(r, t);
+  const r2 = det?.performanceMetric;
+  const cov = det?.coverage || 0;
+  const tooltip = confidenceTooltip(r.confidence, r2, cov);
   return html`
     <section class="trait-detail__score-hero">
+      <div class="trait-detail__score-hero-badge" title="${tooltip}">
+        <confidence-badge level="${r.confidence || 'none'}"></confidence-badge>
+      </div>
       <mini-curve
         value="${r.percentile || 50}"
         indEmoji="${indEmoji || '🧬'}"
@@ -25,12 +33,41 @@ export function scoreHero(r, t, fd, indEmoji) {
       <div class="trait-detail__score-stats">
         <span class="trait-detail__percentile">${fmtPct(r.percentile || 0)}</span>
         <span class="trait-detail__pct-label">percentile</span>
-        ${fmt ? html`<span class="trait-detail__pred">${fmt.display}</span>` : html``}
-        <confidence-badge level="${r.confidence || 'none'}"></confidence-badge>
       </div>
+      ${fmt && t?.value_display !== 'percentile_only' ? html`<span class="trait-detail__pred">${fmt.display}</span>` : html``}
       ${interp}
+      ${r2 ? predictiveNote(r2) : html``}
     </section>
   `;
+}
+
+/** Compute predicted value from stored result or retroactively from z-score. */
+function computeDisplayValue(r, t, det) {
+  if (r.value !== null && r.value !== undefined) return r.value;
+  if (!det?.zScore || !t?.phenotype_mean || !t?.phenotype_sd) return null;
+  const r2 = det.performanceMetric || 0.05;
+  return t.phenotype_mean + det.zScore * Math.sqrt(r2) * t.phenotype_sd;
+}
+
+/** Plain-english note about what R² means for this score. */
+function predictiveNote(r2) {
+  const pct = Math.round(r2 * 100);
+  if (pct < 1) return html``;
+  const strength = pct >= 20 ? 'strong' : pct >= 5 ? 'moderate' : 'modest';
+  return html`<p class="trait-detail__r2-note">
+    ~${pct}% of variation explained — ${strength} predictor
+  </p>`;
+}
+
+/** Build tooltip explaining confidence reasoning. */
+function confidenceTooltip(level, r2, coverage) {
+  const parts = [];
+  if (r2) parts.push(`R²: ${(r2 * 100).toFixed(1)}% predictive accuracy`);
+  if (coverage) parts.push(`Coverage: ${Math.round(coverage * 100)}% of variants matched`);
+  if (level === 'high') parts.push('Strong data quality across all metrics');
+  else if (level === 'medium') parts.push('Moderate data — some variants missing or lower study power');
+  else if (level === 'low') parts.push('Limited data — interpret with caution');
+  return parts.join('\n');
 }
 
 /** @param {number} p */

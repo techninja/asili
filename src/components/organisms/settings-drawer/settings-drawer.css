@@ -81,6 +81,12 @@
   }
 }
 
+.settings-drawer__section-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
 .settings-drawer__meta {
   font-size: var(--text-sm);
   color: var(--color-text-muted);

@@ -16,6 +16,7 @@ import '#atoms/app-icon/app-icon.js';
  * @returns {*}
  */
 export function appHeader({ onSettings, center, badge, trailing } = {}) {
+  if (!measured) requestAnimationFrame(initHeaderObserver);
   return html`
     <header class="app-header">
       <a href="/" class="app-header__logo">
@@ -35,4 +36,17 @@ export function appHeader({ onSettings, center, badge, trailing } = {}) {
       </div>
     </header>
   `;
+}
+
+let measured = false;
+function initHeaderObserver() {
+  if (measured) return;
+  const el = document.querySelector('.app-header');
+  if (!el) return;
+  measured = true;
+  const update = () => {
+    document.documentElement.style.setProperty('--header-height', `${Math.round(el.offsetHeight)}px`);
+  };
+  update();
+  window.addEventListener('resize', update);
 }

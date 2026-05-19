@@ -85,7 +85,7 @@ export default define({
         <div class="upload-zone__content">
           <span class="upload-zone__icon">📁</span>
           <p class="upload-zone__text">
-            Drop your DNA file here or <span class="upload-zone__link">browse</span>
+            <span class="upload-zone__text--desktop">Drop your DNA file here or </span><span class="upload-zone__link">Choose file</span>
           </p>
           <p class="upload-zone__hint">
             23andMe, AncestryDNA, MyHeritage, FTDNA, VCF, or .asili imputed

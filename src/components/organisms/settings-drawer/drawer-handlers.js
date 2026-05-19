@@ -62,6 +62,13 @@ export async function handleRescore(_host, e) {
   window.dispatchEvent(new CustomEvent('asili-rescore', { detail: ind.id }));
 }
 
+/** Rescore all individuals sequentially. */
+export async function rescoreAll(host) {
+  for (const ind of host.individuals || []) {
+    window.dispatchEvent(new CustomEvent('asili-rescore', { detail: ind.id }));
+  }
+}
+
 /** @param {object} host @param {Event} e */
 export async function handleAutoScore(host, e) {
   host.autoScore = /** @type {HTMLInputElement} */ (e.target).checked;
@@ -80,6 +87,13 @@ export function handleAncestry(host, e) {
   host.ancestry = val;
   if (val) set('ancestry', val);
   else remove('ancestry');
+}
+
+/** @param {object} host @param {Event} e */
+export function handleUnits(host, e) {
+  const val = /** @type {HTMLSelectElement} */ (e.target).value;
+  host.units = val;
+  localStorage.setItem('asili-units', val);
 }
 
 /** @param {object} _host */

@@ -8,6 +8,7 @@ import { getTraitList } from '#utils/manifest.js';
 import { getIdleSession, initSession, scoreAll } from './worker-pool.js';
 import { S, notifyNow, markDone, markError, markAllError } from './queue-state.js';
 import { loadIndividualDNA } from './queue-loader.js';
+import { DATA_BASE } from '#utils/data-url.js';
 
 /** @param {string} individualId */
 export async function scoreIndividual(individualId) {
@@ -57,7 +58,7 @@ export async function scoreIndividual(individualId) {
   const retrySet = new Set();
 
   try {
-    await scoreAll(session, traitsToScore, '/data', {
+    await scoreAll(session, traitsToScore, DATA_BASE, {
       onProgress: ({ traitName, chrDone, chrTotal, variantsSoFar }) => {
         S.currentTraitName = traitName;
         S.currentChrDone = chrDone || 0;
@@ -86,7 +87,7 @@ export async function scoreIndividual(individualId) {
   if (retrySet.size > 0 && !S.paused && !S.needsReprioritize) {
     const retryTraits = allTraits.filter((t) => retrySet.has(t.trait_id));
     try {
-      await scoreAll(session, retryTraits, '/data', {
+      await scoreAll(session, retryTraits, DATA_BASE, {
         onTraitScored: async ({ traitId, result }) => {
           await idb.put('results', `${individualId}:${traitId}`, {
             ...result,

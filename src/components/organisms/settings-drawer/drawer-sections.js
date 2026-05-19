@@ -4,7 +4,7 @@
  */
 
 import { html } from 'hybrids';
-import { handleDelete, handleRescore, handleAutoScore, handleMemory, handleAncestry } from './drawer-handlers.js';
+import { handleDelete, handleRescore, rescoreAll, handleAutoScore, handleMemory, handleAncestry, handleUnits } from './drawer-handlers.js';
 
 export { dangerSection, footerSection } from './drawer-danger.js';
 
@@ -14,7 +14,16 @@ export { dangerSection, footerSection } from './drawer-danger.js';
 export function individualsSection(host) {
   return html`
     <section class="settings-drawer__section">
-      <h3><app-icon name="users"></app-icon> Individuals</h3>
+      <div class="settings-drawer__section-header">
+        <h3><app-icon name="users"></app-icon> Individuals</h3>
+        <button
+          class="btn btn-ghost btn-sm"
+          title="Rescore all individuals"
+          onclick="${() => rescoreAll(host)}"
+        >
+          <app-icon name="refresh" size="sm"></app-icon>
+        </button>
+      </div>
       <individual-list
         individuals="${JSON.stringify(host.individuals)}"
         ondelete-individual="${handleDelete}"
@@ -73,6 +82,13 @@ export function scoringSection(host) {
           <option value="AMR" selected="${host.ancestry === 'AMR'}">American</option>
           <option value="ASJ" selected="${host.ancestry === 'ASJ'}">Ashkenazi</option>
           <option value="MID" selected="${host.ancestry === 'MID'}">Middle Eastern</option>
+        </select>
+      </label>
+      <label class="settings-drawer__row">
+        <span>Units</span>
+        <select onchange="${handleUnits}">
+          <option value="metric" selected="${host.units === 'metric'}">Metric</option>
+          <option value="imperial" selected="${host.units === 'imperial'}">Imperial</option>
         </select>
       </label>
       <p class="settings-drawer__note">

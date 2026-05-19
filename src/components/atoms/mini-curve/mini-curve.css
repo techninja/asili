@@ -4,6 +4,32 @@
 
 .mini-curve {
   width: 100%;
-  aspect-ratio: 2 / 1;
+  height: auto;
   display: block;
+}
+
+.mini-curve__marker {
+  cursor: pointer;
+  transition: opacity 0.15s;
+}
+
+.mini-curve__marker:hover {
+  opacity: 1 !important;
+}
+
+.mini-curve__marker:hover line {
+  stroke-width: 1.5;
+  stroke: var(--color-primary);
+  opacity: 0.8;
+}
+
+.mini-curve__marker:hover circle {
+  r: 3;
+  fill: var(--color-primary);
+  opacity: 1;
+}
+
+.mini-curve__marker:hover text {
+  opacity: 1;
+  font-size: 12px;
 }

@@ -23,6 +23,7 @@ export default define({
   autoScore: true,
   memoryLimit: '2GB',
   ancestry: '',
+  units: { value: 'metric', connect(host) { host.units = localStorage.getItem('asili-units') || 'metric'; } },
   confirmClear: false,
   clearing: false,
   closing: false,

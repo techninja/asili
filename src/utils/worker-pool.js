@@ -70,11 +70,10 @@ export async function loadDNA(s, variants, file, onProgress) {
   }
 }
 
-/** @param {WorkerSession} s @param {Array} traits @param {string} path @param {object} cb */
-export async function scoreAll(s, traits, path, cb = {}) {
+/** @param {WorkerSession} s @param {Array} traits @param {string} base @param {object} cb */
+export async function scoreAll(s, traits, base, cb = {}) {
   s.scoring = true;
   s.aborted = false;
-  const base = `${window.location.origin}${path}`;
   try {
     for (let i = 0; i < traits.length; i++) {
       if (s.aborted) break;

@@ -1,15 +1,7 @@
-/* Tab bar for beta view — sticky below header */
+/* Tab bar for beta view */
 .beta-view__tabs {
   display: flex;
   gap: 0;
-  padding-top: var(--space-sm);
-  border-bottom: 2px solid var(--color-border);
-  position: sticky;
-  top: 3.25rem;
-  z-index: 90;
-  background: color-mix(in srgb, var(--color-bg) 90%, transparent);
-  backdrop-filter: blur(8px);
-  box-shadow: 0 4px 8px -2px rgb(0 0 0 / 15%);
 }
 
 .beta-view__tab {
