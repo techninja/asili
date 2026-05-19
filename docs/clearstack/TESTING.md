@@ -169,36 +169,31 @@ describe('GET /api/users?schema=true', () => {
 
 ### Component Tests (browser)
 
-Using `@web/test-runner` with `@open-wc/testing`:
+Using `@web/test-runner` with `@open-wc/testing`. Since all components
+use light DOM (`shadow: false`), query the host element directly — not
+`shadowRoot`:
 
 ```javascript
 // src/components/atoms/app-button/app-button.test.js
-import { fixture, html, expect } from '@open-wc/testing';
+import { fixture, expect } from '@open-wc/testing';
 import './app-button.js';
 
 describe('app-button', () => {
   it('renders with label', async () => {
-    const el = await fixture(html`<app-button label="Click me"></app-button>`);
-    const button = el.shadowRoot.querySelector('button');
+    const el = await fixture(`<app-button label="Click me"></app-button>`);
+    await new Promise((r) => requestAnimationFrame(r));
+    const button = el.querySelector('button');
     expect(button.textContent).to.contain('Click me');
   });
-
-  it('reflects disabled attribute', async () => {
-    const el = await fixture(html`<app-button disabled></app-button>`);
-    const button = el.shadowRoot.querySelector('button');
-    expect(button.hasAttribute('disabled')).to.be.true;
-  });
-
-  it('dispatches click event', async () => {
-    const el = await fixture(html`<app-button label="Go"></app-button>`);
-    let clicked = false;
-    el.addEventListener('click', () => {
-      clicked = true;
-    });
-    el.shadowRoot.querySelector('button').click();
-    expect(clicked).to.be.true;
-  });
 });
+```
+
+The `requestAnimationFrame` wait gives hybrids time to complete its
+render cycle. For components with async store data, use a longer timeout:
+
+```javascript
+const tick = () => new Promise((r) => setTimeout(r, 100));
+await tick(); // after fixture, before assertions
 ```
 
 ### Store Integration Tests (browser)
@@ -227,15 +222,53 @@ describe('task-list', () => {
 
 ### web-test-runner.config.js
 
+`@web/test-runner` uses `nodeResolve` for bare specifiers like `hybrids`,
+but it does **not** support browser import maps. The `#prefix/` aliases
+from `index.html` won't resolve in tests without a custom plugin:
+
 ```javascript
 import { playwrightLauncher } from '@web/test-runner-playwright';
+import { dirname, resolve } from 'node:path';
+import { fileURLToPath } from 'node:url';
+
+const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..');
+
+const aliases = {
+  '#store/': '/src/store/',
+  '#utils/': '/src/utils/',
+  '#atoms/': '/src/components/atoms/',
+  '#molecules/': '/src/components/molecules/',
+  '#organisms/': '/src/components/organisms/',
+  '#templates/': '/src/components/templates/',
+  '#pages/': '/src/pages/',
+};
+
+function importMapPlugin() {
+  return {
+    name: 'import-map-aliases',
+    resolveImport({ source }) {
+      for (const [prefix, target] of Object.entries(aliases)) {
+        if (source.startsWith(prefix)) return source.replace(prefix, target);
+      }
+    },
+  };
+}
 
 export default {
   files: 'src/components/**/*.test.js',
   nodeResolve: true,
+  rootDir: ROOT,
   browsers: [playwrightLauncher({ product: 'chromium' })],
+  plugins: [importMapPlugin()],
 };
 ```
+
+Key points:
+
+- **`rootDir`** must be the project root so `/src/store/` resolves correctly.
+- **Aliases must match the import map** in `index.html`. If you add a prefix
+  there, add it here too.
+- Test files can use `#prefix/` imports just like app code.
 
 ### package.json Scripts
 

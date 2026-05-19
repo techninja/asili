@@ -212,6 +212,29 @@ Pages → Templates → Organisms → Molecules → Atoms
                                           Store / Utils
 ```
 
+#### Organisms Must Not Import Pages
+
+Organisms sit below pages in the import hierarchy. If an organism needs
+to generate a URL to a page (e.g. a product grid linking to a product
+detail page), **use a string URL, not `router.url(PageView)`**.
+
+`router.url()` requires importing the page component, which creates a
+circular dependency: page → organism → page. Even if the bundler or
+browser resolves it, it makes the dependency graph untraceable.
+
+```javascript
+// ❌ BAD — organism imports a page, circular dependency
+import ProductDetailView from '#pages/product-detail/product-detail-view.js';
+html`<a href="${router.url(ProductDetailView, { sku })}">View</a>`;
+
+// ✅ GOOD — string URL, no import needed
+html`<a href="${`/product/${sku}`}">View</a>`;
+```
+
+If the URL pattern changes, update it in one place. For complex URL
+generation, extract a `buildUrl(view, params)` utility in `src/utils/`
+that returns strings — no component imports.
+
 - Atoms import **nothing** from other component tiers.
 - Molecules import only from **atoms**.
 - Organisms import from **molecules** and **atoms**.

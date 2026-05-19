@@ -22,8 +22,10 @@ pnpm add -D @techninja/clearstack
 From your project root:
 
 ```bash
-npx clearstack init        # interactive
-npx clearstack init -y     # non-interactive (defaults)
+npx clearstack init            # interactive
+npx clearstack init -y         # non-interactive (fullstack defaults)
+npx clearstack init --static   # non-interactive, static mode
+npx clearstack init -y --static # same as above
 ```
 
 The interactive prompt asks for:
@@ -41,7 +43,7 @@ If a `package.json` already exists, Clearstack merges into it — your existing 
 
 ```
 your-project/
-├── .configs/              # ⟳ Managed — synced on update
+├── .configs/              # ✏️ Scaffolded once — yours to customize
 ├── .github/               # CI workflow, PR + issue templates
 ├── docs/
 │   ├── clearstack/        # ⟳ Managed — spec docs, synced on update
@@ -106,14 +108,16 @@ When Clearstack releases a new version:
 
 ```bash
 npm update @techninja/clearstack    # bump the package
-npm run spec:update                 # sync docs + configs
+npm run spec update                 # sync docs, skip existing configs
+npm run spec update --force         # sync docs + overwrite configs
 git diff docs/ .configs/            # review what changed
 ```
 
 This updates:
 
-- `docs/clearstack/*.md` — spec documentation
-- `.configs/*` — linter, formatter, type checker, test runner configs
+- `docs/clearstack/*.md` — spec documentation (always overwritten)
+- `.configs/*` — skipped if already exists (your customizations are safe)
+- `.configs/*` with `--force` — overwritten with latest defaults
 
 This never touches:
 
@@ -125,12 +129,16 @@ This never touches:
 ## 8. Spec Compliance
 
 ```bash
-npm run spec           # full check via clearstack binary
-npm run spec:code      # code files ≤150 lines
-npm run spec:docs      # doc files ≤500 lines
-npm run lint:fix       # ESLint auto-fix
-npm run format         # Prettier auto-format
-npm run typecheck      # JSDoc type validation
+npm run spec           # interactive menu
+npm run spec all       # full check
+npm run spec code      # code files ≤150 lines
+npm run spec docs      # doc files ≤500 lines
+npm run spec lint      # ESLint + Stylelint + Markdown
+npm run spec lint es   # ESLint only
+npm run spec format    # Prettier
+npm run spec imports   # import map aliases
+npm run spec types     # JSDoc types (all jsconfigs)
+npm run spec audit     # security audit
 npm test               # Node + browser tests
 ```
 
@@ -151,20 +159,21 @@ SPEC_IGNORE_DIRS=node_modules,src/vendor,.git,.configs
 The scaffolded `.github/workflows/spec.yml` runs all checks on every PR:
 
 ```
-spec:code → spec:docs → lint → format → typecheck → test
+spec all → lint + format + code + docs + imports + types + audit
 ```
 
 ## Summary
 
-| Task                  | Command                                |
-| --------------------- | -------------------------------------- |
-| Install Clearstack    | `npm install -D @techninja/clearstack` |
-| Scaffold a project    | `npx clearstack init`                  |
-| Install dependencies  | `npm install`                          |
-| Start dev server      | `npm run dev`                          |
-| Lint + format         | `npm run lint:fix && npm run format`   |
-| Type check            | `npm run typecheck`                    |
-| Run tests             | `npm test`                             |
-| Full spec check       | `npm run spec`                         |
-| Update spec + configs | `npm run spec:update`                  |
-| Review spec changes   | `git diff docs/ .configs/`             |
+| Task                  | Command                                    |
+| --------------------- | ------------------------------------------ |
+| Install Clearstack    | `npm install -D @techninja/clearstack`     |
+| Scaffold (fullstack)  | `npx clearstack init`                      |
+| Scaffold (static)     | `npx clearstack init --static`             |
+| Install dependencies  | `npm install`                              |
+| Start dev server      | `npm run dev`                              |
+| Lint + format         | `npm run spec lint && npm run spec format` |
+| Type check            | `npm run spec types`                       |
+| Run tests             | `npm test`                                 |
+| Full spec check       | `npm run spec`                             |
+| Update spec + configs | `npm run spec update`                      |
+| Review spec changes   | `git diff docs/ .configs/`                 |

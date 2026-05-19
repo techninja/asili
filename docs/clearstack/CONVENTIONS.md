@@ -197,6 +197,20 @@ function toggle(host) {
 }
 ```
 
+```javascript
+// BAD — silent catch hides the failure completely
+try {
+  store.clear([Model]);
+} catch {
+  /* list may not exist */
+}
+```
+
+**Never use empty `catch` blocks.** If you catch to prevent crashing,
+you must `console.warn` or `console.error` so the failure is visible.
+Silent catches turn bugs into ghosts — things "just don't work" with
+zero console output to trace.
+
 ### ✅ Do
 
 ```javascript
@@ -212,6 +226,15 @@ function toggle(host) {
   if (!store.ready(host.state)) return;
   const next = host.state.theme === 'light' ? 'dark' : 'light';
   store.set(host.state, { theme: next });
+}
+```
+
+```javascript
+// GOOD — catch to prevent crash, but log so failures are visible
+try {
+  store.clear([Model]);
+} catch (e) {
+  console.warn('[store] clear failed:', e.message);
 }
 ```
 
@@ -251,10 +274,24 @@ export const fullName = (user) => `${user.firstName} ${user.lastName}`;
 
 ---
 
-## File Size: Soft Warnings Before Hard Limits
+## File Size: Why 150 Lines
 
-The 150-line limit is a hard gate in CI, but treat **~120 lines as a yellow
-light.** When a file passes 120 lines:
+The 150-line limit isn't about the number — it's about **context cost**.
+A 400-line file isn't hard to scroll through, but it's expensive to
+_hold in mind_. Humans can only reason about a limited scope at once.
+LLMs face the same constraint differently: every token spent reading a
+bloated file is a token not spent on the actual task. Small files mean
+context is spent on _building_, not on _understanding what you're
+looking at_.
+
+When every file is small enough to comprehend in one pass, both humans
+and LLMs can generate, review, and modify code without re-reading
+unrelated sections. Refactors become safe because the blast radius of
+any change is one small file. The limit forces decomposition into
+concept-sized units — not arbitrary chunks, but files where each one
+answers a single question.
+
+Treat **~120 lines as a yellow light.** When a file passes 120 lines:
 
 1. Add a `// SPLIT CANDIDATE:` comment noting where a logical split could happen
 2. Continue working — don't split mid-feature
@@ -266,6 +303,27 @@ This prevents premature extraction while keeping the eventual split obvious.
 // SPLIT CANDIDATE: moveObj/resizeObj could extract to canvasTransform.js
 function moveObj(o, dx, dy) { ... }
 ```
+
+### When a File Exceeds 150 Lines
+
+The **only correct response** is to split the file into two or more files.
+The concepts have outgrown the container — find the seam between them
+and give each its own file. Never do any of the following to reduce
+line count:
+
+- Remove or shorten JSDoc comments
+- Collapse multi-line expressions onto one line
+- Remove blank lines between logical sections
+- Combine unrelated functions into one
+- Delete code that is still needed
+
+These make the code harder to read, which defeats the purpose of the limit.
+The limit exists to force decomposition, not compression.
+
+The spec checker runs formatters (Prettier, ESLint `--fix`) **before**
+counting lines, so the line count always reflects the formatted result.
+Write code in its natural readable form, run `npm run spec all`, and if
+a file is over the limit, split it.
 
 ---
 
@@ -279,7 +337,7 @@ multiple keys.
 
 - **One script per domain.** `test`, `spec`, `lint` — not `test:node`,
   `test:browser`, `lint:fix`, `spec:code`, `spec:docs`.
-- **Arguments over aliases.** `pnpm spec check code` instead of
+- **Arguments over aliases.** `pnpm spec code` instead of
   `pnpm spec:code`. The CLI handles routing.
 - **Interactive by default.** Running `pnpm spec` with no arguments shows
   a menu of available actions. Users discover commands by using the tool.
@@ -327,6 +385,54 @@ multiple keys.
 
 Spec is the inner dev loop — run it constantly. Tests are the commit gate —
 run them before pushing. CI runs both, in parallel.
+
+### Spec Output Contract
+
+The spec checker is designed for **minimal, complete output**. Every check
+prints exactly one line: ✅ on pass, ❌ on fail with the violating file and
+reason. The final summary is 2 lines (`N/N checks passed`).
+
+Total output for a passing run is ~12 lines. A failing run adds one line
+per violation with the exact file path and what to fix.
+
+**Do not pipe, grep, tail, or filter spec output.** It is already the
+minimal actionable result. Filtering it discards the violation details
+that tell you which file to fix, forcing redundant re-runs.
+
+To narrow scope, run a targeted check instead of filtering `all`:
+
+```bash
+# Run everything
+npm run spec all
+
+# Run one check by key
+npm run spec code          # line counts (code files ≤150)
+npm run spec docs          # line counts (doc files ≤500)
+npm run spec imports       # import map aliases (no ../)
+npm run spec types         # all jsconfigs (auto-discovered)
+npm run spec types frontend # just .configs/jsconfig.json
+npm run spec audit         # security audit
+
+# Parent keys run all children
+npm run spec lint           # ESLint + Stylelint + Markdown lint
+npm run spec format         # Prettier (all formatters)
+
+# Child keys run one
+npm run spec lint es        # ESLint only
+npm run spec lint css       # Stylelint only
+npm run spec lint md        # Markdown lint only
+npm run spec format prettier
+```
+
+```bash
+# ❌ Wrong — discards violation file paths
+npm run spec all 2>&1 | tail -3
+npm run spec all 2>&1 | grep -E "pass|fail"
+```
+
+This matters especially for LLM-assisted development: the spec output is
+structured so an LLM can read it in one pass, identify the failing file,
+and fix it without re-running the check. Filtering breaks that loop.
 
 ---
 

@@ -102,20 +102,13 @@ default values, so the model initializes cleanly:
 
 ```javascript
 [store.connect]: {
-  // ✅ GOOD — returns empty object, hybrids merges with defaults
   get: () => {
     const raw = localStorage.getItem('appState');
-    return raw ? JSON.parse(raw) : {};
+    return raw ? JSON.parse(raw) : {}; // ✅ — {} merges with defaults
+    // return raw ? JSON.parse(raw) : undefined; // ❌ — triggers error state
   },
-  // ❌ BAD — undefined triggers error state
-  // get: () => {
-  //   const raw = localStorage.getItem('appState');
-  //   return raw ? JSON.parse(raw) : undefined;
-  // },
 }
 ```
-
-This applies to all localStorage-backed singletons (`AppState`, `UserPrefs`).
 
 Consume in any component:
 
@@ -227,31 +220,36 @@ non-array during the pending phase.
 Always guard with `Array.isArray()` before calling array methods:
 
 ```javascript
-export default define({
-  tag: 'my-view',
-  items: {
-    value: [],
-    connect: (host, _key, invalidate) => {
-      fetchItems().then((list) => {
-        host.items = list;
-        invalidate();
-      });
-    },
-  },
-  render: ({ items }) => html`
-    // ❌ BAD — items may not be an array yet when render fires
-    ${items.filter((i) => i.active).map((i) => html`<span>${i.name}</span>`)} // ✅ GOOD — guard
-    before calling array methods
-    ${Array.isArray(items) && items.length > 0
-      ? items.filter((i) => i.active).map((i) => html`<span>${i.name}</span>`)
-      : html``}
-  `,
-});
+// ❌ BAD — items may not be an array yet when render fires
+${items.filter((i) => i.active).map((i) => html`<span>${i.name}</span>`)}
+
+// ✅ GOOD — guard before calling array methods
+${Array.isArray(items) && items.length > 0
+  ? items.filter((i) => i.active).map((i) => html`<span>${i.name}</span>`)
+  : html``}
 ```
 
-This applies to any property with `value: []` and an async `connect`.
-The `connect` callback sets the value and calls `invalidate()`, but the
-first render happens before that resolves.
+The first render fires before `connect`'s async callback resolves.
+
+#### Async Init with Child Component Props
+
+When a parent sets a child prop during `connect`, the child may never
+see the change (no old → new transition). Defer to after first render:
+
+```javascript
+// ❌ BAD — child mounts with 14, never sees a change
+connect: (host, _key, invalidate) => {
+  loadData(host).then(() => { host.resultCount = 14; invalidate(); });
+},
+
+// ✅ GOOD — child mounts with default (0), then sees 0 → 14
+connect: (host, _key, invalidate) => {
+  loadData(host).then(() => {
+    invalidate();
+    requestAnimationFrame(() => { host.resultCount = loadedCount; });
+  });
+},
+```
 
 ---
 
@@ -309,40 +307,69 @@ export default define({
 
 #### Router Property Cache: Same-Value Writes Are No-Ops
 
-The router caches component property values across navigations and page
-reloads. When a view reconnects, its properties are restored from cache
-**before** `connect` callbacks run.
-
-This means if a `connect` callback loads data asynchronously and then sets
-a property to the same value the cache already holds, hybrids sees no
-change and skips the re-render:
+The router restores cached property values on reconnect. If `connect`
+sets a property to the same value the cache holds, hybrids skips re-render.
+Reset to a sentinel first:
 
 ```javascript
-// ❌ BAD — if router cache already has resultCount=22,
-// setting it to 22 again is a no-op. No re-render happens.
-connect: (host, _key, invalidate) => {
-  loadFromDB(host.userId).then((data) => {
-    populateMemoryCache(data);     // side effect: fills an external object
-    host.resultCount = data.length; // may equal cached value → no re-render
-    invalidate();
-  });
-},
+// ❌ BAD — may equal cached value → no re-render
+host.resultCount = data.length;
 
-// ✅ GOOD — reset to a sentinel value first, then set the real value.
-// Hybrids sees 0 → 22, triggers re-render after data is loaded.
-connect: (host, _key, invalidate) => {
-  loadFromDB(host.userId).then((data) => {
-    populateMemoryCache(data);
-    host.resultCount = 0;           // force a change
-    host.resultCount = data.length; // now hybrids sees a real change
-    invalidate();
-  });
-},
+// ✅ GOOD — force a change so hybrids sees 0 → 22
+host.resultCount = 0;
+host.resultCount = data.length;
 ```
 
-This is especially important when render depends on external mutable state
-(e.g. an in-memory cache object) that the property change is meant to
-signal. Without the reset, the component renders with stale external state.
+Important when render depends on external mutable state that the property
+change is meant to signal.
+
+#### Router Cache Poisons Boolean Flags Across Reconnects
+
+When a routed view has a boolean property used as a fallback/error flag,
+the router cache can poison it across reconnects. If the flag is ever set
+to `true` (e.g. a failed fetch), the cached value persists. On the next
+navigation to that view, `connect` runs but the property is already `true`
+from cache — even though the default is `false`:
+
+```javascript
+// ❌ BAD — if fallback was ever true, it stays true on reconnect
+export default define({
+  tag: 'my-view',
+  data: {
+    value: undefined,
+    connect(host, _key, invalidate) {
+      loadData(host).then(() => invalidate());
+    },
+  },
+  fallback: false, // default is false, but cache may hold true
+  render: ({ data, fallback }) => {
+    if (fallback) return html`<p>Error</p>`; // stuck here forever
+    // ...
+  },
+});
+
+// ✅ GOOD — reset the flag in connect before the async load
+export default define({
+  tag: 'my-view',
+  data: {
+    value: undefined,
+    connect(host, _key, invalidate) {
+      host.fallback = false; // clear stale cache
+      loadData(host).then(() => invalidate());
+    },
+  },
+  fallback: false,
+  render: ({ data, fallback }) => {
+    if (fallback) return html`<p>Error</p>`;
+    // ...
+  },
+});
+```
+
+The general rule: any boolean flag that gates render output and is set
+by an async `connect` flow should be explicitly reset at the top of
+`connect`. This is especially common with fetch-or-fallback patterns
+where the fallback path sets the flag to `true` on network errors.
 
 #### `router.backUrl()` Serializes All Parent Properties
 
@@ -410,37 +437,16 @@ For live data updates, the backend pushes events via **Server-Sent Events
 
 ### Frontend: SSE Listener
 
-Lives in `src/utils/realtimeSync.js`:
+`src/utils/realtimeSync.js` connects to the SSE endpoint, listens for
+`update` events, and calls `store.clear(Model)` to invalidate the cache.
+Any component bound via `store()` re-fetches automatically.
 
-```javascript
-import { store } from 'hybrids';
+The listener reconnects on error (5s delay) and returns a disconnect
+function for cleanup in the router shell's `connect` descriptor.
 
-export function connectRealtime(url, modelMap) {
-  const source = new EventSource(url);
-
-  source.addEventListener('update', (event) => {
-    const { type } = JSON.parse(event.data);
-    const Model = modelMap[type];
-    if (Model) store.clear(Model); // full clear triggers re-fetch
-  });
-
-  source.addEventListener('error', () => {
-    source.close();
-    setTimeout(() => connectRealtime(url, modelMap), 5000);
-  });
-
-  return () => source.close();
-}
-```
-
-`store.clear(Model)` fully invalidates the cache for that model type.
-Any component bound to the model via `store()` will automatically re-fetch
-from the API. This is the mechanism that makes multi-user realtime work —
-when user A creates a task, user B's task list updates automatically.
-
-For the local user, form submit handlers also call `store.clear(Model)`
-immediately after a successful save. The SSE event that follows is
-redundant for the local user but ensures other connected clients update.
+`store.clear(Model)` is also called by form submit handlers after a
+successful save. The SSE event that follows is redundant for the local
+user but ensures other connected clients update.
 
 ### Backend: SSE Endpoint
 
@@ -449,31 +455,20 @@ contract.
 
 ### Wiring It Up
 
-In the router shell's `connect` descriptor:
+In the router shell, use a `connect` descriptor to start SSE and return
+the disconnect function. Map entity types to store models:
 
 ```javascript
-import { connectRealtime } from '../utils/realtimeSync.js';
-import UserModel from '../store/UserModel.js';
-
-export default define({
-  tag: 'app-router',
-  stack: router(HomeView, { url: '/' }),
-  connection: {
-    value: undefined,
-    connect(host) {
-      const disconnect = connectRealtime('/api/events', {
-        user: UserModel,
-      });
-      return disconnect;
-    },
+connection: {
+  value: undefined,
+  connect(host) {
+    return connectRealtime('/api/events', { user: UserModel });
   },
-  render: ({ stack }) => html` <template layout="column height::100vh">${stack}</template> `,
-});
+},
 ```
 
-When the backend sends `{ type: "user", id: "42" }` over SSE, the store
-cache for `UserModel` is cleared, and any component displaying that user
-re-fetches automatically.
+When the backend sends `{ type: "user" }` over SSE, the store cache for
+`UserModel` is cleared and any bound component re-fetches automatically.
 
 ### Debouncing Batch Operations
 
