@@ -6,7 +6,7 @@
 import * as idb from '/packages/core/src/data-layer/idb.js';
 import { getTraitList } from '#utils/manifest.js';
 import { getIdleSession, initSession, scoreAll } from './worker-pool.js';
-import { S, notifyNow, markDone, markError, markAllError } from './queue-state.js';
+import { S, notify, notifyNow, markDone, markError, markAllError } from './queue-state.js';
 import { loadIndividualDNA } from './queue-loader.js';
 import { DATA_BASE } from '#utils/data-url.js';
 
@@ -29,14 +29,18 @@ export async function scoreIndividual(individualId) {
     }
     if (session.loadedDnaId !== individualId) {
       S.currentTraitName = 'Loading DNA…';
+      S.subProgress = 0;
       notifyNow();
       await loadIndividualDNA(session, individualId, ({ phase, done, total }) => {
+        S.subProgress = total > 0 ? done / total : 0;
         if (phase === 'insert') {
           S.currentTraitName = `Loading DNA… ${((done / total) * 100) | 0}%`;
         } else {
           S.currentTraitName = `Liftover chr ${done}/${total}…`;
         }
+        notify();
       });
+      S.subProgress = 0;
       session.loadedDnaId = individualId;
     }
   } catch (err) {
@@ -63,7 +67,9 @@ export async function scoreIndividual(individualId) {
         S.currentTraitName = traitName;
         S.currentChrDone = chrDone || 0;
         S.currentChrTotal = chrTotal || 0;
+        S.subProgress = chrTotal > 0 ? (chrDone || 0) / chrTotal : 0;
         if (variantsSoFar) S.liveVariants = variantsSoFar;
+        notify();
       },
       onTraitScored: async ({ traitId, result }) => {
         await idb.put('results', `${individualId}:${traitId}`, {

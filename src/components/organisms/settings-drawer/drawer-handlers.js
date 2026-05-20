@@ -34,19 +34,20 @@ export async function loadData(host) {
 }
 
 /**
- *
+ * Compute storage info without loading all data into memory.
+ * Uses navigator.storage.estimate() for total size, key counts for breakdown.
  */
 async function computeStorage(host) {
-  const resultKeys = await idb.getAllKeys('results');
+  const [resultKeys, variantKeys, estimate] = await Promise.all([
+    idb.getAllKeys('results'),
+    idb.getAllKeys('variants'),
+    navigator.storage?.estimate?.(),
+  ]);
   const indCount = host.individuals.length;
   const resultCount = resultKeys.length;
-  let totalBytes = 0;
-  for (const store of ['individuals', 'variants', 'results', 'settings']) {
-    const all = await idb.getAll(store);
-    totalBytes += new Blob([JSON.stringify(all)]).size;
-  }
-  const mb = (totalBytes / 1024 / 1024).toFixed(1);
-  host.storageInfo = `${mb} MB stored (${indCount} individuals, ${resultCount} results)`;
+  const variantCount = variantKeys.length;
+  const mb = estimate?.usage ? (estimate.usage / 1024 / 1024).toFixed(1) : '?';
+  host.storageInfo = `${mb} MB stored (${indCount} individuals, ${resultCount} results, ${variantCount} variant sets)`;
 }
 
 /** @param {object} host */

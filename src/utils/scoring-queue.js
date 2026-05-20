@@ -9,6 +9,7 @@ import { getTraitList } from '#utils/manifest.js';
 import { S, subscribe, getState, notifyNow, canScoreIndividual } from './queue-state.js';
 import { acquire, release } from './wake-lock.js';
 import { startHeartbeat, stopHeartbeat } from './heartbeat.js';
+import { getTransferMap } from './transfer-tracker.js';
 
 // Re-export for consumers
 export { subscribe, getState };
@@ -36,6 +37,7 @@ export async function scanAndQueue() {
     S.doneByIndividual.set(ind.id, done);
     S.errorByIndividual.set(ind.id, new Set());
   }
+  S.transferBytes = await getTransferMap();
 }
 
 /** @param {string} id */

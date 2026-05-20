@@ -14,6 +14,7 @@ import { finalize } from '/packages/core/src/scorer.js';
 import { loadManifest } from '#utils/manifest.js';
 import { get as storageGet } from '#utils/storage.js';
 import { DATA_BASE } from '#utils/data-url.js';
+import { trackTransfer } from '#utils/transfer-tracker.js';
 
 /** @type {Record<string, object>|null} */
 let normCache = null;
@@ -60,13 +61,15 @@ export async function getNormParams() {
 
 /**
  * Fetch .asili tar, register chr parquets, return map + cleanup fn.
+ * Tracks bytes transferred per individual.
  * @param {string} url @param {string} traitId
- * @returns {Promise<{chrMap: Map<string, string>, cleanup: Function}>}
+ * @returns {Promise<{chrMap: Map<string, string>, cleanup: Function, bytes: number}>}
  */
 async function loadTraitPack(url, traitId) {
   const resp = await fetch(url);
   if (!resp.ok) throw new Error(`Failed to fetch ${url}: ${resp.status}`);
   const tarBuf = await resp.arrayBuffer();
+  const bytes = tarBuf.byteLength;
   const entries = parseTarBuffer(tarBuf);
   const chrMap = new Map();
   const names = [];
@@ -83,12 +86,13 @@ async function loadTraitPack(url, traitId) {
     for (const n of names) await dropFile(n);
     await new Promise((r) => setTimeout(r, 10));
   };
-  return { chrMap, cleanup };
+  return { chrMap, cleanup, bytes };
 }
 
 /** @param {string} url @param {object} t @param {Function} [onProgress] */
 export async function scoreUnifiedTrait(url, t, onProgress) {
-  const { chrMap, cleanup } = await loadTraitPack(url, t.trait_id);
+  const { chrMap, cleanup, bytes } = await loadTraitPack(url, t.trait_id);
+  trackTransfer(bytes);
   const onChr = onProgress
     ? (done, total, matched) =>
         onProgress({ traitName: t.name, chrDone: done, chrTotal: total, variantsSoFar: matched })

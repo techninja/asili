@@ -6,6 +6,7 @@
 import * as idb from '/packages/core/src/data-layer/idb.js';
 import { loadResults, clearResults } from './results-store.js';
 import { initQueue, switchIndividual } from './scoring-controller.js';
+import { clearTransfer } from '#utils/transfer-tracker.js';
 
 /** @param {object} host */
 export async function initApp(host) {
@@ -39,17 +40,18 @@ export function connectInit(host, _key, invalidate) {
   window.addEventListener('asili-individuals-changed', refresh);
   const rescore = async (e) => {
     const id = e.detail;
+    await clearTransfer(id);
     if (id === host.activeId) {
       await clearResults();
       host.resultCount = 0;
       host.scoringStatus = '';
-      initQueue(host);
     } else {
       const dl = await import('/packages/core/src/data-layer/create.js').then((m) =>
         m.getDataLayer(),
       );
       await dl.clearResults(id);
     }
+    initQueue(host);
   };
   window.addEventListener('asili-rescore', rescore);
   return () => {

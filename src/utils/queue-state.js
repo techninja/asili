@@ -21,6 +21,12 @@ export const S = {
   currentTraitName: '',
   currentChrDone: 0,
   currentChrTotal: 0,
+  /** Sub-process progress (0-1): DNA loading, chromosome within trait, etc. */
+  subProgress: 0,
+  /** @type {Record<string, number>} Per-individual bytes downloaded */
+  transferBytes: {},
+  /** Smoothed transfer rate in bytes/sec */
+  transferRate: 0,
   paused: false,
   running: false,
   startMs: 0,
@@ -72,6 +78,7 @@ export function markDone(id, tid, matches) {
   ensure(S.doneByIndividual, id).add(tid);
   S.totalVariantsScored += matches;
   S.liveVariants = 0;
+  S.subProgress = 0;
   S.traitsCompleted++;
   notify();
 }

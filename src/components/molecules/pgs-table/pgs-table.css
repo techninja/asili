@@ -23,6 +23,17 @@
   color: var(--color-primary);
 }
 
+.pgs-table__star {
+  position: absolute;
+  left: calc(-0.5em - var(--space-xs));
+  top: 50%;
+  transform: translateY(-50%);
+}
+
+.pgs-table__best td:first-child {
+  position: relative;
+}
+
 .pgs-table__empty {
   color: var(--color-text-muted);
   font-style: italic;

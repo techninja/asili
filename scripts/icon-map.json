@@ -212,5 +212,9 @@
   "square-check": "square-check",
   "hand-helping": "hand-helping",
   "lightbulb": "lightbulb",
-  "scan-heart": "scan-heart"
+  "scan-heart": "scan-heart",
+  "play": "play",
+  "pause": "pause",
+  "badge": "badge",
+  "circle-check-big": "check-done"
 }
