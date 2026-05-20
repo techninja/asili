@@ -10,7 +10,7 @@
  *   node scripts/deploy-data.js --trait EFO_0004340  # Deploy single trait pack
  */
 
-import { readdirSync } from 'fs';
+import { readdirSync, readFileSync } from 'fs';
 import { resolve } from 'path';
 import { loadDeployLog, saveDeployLog, upload } from './deploy-helpers.js';
 
@@ -51,20 +51,22 @@ if (smallOnly) {
   process.exit(0);
 }
 
-// Trait packs
+// Trait packs — only deploy those referenced in the manifest
 if (singleTrait) {
   const file = `${singleTrait}_hg38.asili`;
   console.log(`🧬 Single trait: ${file}`);
   up(`${PACKS_DIR}/${file}`, `packs/asili/${file}`, 'application/octet-stream');
 } else {
-  console.log('🧬 Trait packs (this may take a while)...');
-  const packs = readdirSync(PACKS_DIR).filter((f) => f.endsWith('.asili'));
+  console.log('🧬 Trait packs (manifest-filtered)...');
+  const manifest = JSON.parse(readFileSync(MANIFEST, 'utf-8'));
+  const traitIds = Object.keys(manifest.traits);
   let i = 0;
-  for (const f of packs) {
+  for (const tid of traitIds) {
+    const f = `${tid}_hg38.asili`;
     up(`${PACKS_DIR}/${f}`, `packs/asili/${f}`, 'application/octet-stream');
-    if (++i % 10 === 0) console.log(`  ... ${i}/${packs.length}`);
+    if (++i % 10 === 0) console.log(`  ... ${i}/${traitIds.length}`);
   }
-  console.log(`  ✓ ${packs.length} trait packs\n`);
+  console.log(`  ✓ ${traitIds.length} trait packs\n`);
 }
 
 console.log(`\n✅ Deploy complete`);
