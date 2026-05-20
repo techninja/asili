@@ -80,5 +80,6 @@ export function getState() {
     rate: smoothedRate,
     etaSeconds: smoothedEta > 0 ? Math.round(pending * smoothedEta) : 0,
     individualCount: S.individualMeta.size,
+    lastError: S.lastError,
   };
 }

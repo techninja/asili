@@ -107,6 +107,14 @@
   pointer-events: none;
 }
 
+.floating-bar--error {
+  border-color: var(--color-danger);
+}
+
+.floating-bar__stats--error {
+  color: var(--color-danger);
+}
+
 @media (width <= 640px) {
   .floating-bar {
     bottom: var(--space-sm);

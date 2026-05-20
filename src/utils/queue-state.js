@@ -28,6 +28,7 @@ export const S = {
   traitsCompleted: 0,
   liveVariants: 0,
   needsReprioritize: false,
+  lastError: '',
   /** @type {Set<string>} Individuals currently being scored by a worker */
   activeScoringIds: new Set(),
 };
@@ -90,6 +91,7 @@ export function markAllError(id, reason) {
   const errors = ensure(S.errorByIndividual, id);
   for (const tid of pending) errors.add(tid);
   pending.clear();
+  S.lastError = reason || 'Unknown error';
   console.warn(`Queue: ${errors.size} traits errored for ${id}: ${reason}`);
   notify();
 }

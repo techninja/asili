@@ -33,12 +33,14 @@ export default define({
       void host._tick;
       const state = getState();
       const status = state.paused ? 'paused' : state.running ? 'scoring' : '';
+      const hasError = !state.running && !state.paused && state.errors > 0 && state.pending === 0;
       const hasScoring = ACTIVE_STATES.has(status);
       const hasPager = host.prevHref || host.nextHref;
-      if (!hasScoring && !hasPager) return html``;
+      if (!hasScoring && !hasError && !hasPager) return html``;
 
       return html`
-        <div class="floating-bar">
+        <div class="floating-bar ${hasError ? 'floating-bar--error' : ''}">
+          ${hasError ? errorContent(state) : html``}
           ${hasScoring ? scoringContent(host, state, status) : html``}
           ${hasPager ? pagerContent(host.prevHref, host.nextHref) : html``}
         </div>
@@ -51,10 +53,20 @@ export default define({
 /**
  *
  */
+function errorContent(state) {
+  const msg = state.lastError || `${state.errors} trait${state.errors !== 1 ? 's' : ''} failed`;
+  const short = msg.length > 60 ? msg.slice(0, 57) + '…' : msg;
+  return html`<div class="floating-bar__section">
+    <span class="floating-bar__stats floating-bar__stats--error" title="${msg}">
+      ⚠ ${short}
+    </span>
+  </div>`;
+}
+
 function scoringContent(host, state, status) {
   if (status === 'paused') {
     return html`<div class="floating-bar__section">
-      <span class="floating-bar__stats">⏸ ${state.done}/${state.total} scored</span>
+      <span class="floating-bar__stats">⏸ ${state.done}/${state.total} scored${state.errors ? html` · ${state.errors} failed` : html``}</span>
       <button class="floating-bar__action" onclick="${() => handleResume()}" title="Resume">
         <app-icon name="play"></app-icon>
       </button>
