@@ -28,7 +28,9 @@ function createSession() {
 /** @param {WorkerSession} s */
 export async function initSession(s) {
   if (!dbReady) {
-    await initDuckDB(`${window.location.origin}/deps/duckdb`);
+    const isDev = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+    const duckdbBase = isDev ? `${window.location.origin}/deps/duckdb` : 'https://data.asili.dev/deps/duckdb';
+    await initDuckDB(duckdbBase);
     dbReady = true;
   }
   s.ready = true;
