@@ -7,6 +7,7 @@
 
   @media (width <= 640px) {
     grid-template-columns: 1fr;
+    margin-bottom: 0;
 
     & .trait-detail__identity {
       min-height: 280px;
