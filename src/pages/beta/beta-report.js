@@ -6,11 +6,12 @@
 import { html, define } from 'hybrids';
 // @ts-ignore
 import '#organisms/radar-chart/radar-chart.js';
-import { results, getActiveId } from './results-store.js';
+import { results, getActiveId, loadResults } from './results-store.js';
 import { buildCategorySummary } from '#utils/categories.js';
 import { getTraitList } from '#utils/manifest.js';
 import * as idb from '/packages/core/src/data-layer/idb.js';
 import { summarySection, categoryCards, qualitySection, traitTable } from './report-sections.js';
+import { subscribe, getState } from '#utils/queue-state.js';
 
 /** @type {Array<object>} */
 let traitCache = [];
@@ -31,8 +32,16 @@ export default define({
   tag: 'report-content',
   resultCount: 0,
   switchEpoch: 0,
+  _tick: {
+    value: 0,
+    connect: (host, _key, invalidate) => {
+      const unsub = subscribe(() => { host._tick++; invalidate(); });
+      return unsub;
+    },
+  },
   render: {
     value: (host) => {
+      void host._tick;
       void host.resultCount;
       void host.switchEpoch;
       if (!traitCache.length) return html`<p>Loading traits…</p>`;
@@ -40,7 +49,15 @@ export default define({
       const ind = indMap.get(activeId);
       const name = ind ? `${ind.emoji || ''} ${ind.name || ''}`.trim() : '';
       const cats = buildCategorySummary(results, traitCache);
-      const scored = traitCache.filter((t) => results[t.trait_id]?.percentile !== null);
+      const scored = traitCache.filter((t) => results[t.trait_id]?.percentile != null);
+      if (!scored.length) {
+        return html`<div class="report-tab">
+          <div class="report-tab__header">
+            <h2><app-icon name="document"></app-icon> Genomic Report${name ? ` — ${name}` : ''}</h2>
+          </div>
+          <p class="report-tab__meta">No scored traits yet. Results will appear here as scoring completes.</p>
+        </div>`;
+      }
       const sorted = [...scored].sort(
         (a, b) => (results[b.trait_id]?.percentile || 0) - (results[a.trait_id]?.percentile || 0),
       );

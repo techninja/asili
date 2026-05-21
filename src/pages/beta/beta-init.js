@@ -51,7 +51,7 @@ export function connectInit(host, _key, invalidate) {
       );
       await dl.clearResults(id);
     }
-    initQueue(host);
+    await initQueue(host);
   };
   window.addEventListener('asili-rescore', rescore);
   return () => {
