@@ -98,7 +98,11 @@ export default define({
       }
 
       return html`
-        <div class="floating-bar ${hasError ? 'floating-bar--error' : ''} ${host.expanded ? 'floating-bar--expanded' : ''}">
+        <div
+          class="floating-bar ${hasError ? 'floating-bar--error' : ''} ${host.expanded
+            ? 'floating-bar--expanded'
+            : ''}"
+        >
           ${hasError ? errorContent(host, state) : html``}
           ${hasScoring ? scoringContent(host, state, status) : html``}
           ${host.expanded ? detailPanel(state, hasError, JSON.parse(host._indCache)) : html``}
@@ -110,27 +114,44 @@ export default define({
   },
 });
 
+/**
+ *
+ */
 function toggleExpand(host) {
   host.expanded = !host.expanded;
 }
 
+/**
+ *
+ */
 function errorContent(host, state) {
   const msg = state.lastError || `${state.errors} trait${state.errors !== 1 ? 's' : ''} failed`;
   const short = msg.length > 60 ? msg.slice(0, 57) + '…' : msg;
   return html`<div class="floating-bar__section">
-    <button class="floating-bar__stats floating-bar__stats--error floating-bar__stats--tappable" onclick="${(h) => toggleExpand(h)}" title="${msg}">
+    <button
+      class="floating-bar__stats floating-bar__stats--error floating-bar__stats--tappable"
+      onclick="${(h) => toggleExpand(h)}"
+      title="${msg}"
+    >
       <app-icon name="alert"></app-icon> ${short}
     </button>
   </div>`;
 }
 
+/**
+ *
+ */
 function scoringContent(host, state, status) {
   // Done — nothing left to score
   if (state.pending === 0 && state.done > 0) {
     return html`<div class="floating-bar__section">
       <span class="floating-bar__icon"><app-icon name="check-done"></app-icon></span>
-      <button class="floating-bar__stats floating-bar__stats--tappable" onclick="${(h) => toggleExpand(h)}">
-        ${state.done}/${state.total} scored${state.errors ? html` · ${state.errors} failed` : html``}
+      <button
+        class="floating-bar__stats floating-bar__stats--tappable"
+        onclick="${(h) => toggleExpand(h)}"
+      >
+        ${state.done}/${state.total}
+        scored${state.errors ? html` · ${state.errors} failed` : html``}
       </button>
     </div>`;
   }
@@ -141,10 +162,18 @@ function scoringContent(host, state, status) {
       <span class="floating-bar__status-icon" title="Paused">
         <app-icon name="octagon-pause"></app-icon>
       </span>
-      <button class="floating-bar__stats floating-bar__stats--tappable" onclick="${(h) => toggleExpand(h)}">
-        ${state.done}/${state.total} scored${state.errors ? html` · ${state.errors} failed` : html``}
+      <button
+        class="floating-bar__stats floating-bar__stats--tappable"
+        onclick="${(h) => toggleExpand(h)}"
+      >
+        ${state.done}/${state.total}
+        scored${state.errors ? html` · ${state.errors} failed` : html``}
       </button>
-      <button class="floating-bar__action floating-bar__action--resume" onclick="${() => handleResume()}" title="Resume">
+      <button
+        class="floating-bar__action floating-bar__action--resume"
+        onclick="${() => handleResume()}"
+        title="Resume"
+      >
         <app-icon name="play"></app-icon>
       </button>
     </div>`;
@@ -155,7 +184,8 @@ function scoringContent(host, state, status) {
   const subPct = state.subProgress > 0 ? (state.subProgress * 100).toFixed(1) : 0;
   const trait = state.currentTraitName || '';
   const rate = state.rate > 0 ? fmtN(Math.round(state.rate)) + ' var/s' : '';
-  const dlRate = state.transferRate > 0 ? fmtBits(state.transferRate) : (state.done > 0 ? '-- Mbps' : '');
+  const dlRate =
+    state.transferRate > 0 ? fmtRate(state.transferRate) : state.done > 0 ? '-- MB/min' : '';
   const eta = state.etaSeconds > 0 ? '~' + fmtT(state.etaSeconds) : '';
 
   return html`
@@ -166,22 +196,27 @@ function scoringContent(host, state, status) {
           <app-icon name="pause"></app-icon>
         </button>
       </div>
-      <div class="floating-bar__tracks">
-        <div class="floating-bar__track">
-          <div class="floating-bar__fill" style="${{ width: `${pct}%` }}"></div>
+      <div class="floating-bar__progress">
+        <div class="floating-bar__tracks">
+          <div class="floating-bar__track">
+            <div class="floating-bar__fill" style="${{ width: `${pct}%` }}"></div>
+          </div>
+          <div class="floating-bar__subtrack">
+            <div class="floating-bar__subfill" style="${{ width: `${subPct}%` }}"></div>
+          </div>
         </div>
-        <div class="floating-bar__subtrack">
-          <div class="floating-bar__subfill" style="${{ width: `${subPct}%` }}"></div>
-        </div>
+        <button
+          class="floating-bar__stats floating-bar__stats--tappable"
+          onclick="${(h) => toggleExpand(h)}"
+        >
+          <span class="floating-bar__stats-line">${trait ? html`${trait}` : html`Scoring`}</span>
+          <span class="floating-bar__stats-line"
+            >${state.done}/${state.total}${rate ? html` · ${rate}` : html``}${dlRate
+              ? html` · ${dlRate}`
+              : html``}${eta ? html` · ${eta}` : html``}</span
+          >
+        </button>
       </div>
-      <button class="floating-bar__stats floating-bar__stats--tappable" onclick="${(h) => toggleExpand(h)}">
-        <span class="floating-bar__stats-line">${trait ? html`${trait}` : html`Scoring`}</span>
-        <span class="floating-bar__stats-line">${state.done}/${state.total}${rate
-          ? html` · ${rate}`
-          : html``}${dlRate
-          ? html` · ${dlRate}`
-          : html``}${eta ? html` · ${eta}` : html``}</span>
-      </button>
       <button
         class="floating-bar__action"
         onclick="${(h) => dispatch(h, 'focus-mode', { bubbles: true })}"
@@ -193,43 +228,75 @@ function scoringContent(host, state, status) {
   `;
 }
 
+/**
+ *
+ */
 function detailPanel(state, hasError, indCache) {
   const individuals = Object.values(state.byIndividual || {});
   const transferBytes = state.transferBytes || {};
   const totalTransfer = Object.values(transferBytes).reduce((s, v) => s + v, 0);
   return html`
     <div class="floating-bar__detail">
-      ${hasError && state.lastError ? html`<div class="floating-bar__detail-row floating-bar__detail-row--error">${state.lastError}</div>` : html``}
+      ${hasError && state.lastError
+        ? html`<div class="floating-bar__detail-row floating-bar__detail-row--error">
+            ${state.lastError}
+          </div>`
+        : html``}
       <div class="floating-bar__detail-row">
-        <span>Traits:</span> <span>${state.done} done · ${state.errors} failed · ${state.pending} pending</span>
+        <span>Traits:</span>
+        <span>${state.done} done · ${state.errors} failed · ${state.pending} pending</span>
       </div>
-      ${state.rate > 0 ? html`<div class="floating-bar__detail-row">
-        <span>Throughput:</span> <span>${fmtN(Math.round(state.rate))} variants/sec${state.transferRate > 0 ? ` · ${fmtBits(state.transferRate)}` : ''}</span>
-      </div>` : html``}
-      ${state.totalVariantsScored > 0 ? html`<div class="floating-bar__detail-row">
-        <span>Variants scored:</span> <span>${fmtN(state.totalVariantsScored)}</span>
-      </div>` : html``}
-      ${totalTransfer > 0 ? html`<div class="floating-bar__detail-row">
-        <span>Data scanned:</span> <span>${fmtBytes(totalTransfer)}</span>
-      </div>` : html``}
-      ${state.etaSeconds > 0 ? html`<div class="floating-bar__detail-row">
-        <span>ETA:</span> <span>${fmtT(state.etaSeconds)}</span>
-      </div>` : html``}
-      ${individuals.length > 1 ? html`
-        <div class="floating-bar__detail-heading">Per individual</div>
-        ${individuals.map((ind) => {
-          const meta = indCache[ind.id];
-          const label = meta ? `${meta.emoji} ${meta.name}` : ind.id.slice(0, 8);
-          const indBytes = transferBytes[ind.id];
-          return html`<div class="floating-bar__detail-row">
-            <span>${label}</span> <span>${ind.done}/${ind.total}${ind.errors ? ` · ${ind.errors} err` : ''}${indBytes ? ` · ${fmtBytes(indBytes)} scanned` : ''}</span>
-          </div>`;
-        })}
-      ` : html``}
+      ${state.rate > 0 || state.transferRate > 0
+        ? html`<div class="floating-bar__detail-row">
+            <span>Throughput:</span>
+            <span
+              >${state.rate > 0 ? `${fmtN(Math.round(state.rate))} variants/sec` : ''}${state.rate >
+                0 && state.transferRate > 0
+                ? ' · '
+                : ''}${state.transferRate > 0 ? fmtRate(state.transferRate) : ''}</span
+            >
+          </div>`
+        : html``}
+      ${state.totalVariantsScored > 0
+        ? html`<div class="floating-bar__detail-row">
+            <span>Variants scored:</span> <span>${fmtN(state.totalVariantsScored)}</span>
+          </div>`
+        : html``}
+      ${totalTransfer > 0
+        ? html`<div class="floating-bar__detail-row">
+            <span>Data scanned:</span> <span>${fmtBytes(totalTransfer)}</span>
+          </div>`
+        : html``}
+      ${state.etaSeconds > 0
+        ? html`<div class="floating-bar__detail-row">
+            <span>ETA:</span> <span>${fmtT(state.etaSeconds)}</span>
+          </div>`
+        : html``}
+      ${individuals.length > 1
+        ? html`
+            <div class="floating-bar__detail-heading">Per individual</div>
+            ${individuals.map((ind) => {
+              const meta = indCache[ind.id];
+              const label = meta ? `${meta.emoji} ${meta.name}` : ind.id.slice(0, 8);
+              const indBytes = transferBytes[ind.id];
+              return html`<div class="floating-bar__detail-row">
+                <span>${label}</span>
+                <span
+                  >${ind.done}/${ind.total}${ind.errors ? ` · ${ind.errors} err` : ''}${indBytes
+                    ? ` · ${fmtBytes(indBytes)} scanned`
+                    : ''}</span
+                >
+              </div>`;
+            })}
+          `
+        : html``}
     </div>
   `;
 }
 
+/**
+ *
+ */
 function pagerContent(prevHref, nextHref) {
   return html`
     <div class="floating-bar__pager">
@@ -272,11 +339,11 @@ const fmtBytes = (b) => {
   return `${b} B`;
 };
 
-/** @param {number} bytesPerSec — formats as bits/sec (Mbps, Kbps) */
-const fmtBits = (bytesPerSec) => {
-  const bps = bytesPerSec * 8;
-  if (bps >= 1e9) return `${(bps / 1e9).toFixed(1)} Gbps`;
-  if (bps >= 1e6) return `${(bps / 1e6).toFixed(1)} Mbps`;
-  if (bps >= 1e3) return `${(bps / 1e3).toFixed(0)} Kbps`;
-  return `${Math.round(bps)} bps`;
+/** @param {number} bytesPerSec — formats as data usage rate (MB/min, GB/hr) */
+const fmtRate = (bytesPerSec) => {
+  const mbPerMin = (bytesPerSec * 60) / 1e6;
+  if (mbPerMin >= 1000) return `${(mbPerMin / 1000).toFixed(1)} GB/min`;
+  if (mbPerMin >= 10) return `${Math.round(mbPerMin)} MB/min`;
+  if (mbPerMin >= 1) return `${mbPerMin.toFixed(1)} MB/min`;
+  return `${Math.round(mbPerMin * 1000)} KB/min`;
 };

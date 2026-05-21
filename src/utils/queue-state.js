@@ -29,6 +29,10 @@ export const S = {
   transferRate: 0,
   /** Timestamp of last transfer update */
   _transferLastTs: 0,
+  /** Timestamp when transfer tracking started this session */
+  _transferStartTs: 0,
+  /** Total bytes downloaded this session */
+  _transferSessionBytes: 0,
   paused: false,
   running: false,
   startMs: 0,

@@ -89,10 +89,14 @@ export function scoringBanner(host) {
   }
   if (host.scoringStatus === 'init')
     return html`<p class="beta-view__scoring">Initializing DuckDB…</p>`;
-  if (host.scoringStatus === 'done')
+  if (host.scoringStatus === 'done') {
+    const state = getQueueState();
+    const ind = state.byIndividual[host.activeId];
+    const errors = ind?.errors || 0;
     return html`<p class="beta-view__scoring beta-view__scoring--done">
-      ✅ ${host.resultCount} traits scored
+      ✅ ${host.resultCount} traits scored${errors ? html` · ${errors} failed` : html``}
     </p>`;
+  }
   if (host.scoringStatus === 'blocked') {
     const need = getImputedNeedingReupload().length;
     return html`<p class="beta-view__scoring">

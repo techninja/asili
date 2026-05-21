@@ -29,7 +29,9 @@ export default define({
             ${entries.map(
               (p) => html`
                 <tr class="${p.isBest ? 'pgs-table__best' : ''}">
-                  <td>${p.isBest ? html`<span class="pgs-table__star">★</span>` : html``}${p.id}</td>
+                  <td>
+                    ${p.isBest ? html`<span class="pgs-table__star">★</span>` : html``}${p.id}
+                  </td>
                   <td>${((p.r2 || 0) * 100).toFixed(1)}%</td>
                   <td>
                     ${p.zScore !== null ? (p.zScore > 0 ? '+' : '') + p.zScore.toFixed(2) : '—'}

@@ -7,9 +7,12 @@ import { S } from './queue-state.js';
 
 /** @returns {number} */
 function getCurrentRate() {
+  // While scoring, recalculate from session totals (updates every tick)
+  if (S.running && S._transferStartTs > 0 && S._transferSessionBytes > 0) {
+    const elapsed = (Date.now() - S._transferStartTs) / 1000;
+    return elapsed > 0 ? S._transferSessionBytes / elapsed : 0;
+  }
   if (!S._transferLastTs || !S.transferRate) return 0;
-  // Don't decay while actively scoring — gaps between fetches are normal
-  if (S.running) return S.transferRate;
   const age = Date.now() - S._transferLastTs;
   const STALE_MS = 30_000;
   if (age > STALE_MS) {

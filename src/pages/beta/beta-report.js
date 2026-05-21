@@ -6,12 +6,12 @@
 import { html, define } from 'hybrids';
 // @ts-ignore
 import '#organisms/radar-chart/radar-chart.js';
-import { results, getActiveId, loadResults } from './results-store.js';
+import { results, getActiveId } from './results-store.js';
 import { buildCategorySummary } from '#utils/categories.js';
 import { getTraitList } from '#utils/manifest.js';
 import * as idb from '/packages/core/src/data-layer/idb.js';
 import { summarySection, categoryCards, qualitySection, traitTable } from './report-sections.js';
-import { subscribe, getState } from '#utils/queue-state.js';
+import { subscribe } from '#utils/queue-state.js';
 
 /** @type {Array<object>} */
 let traitCache = [];
@@ -35,7 +35,10 @@ export default define({
   _tick: {
     value: 0,
     connect: (host, _key, invalidate) => {
-      const unsub = subscribe(() => { host._tick++; invalidate(); });
+      const unsub = subscribe(() => {
+        host._tick++;
+        invalidate();
+      });
       return unsub;
     },
   },
@@ -55,7 +58,9 @@ export default define({
           <div class="report-tab__header">
             <h2><app-icon name="document"></app-icon> Genomic Report${name ? ` — ${name}` : ''}</h2>
           </div>
-          <p class="report-tab__meta">No scored traits yet. Results will appear here as scoring completes.</p>
+          <p class="report-tab__meta">
+            No scored traits yet. Results will appear here as scoring completes.
+          </p>
         </div>`;
       }
       const sorted = [...scored].sort(

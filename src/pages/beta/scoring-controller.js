@@ -115,13 +115,27 @@ function syncHostState(host, state) {
     if (document.fullscreenElement) document.exitFullscreen().catch(() => {});
   }
 
-  if (state.activeIndividualId === host.activeId) {
-    const ind = state.byIndividual[host.activeId];
-    if (ind && ind.done !== host.resultCount) {
+  const ind = state.byIndividual[host.activeId];
+  if (ind) {
+    const expectedCount = ind.done;
+    if (expectedCount !== host.resultCount) {
+      // If queue says 0 done, immediately reflect that
+      if (expectedCount === 0) {
+        host.resultCount = 0;
+        return;
+      }
       if (loadTimer) clearTimeout(loadTimer);
       loadTimer = setTimeout(() => {
         loadResults(host.activeId).then((c) => {
           host.resultCount = c;
+          // Retry if IDB hasn't caught up yet
+          if (c < expectedCount) {
+            setTimeout(() => {
+              loadResults(host.activeId).then((c2) => {
+                host.resultCount = c2;
+              });
+            }, 1000);
+          }
         });
       }, 500);
     }

@@ -20,7 +20,10 @@ export default define({
   _tick: {
     value: 0,
     connect: (host, _key, invalidate) => {
-      const unsub = subscribe(() => { host._tick++; invalidate(); });
+      const unsub = subscribe(() => {
+        host._tick++;
+        invalidate();
+      });
       return unsub;
     },
   },
@@ -39,7 +42,9 @@ export default define({
             const isScoring = state.running && state.currentScoringId === ind.id;
             return html`
               <div
-                class="individual-list__item ${ind.id === activeId ? 'individual-list__item--active' : ''} ${isScoring ? 'individual-list__item--scoring' : ''}"
+                class="individual-list__item ${ind.id === activeId
+                  ? 'individual-list__item--active'
+                  : ''} ${isScoring ? 'individual-list__item--scoring' : ''}"
                 style="--progress: ${pct}%"
               >
                 <button
