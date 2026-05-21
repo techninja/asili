@@ -3,13 +3,16 @@
   min-height: 100vh;
 }
 
-.app-layout__sub-header {
+.app-layout__sticky-top {
   position: sticky;
-  top: var(--header-height, 3.5rem);
+  top: 0;
+  z-index: 100;
+}
+
+.app-layout__sub-header {
   z-index: 90;
   background: color-mix(in srgb, var(--color-bg) 90%, transparent);
   backdrop-filter: blur(8px);
-  margin-top: -1px;
 }
 
 .app-layout__sub-header-inner {

@@ -54,5 +54,5 @@ function initHeaderObserver() {
     );
   };
   update();
-  window.addEventListener('resize', update);
+  new ResizeObserver(update).observe(el);
 }

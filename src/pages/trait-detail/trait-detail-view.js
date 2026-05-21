@@ -56,33 +56,35 @@ const TraitDetail = define({
 
       return html`
         <div class="app-layout">
-          ${appHeader({
-            badge: 'beta',
-            onSettings: () => toggleSettings(),
-            center: html`<individual-switcher
-              activeId="${host.activeId}"
-              onswitch-individual="${handleSwitch}"
-            ></individual-switcher>`,
-            trailing: html`<a
-              href="/beta"
-              class="app-header__link"
-              title="Add individual"
-              onclick="${() => sessionStorage.setItem('asili-open-upload', '1')}"
-            >
-              <app-icon name="user-plus"></app-icon>
-            </a>`,
-          })}
-          <div class="app-layout__sub-header">
-            <nav class="app-layout__sub-header-inner trait-detail__breadcrumb">
-              <a href="/beta" class="trait-detail__breadcrumb-back">
-                <app-icon name="arrow-left"></app-icon>
-                ${sourceLabel()}
-              </a>
-              <span class="trait-detail__breadcrumb-sep"
-                ><app-icon name="chevron-right" size="sm"></app-icon
-              ></span>
-              <span class="trait-detail__breadcrumb-current">${emoji} ${name}</span>
-            </nav>
+          <div class="app-layout__sticky-top">
+            ${appHeader({
+              badge: 'beta',
+              onSettings: () => toggleSettings(),
+              center: html`<individual-switcher
+                activeId="${host.activeId}"
+                onswitch-individual="${handleSwitch}"
+              ></individual-switcher>`,
+              trailing: html`<a
+                href="/beta"
+                class="app-header__link"
+                title="Add individual"
+                onclick="${() => sessionStorage.setItem('asili-open-upload', '1')}"
+              >
+                <app-icon name="user-plus"></app-icon>
+              </a>`,
+            })}
+            <div class="app-layout__sub-header">
+              <nav class="app-layout__sub-header-inner trait-detail__breadcrumb">
+                <a href="/beta" class="trait-detail__breadcrumb-back">
+                  <app-icon name="arrow-left"></app-icon>
+                  ${sourceLabel()}
+                </a>
+                <span class="trait-detail__breadcrumb-sep"
+                  ><app-icon name="chevron-right" size="sm"></app-icon
+                ></span>
+                <span class="trait-detail__breadcrumb-current">${emoji} ${name}</span>
+              </nav>
+            </div>
           </div>
           <main class="app-layout__content">
             <div class="trait-detail__hero">

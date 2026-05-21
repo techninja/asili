@@ -96,24 +96,26 @@ export default define({
       const showPanel = hasData && (host.showUpload || host.parseStatus);
       return html`
         <div class="app-layout">
-          ${appHeader({
-            badge: 'beta',
-            onSettings: (h) => {
-              h.showUpload = false;
-              toggleSettings();
-            },
-            center: hasData ? individualSelector(host, list, handleSwitch) : html``,
-            trailing: hasData
-              ? html`<button
-                  class="app-header__link ${showPanel ? 'app-header__link--active' : ''}"
-                  onclick="${closeOrToggleUpload}"
-                  title="Add individual"
-                >
-                  <app-icon name="user-plus"></app-icon>
-                </button>`
-              : html``,
-          })}
-          ${hasData ? appSubHeader(host) : html``}
+          <div class="app-layout__sticky-top">
+            ${appHeader({
+              badge: 'beta',
+              onSettings: (h) => {
+                h.showUpload = false;
+                toggleSettings();
+              },
+              center: hasData ? individualSelector(host, list, handleSwitch) : html``,
+              trailing: hasData
+                ? html`<button
+                    class="app-header__link ${showPanel ? 'app-header__link--active' : ''}"
+                    onclick="${closeOrToggleUpload}"
+                    title="Add individual"
+                  >
+                    <app-icon name="user-plus"></app-icon>
+                  </button>`
+                : html``,
+            })}
+            ${hasData ? appSubHeader(host) : html``}
+          </div>
           ${showPanel || host.closingUpload ? uploadPanel(host, cancelSetup) : html``}
           <main class="app-layout__content">
             ${hasData ? appContent(host) : uploadContent(host, cancelSetup)}
