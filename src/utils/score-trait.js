@@ -15,6 +15,7 @@ import { loadManifest } from '#utils/manifest.js';
 import { get as storageGet } from '#utils/storage.js';
 import { DATA_BASE } from '#utils/data-url.js';
 import { trackTransfer } from '#utils/transfer-tracker.js';
+import { getScoringSettings } from '#utils/queue-settings.js';
 
 /** @type {Record<string, object>|null} */
 let normCache = null;
@@ -66,10 +67,12 @@ export async function getNormParams() {
  * @returns {Promise<{chrMap: Map<string, string>, cleanup: Function, bytes: number}>}
  */
 async function loadTraitPack(url, traitId) {
+  const t0 = performance.now();
   const resp = await fetch(url);
   if (!resp.ok) throw new Error(`Failed to fetch ${url}: ${resp.status}`);
   const tarBuf = await resp.arrayBuffer();
   const bytes = tarBuf.byteLength;
+  const fetchMs = performance.now() - t0;
   const entries = parseTarBuffer(tarBuf);
   const chrMap = new Map();
   const names = [];
@@ -86,13 +89,22 @@ async function loadTraitPack(url, traitId) {
     for (const n of names) await dropFile(n);
     await new Promise((r) => setTimeout(r, 10));
   };
-  return { chrMap, cleanup, bytes };
+  return { chrMap, cleanup, bytes, fetchMs };
 }
 
 /** @param {string} url @param {object} t @param {Function} [onProgress] */
 export async function scoreUnifiedTrait(url, t, onProgress) {
-  const { chrMap, cleanup, bytes } = await loadTraitPack(url, t.trait_id);
-  trackTransfer(bytes);
+  const { chrMap, cleanup, bytes, fetchMs } = await loadTraitPack(url, t.trait_id);
+  trackTransfer(bytes, fetchMs);
+
+  // Bandwidth throttle: sleep if we downloaded faster than the limit
+  const { bandwidthLimit } = await getScoringSettings();
+  if (bandwidthLimit > 0 && fetchMs > 0) {
+    const limitBytesPerSec = (bandwidthLimit * 1_000_000) / 8;
+    const minMs = (bytes / limitBytesPerSec) * 1000;
+    const sleepMs = minMs - fetchMs;
+    if (sleepMs > 0) await new Promise((r) => setTimeout(r, sleepMs));
+  }
   const onChr = onProgress
     ? (done, total, matched) =>
         onProgress({ traitName: t.name, chrDone: done, chrTotal: total, variantsSoFar: matched })

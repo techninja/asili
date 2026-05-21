@@ -10,6 +10,7 @@ import {
   rescoreAll,
   handleAutoScore,
   handleMemory,
+  handleBandwidth,
   handleAncestry,
   handleUnits,
 } from './drawer-handlers.js';
@@ -79,6 +80,25 @@ export function scoringSection(host) {
         </select>
       </label>
       <label class="settings-drawer__row">
+        <span>Bandwidth limit</span>
+        <select onchange="${handleBandwidth}">
+          <option value="0" selected="${!host.bandwidthLimit}">Unlimited</option>
+          <option value="500" selected="${host.bandwidthLimit === 500}">500 Mbps</option>
+          <option value="100" selected="${host.bandwidthLimit === 100}">100 Mbps</option>
+          <option value="50" selected="${host.bandwidthLimit === 50}">50 Mbps</option>
+          <option value="25" selected="${host.bandwidthLimit === 25}">25 Mbps</option>
+          <option value="10" selected="${host.bandwidthLimit === 10}">10 Mbps</option>
+          <option value="5" selected="${host.bandwidthLimit === 5}">5 Mbps</option>
+        </select>
+      </label>
+      <label class="settings-drawer__row">
+        <span>Units</span>
+        <select onchange="${handleUnits}">
+          <option value="metric" selected="${host.units === 'metric'}">Metric</option>
+          <option value="imperial" selected="${host.units === 'imperial'}">Imperial</option>
+        </select>
+      </label>
+      <label class="settings-drawer__row">
         <span>Ancestry normalization</span>
         <select onchange="${handleAncestry}">
           <option value="" selected="${!host.ancestry}">Global (default)</option>
@@ -90,13 +110,6 @@ export function scoringSection(host) {
           <option value="AMR" selected="${host.ancestry === 'AMR'}">American</option>
           <option value="ASJ" selected="${host.ancestry === 'ASJ'}">Ashkenazi</option>
           <option value="MID" selected="${host.ancestry === 'MID'}">Middle Eastern</option>
-        </select>
-      </label>
-      <label class="settings-drawer__row">
-        <span>Units</span>
-        <select onchange="${handleUnits}">
-          <option value="metric" selected="${host.units === 'metric'}">Metric</option>
-          <option value="imperial" selected="${host.units === 'imperial'}">Imperial</option>
         </select>
       </label>
       <p class="settings-drawer__note">

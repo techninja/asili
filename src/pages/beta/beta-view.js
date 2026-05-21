@@ -62,7 +62,18 @@ export default define({
       return () => clearInterval(iv);
     },
   },
-  scoringScreen: { value: false, connect: () => {} },
+  scoringScreen: {
+    value: false,
+    connect: (host) => {
+      const onFsChange = () => {
+        if (!document.fullscreenElement && host.scoringScreen) {
+          host.scoringScreen = false;
+        }
+      };
+      document.addEventListener('fullscreenchange', onFsChange);
+      return () => document.removeEventListener('fullscreenchange', onFsChange);
+    },
+  },
   showUpload: { value: false, connect: () => {} },
   closingUpload: false,
   activeTab: {

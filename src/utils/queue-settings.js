@@ -15,7 +15,7 @@ const DEFAULT_WORKERS = 1;
 export async function getScoringSettings() {
   await idb.openDB();
   const s = await idb.get('settings', 'scoringPrefs');
-  return { memoryLimit: '2GB', workerCount: DEFAULT_WORKERS, autoScore: true, ...s };
+  return { memoryLimit: '2GB', workerCount: DEFAULT_WORKERS, autoScore: true, bandwidthLimit: 0, ...s };
 }
 
 /**

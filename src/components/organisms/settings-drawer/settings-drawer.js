@@ -22,6 +22,7 @@ export default define({
   storageInfo: '',
   autoScore: true,
   memoryLimit: '2GB',
+  bandwidthLimit: 0,
   ancestry: '',
   units: {
     value: 'metric',

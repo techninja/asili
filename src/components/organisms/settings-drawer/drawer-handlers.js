@@ -26,6 +26,7 @@ export async function loadData(host) {
   const prefs = await getScoringSettings();
   host.autoScore = prefs.autoScore;
   host.memoryLimit = prefs.memoryLimit;
+  host.bandwidthLimit = prefs.bandwidthLimit || 0;
   host.ancestry = get('ancestry') || '';
 
   // Defer heavy storage calculation so the drawer renders immediately
@@ -80,6 +81,12 @@ export async function handleAutoScore(host, e) {
 export async function handleMemory(host, e) {
   host.memoryLimit = /** @type {HTMLSelectElement} */ (e.target).value;
   await saveScoringSettings({ memoryLimit: host.memoryLimit });
+}
+
+/** @param {object} host @param {Event} e */
+export async function handleBandwidth(host, e) {
+  host.bandwidthLimit = Number(/** @type {HTMLSelectElement} */ (e.target).value);
+  await saveScoringSettings({ bandwidthLimit: host.bandwidthLimit });
 }
 
 /** @param {object} host @param {Event} e */

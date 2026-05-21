@@ -12,7 +12,6 @@ const RATE_ALPHA = 0.3;
 
 /** @type {Record<string, number>} */
 let cache = null;
-/** @type {number} */ let lastBytes = 0;
 /** @type {number} */ let lastTs = 0;
 /** @type {number} */ let smoothedRate = 0;
 
@@ -26,8 +25,9 @@ async function load() {
 /**
  * Add bytes to the current scoring individual's tally.
  * @param {number} bytes
+ * @param {number} [fetchMs] - duration of the fetch in ms (for first-sample rate)
  */
-export async function trackTransfer(bytes) {
+export async function trackTransfer(bytes, fetchMs) {
   const id = S.currentScoringId;
   if (!id || !bytes) return;
   const data = await load();
@@ -36,18 +36,22 @@ export async function trackTransfer(bytes) {
 
   // EMA transfer rate
   const now = Date.now();
+  let dt;
   if (lastTs > 0) {
-    const dt = (now - lastTs) / 1000;
-    if (dt > 0.1) {
-      const instant = bytes / dt;
-      smoothedRate = smoothedRate > 0
-        ? smoothedRate * (1 - RATE_ALPHA) + instant * RATE_ALPHA
-        : instant;
-    }
+    dt = (now - lastTs) / 1000;
+  } else if (fetchMs > 0) {
+    // First sample — use the fetch duration itself
+    dt = fetchMs / 1000;
+  }
+  if (dt > 0) {
+    const instant = bytes / dt;
+    smoothedRate = smoothedRate > 0
+      ? smoothedRate * (1 - RATE_ALPHA) + instant * RATE_ALPHA
+      : instant;
   }
   lastTs = now;
-  lastBytes = bytes;
   S.transferRate = smoothedRate;
+  S._transferLastTs = now;
 
   notify();
   idb.put('settings', IDB_KEY, data);
@@ -61,6 +65,9 @@ export async function clearTransfer(id) {
   const data = await load();
   delete data[id];
   S.transferBytes = data;
+  smoothedRate = 0;
+  lastTs = 0;
+  S.transferRate = 0;
   idb.put('settings', IDB_KEY, data);
 }
 

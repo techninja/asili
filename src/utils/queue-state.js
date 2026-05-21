@@ -27,6 +27,8 @@ export const S = {
   transferBytes: {},
   /** Smoothed transfer rate in bytes/sec */
   transferRate: 0,
+  /** Timestamp of last transfer update */
+  _transferLastTs: 0,
   paused: false,
   running: false,
   startMs: 0,

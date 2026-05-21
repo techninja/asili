@@ -5,6 +5,20 @@
 
 import { S } from './queue-state.js';
 
+/** @returns {number} */
+function getCurrentRate() {
+  if (!S._transferLastTs || !S.transferRate) return 0;
+  // Don't decay while actively scoring — gaps between fetches are normal
+  if (S.running) return S.transferRate;
+  const age = Date.now() - S._transferLastTs;
+  const STALE_MS = 30_000;
+  if (age > STALE_MS) {
+    const decay = Math.max(0, 1 - (age - STALE_MS) / STALE_MS);
+    return S.transferRate * decay;
+  }
+  return S.transferRate;
+}
+
 /** @param {Map<string, Set<string>>} m */
 function sum(m) {
   let n = 0;
@@ -78,7 +92,7 @@ export function getState() {
     currentChrTotal: S.currentChrTotal,
     subProgress: S.subProgress,
     transferBytes: S.transferBytes,
-    transferRate: S.transferRate,
+    transferRate: getCurrentRate(),
     totalVariantsScored: totalLive,
     rate: smoothedRate,
     etaSeconds: smoothedEta > 0 ? Math.round(pending * smoothedEta) : 0,

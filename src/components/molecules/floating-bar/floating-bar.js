@@ -138,14 +138,13 @@ function scoringContent(host, state, status) {
   // Paused
   if (status === 'paused') {
     return html`<div class="floating-bar__section floating-bar__section--scoring">
-      <div class="floating-bar__spinner-wrap floating-bar__spinner-wrap--paused">
-        <span class="floating-bar__spinner"><app-icon name="badge"></app-icon></span>
-        <span class="floating-bar__icon floating-bar__icon--muted"><app-icon name="pause"></app-icon></span>
-      </div>
+      <span class="floating-bar__status-icon" title="Paused">
+        <app-icon name="octagon-pause"></app-icon>
+      </span>
       <button class="floating-bar__stats floating-bar__stats--tappable" onclick="${(h) => toggleExpand(h)}">
         ${state.done}/${state.total} scored${state.errors ? html` · ${state.errors} failed` : html``}
       </button>
-      <button class="floating-bar__action" onclick="${() => handleResume()}" title="Resume">
+      <button class="floating-bar__action floating-bar__action--resume" onclick="${() => handleResume()}" title="Resume">
         <app-icon name="play"></app-icon>
       </button>
     </div>`;
@@ -167,21 +166,22 @@ function scoringContent(host, state, status) {
           <app-icon name="pause"></app-icon>
         </button>
       </div>
-      <div class="floating-bar__progress">
+      <div class="floating-bar__tracks">
         <div class="floating-bar__track">
           <div class="floating-bar__fill" style="${{ width: `${pct}%` }}"></div>
         </div>
         <div class="floating-bar__subtrack">
           <div class="floating-bar__subfill" style="${{ width: `${subPct}%` }}"></div>
         </div>
-        <button class="floating-bar__stats floating-bar__stats--tappable" onclick="${(h) => toggleExpand(h)}">
-          ${trait ? html`${trait} · ` : html``}${state.done}/${state.total}${rate
-            ? html` · ${rate}`
-            : html``}${dlRate
-            ? html` · ${dlRate}`
-            : html``}${eta ? html` · ${eta}` : html``}
-        </button>
       </div>
+      <button class="floating-bar__stats floating-bar__stats--tappable" onclick="${(h) => toggleExpand(h)}">
+        <span class="floating-bar__stats-line">${trait ? html`${trait}` : html`Scoring`}</span>
+        <span class="floating-bar__stats-line">${state.done}/${state.total}${rate
+          ? html` · ${rate}`
+          : html``}${dlRate
+          ? html` · ${dlRate}`
+          : html``}${eta ? html` · ${eta}` : html``}</span>
+      </button>
       <button
         class="floating-bar__action"
         onclick="${(h) => dispatch(h, 'focus-mode', { bubbles: true })}"

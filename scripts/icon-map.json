@@ -215,6 +215,7 @@
   "scan-heart": "scan-heart",
   "play": "play",
   "pause": "pause",
+  "octagon-pause": "octagon-pause",
   "badge": "badge",
   "circle-check-big": "check-done"
 }
