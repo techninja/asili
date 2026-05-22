@@ -13,17 +13,17 @@ export function traitShowcase() {
     <section class="beta-hero__showcase">
       <h2 class="beta-hero__section-title">What you'll discover</h2>
       <div class="beta-hero__trait-grid">
-        ${tp('📊', 'Body Mass Index', '80M+ variants analyzed')}
-        ${tp('📏', 'Height', 'Predicted vs actual comparison')}
-        ${tp('☕', 'Coffee Consumption', 'How much is in your genes?')}
-        ${tp('🌅', 'Chronotype', 'Morning lark or night owl')}
-        ${tp('🔥', 'Basal Metabolic Rate', 'Your genetic metabolism baseline')}
-        ${tp('🩸', 'Cholesterol & Lipids', 'HDL, triglycerides, and more')}
-        ${tp('👨\u200d🦲', 'Male Pattern Baldness', 'What does your DNA predict?')}
-        ${tp('☀️', 'Vitamin D Level', 'Genetic absorption tendency')}
+        ${tp('📊', 'Body Mass Index', 'Genetic weight tendency', 'EFO_0004340')}
+        ${tp('📏', 'Height', 'Predicted vs actual comparison', 'OBA_VT0001253')}
+        ${tp('☕', 'Coffee Consumption', 'How much is in your genes?', 'EFO_0006781')}
+        ${tp('🌅', 'Chronotype', 'Morning lark or night owl', 'EFO_0008328')}
+        ${tp('👨\u200d🦲', 'Male Pattern Baldness', 'What does your DNA predict?', 'EFO_0007825')}
+        ${tp('☀️', 'Vitamin D', 'Genetic absorption tendency', 'OBA_1000968')}
+        ${tp('🧠', 'Cognitive Ability', 'Genetic cognitive baseline', 'EFO_0004337')}
+        ${tp('💓', 'Resting Heart Rate', 'Your cardiovascular genetics', 'OBA_1001087')}
       </div>
       <p class="beta-hero__trait-count">
-        44 traits in the public version ·
+        64 traits in the beta ·
         <a href="https://asili.dev/diy" target="_blank" rel="noopener">Self-host for 648+</a>
       </p>
     </section>
@@ -33,15 +33,15 @@ export function traitShowcase() {
 /**
  *
  */
-function tp(emoji, name, detail) {
+function tp(emoji, name, detail, traitId) {
   return html`
-    <div class="beta-hero__trait-preview">
+    <a href="/beta/trait/${traitId}" class="beta-hero__trait-preview">
       <span class="beta-hero__trait-emoji">${emoji}</span>
       <div>
         <strong>${name}</strong>
         <span class="beta-hero__trait-detail">${detail}</span>
       </div>
-    </div>
+    </a>
   `;
 }
 

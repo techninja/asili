@@ -20,9 +20,8 @@ export function heroContent(host, cancelFn) {
       <section class="beta-hero__intro">
         <h1 class="beta-hero__title">Discover what your DNA says about you</h1>
         <p class="beta-hero__sub">
-          Explore hundreds of polygenic risk scores — from heart disease and diabetes to caffeine
-          metabolism and sleep patterns. All processing happens on your device. We never see your
-          data.
+          Explore polygenic scores for 64 traits like BMI, height, cholesterol, caffeine metabolism,
+          and chronotype. All processing happens on your device. We never see your data.
         </p>
       </section>
 

@@ -23,6 +23,15 @@
   border-radius: var(--radius-md);
   background: var(--color-surface-alt);
   border: 1px solid var(--color-border);
+  text-decoration: none;
+  color: inherit;
+  transition: border-color 0.15s, background 0.15s;
+}
+
+.beta-hero__trait-preview:hover {
+  border-color: var(--color-primary);
+  background: color-mix(in srgb, var(--color-primary) 8%, var(--color-surface-alt));
+  text-decoration: none;
 }
 
 .beta-hero__trait-emoji {
