@@ -114,9 +114,9 @@ export default define({
                   </button>`
                 : html``,
             })}
+            ${showPanel || host.closingUpload ? uploadPanel(host, cancelSetup) : html``}
             ${hasData ? appSubHeader(host) : html``}
           </div>
-          ${showPanel || host.closingUpload ? uploadPanel(host, cancelSetup) : html``}
           <main class="app-layout__content">
             ${hasData ? appContent(host) : uploadContent(host, cancelSetup)}
           </main>
