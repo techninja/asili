@@ -21,7 +21,9 @@ export async function handleResume() {
 
 /** Request file permissions or re-upload, then restart. */
 export async function handleResumePermission() {
+  console.log('[permission] attempting restore...');
   const restored = await restoreAll(true);
+  console.log('[permission] restored:', restored.size, 'handles');
   for (const [id, file] of restored) queue.registerImputedFile(id, file);
   if (restored.size > 0) {
     remove('paused');
@@ -31,8 +33,14 @@ export async function handleResumePermission() {
   }
   // No persisted handles — open file picker for all needed individuals
   const needIds = queue.getImputedNeedingReupload();
+  console.log('[permission] need reupload:', needIds.length);
   if (needIds.length === 0) return;
   try {
+    if (!window.showOpenFilePicker) {
+      console.warn('[permission] showOpenFilePicker not supported');
+      alert('File access not available on this browser. Please re-upload your .asili file.');
+      return;
+    }
     // @ts-ignore — showOpenFilePicker is Chrome-only
     const handles = await window.showOpenFilePicker({
       types: [{ accept: { 'application/octet-stream': ['.asili'] } }],
@@ -46,8 +54,8 @@ export async function handleResumePermission() {
     remove('paused');
     await queue.scanAndQueue();
     await queue.start();
-  } catch {
-    /* user cancelled picker */
+  } catch (e) {
+    console.warn('[permission] picker cancelled or failed:', e);
   }
 }
 

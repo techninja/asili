@@ -26,11 +26,14 @@ async function handleDrop(host, e) {
 
 /** @param {object & HTMLElement} host */
 async function handleClick(host) {
-  if (host.disabled) return;
+  if (host.disabled || host._picking) return;
+  host._picking = true;
+  console.log('[upload-zone] handleClick triggered');
   // Prefer File System Access API — returns a persistent handle
   // @ts-ignore — showOpenFilePicker is Chrome-only
   if (window.showOpenFilePicker) {
     try {
+      console.log('[upload-zone] opening showOpenFilePicker...');
       // @ts-ignore
       const [fh] = await window.showOpenFilePicker({
         types: [
@@ -41,15 +44,18 @@ async function handleClick(host) {
         ],
       });
       const file = await fh.getFile();
+      console.log('[upload-zone] file selected:', file.name, file.size);
       dispatch(host, 'file-selected', { detail: { file, handle: fh }, bubbles: true });
-      return;
-    } catch {
-      /* user cancelled — fall through */
+    } catch (e) {
+      console.log('[upload-zone] picker cancelled or error:', e);
     }
+    host._picking = false;
     return;
   }
   // Fallback: trigger hidden file input
+  console.log('[upload-zone] fallback: hidden input click');
   host.querySelector('.upload-zone__input')?.click();
+  host._picking = false;
 }
 
 /** @param {object & HTMLElement} host */
@@ -97,8 +103,7 @@ export default define({
           accept=".txt,.csv,.tsv,.vcf,.zip,.parquet,.asili"
           class="upload-zone__input"
           onchange="${handleInput}"
-          disabled="${disabled || HAS_PICKER}"
-          style="${{ pointerEvents: HAS_PICKER ? 'none' : '' }}"
+          onclick="${(host, e) => e.stopPropagation()}"
         />
       </div>
     `,

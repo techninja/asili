@@ -119,7 +119,6 @@ async function loadTraitPack(url, traitId) {
     return loadTraitPackFull(url, traitId, resp, t0);
   }
 
-  console.log(`[pack] ${traitId}: ${entries.length} chr parquets indexed via Range`);
 
   const chrEntries = entries.filter(e => e.name.endsWith('.parquet'));
   const chrMap = new Map();
@@ -135,7 +134,6 @@ async function loadTraitPack(url, traitId) {
     const e = chrEntries[i];
     const chrNum = e.name.match(/chr(\d+)/)?.[1] || e.name.replace(/[^0-9]/g, '');
     const rangeEnd = e.offset + e.size - 1;
-    console.log(`[pack] ${traitId} chr${chrNum}: ${(e.size / 1024).toFixed(0)}KB`);
 
     // Update progress: downloading chr N of total
     S.currentChrDone = i;
@@ -194,7 +192,6 @@ async function loadTraitPack(url, traitId) {
     await new Promise((r) => setTimeout(r, 10));
   };
   const fetchMs = performance.now() - t0;
-  console.log(`[pack] ${traitId}: ${(totalBytes / 1e6).toFixed(1)}MB in ${(fetchMs / 1000).toFixed(1)}s (${chrEntries.length} chr)`);
   return { chrMap, cleanup, bytes: totalBytes, fetchMs };
 }
 

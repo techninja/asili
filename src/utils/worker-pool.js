@@ -15,6 +15,7 @@ import { loadGenotypedDNA, dropGenotypedDNA } from '/packages/core/src/duckdb/ge
 import { loadUnifiedDNA, resetUnifiedDNA } from '/packages/core/src/duckdb/unified-source.js';
 import { scoreUnifiedTrait, parseTar } from './score-trait.js';
 import { loadLiftover, dropLiftover } from './liftover.js';
+import { isDev } from '#utils/data-url.js';
 
 /** @type {boolean} */ let dbReady = false;
 /** @type {string[]|null} */ let genotypedTables = null;
@@ -28,8 +29,6 @@ function createSession() {
 /** @param {WorkerSession} s */
 export async function initSession(s) {
   if (!dbReady) {
-    const isDev =
-      window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
     const duckdbBase = isDev
       ? `${window.location.origin}/deps/duckdb`
       : 'https://data.asili.dev/deps/duckdb';

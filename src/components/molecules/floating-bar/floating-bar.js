@@ -11,6 +11,8 @@ import { html, define, dispatch } from 'hybrids';
 import '#atoms/app-icon/app-icon.js';
 import { subscribe, getState } from '#utils/queue-state.js';
 import { handlePause, handleResume } from '#pages/beta/scoring-controller.js';
+import { handleResumePermission } from '#pages/beta/scoring-actions.js';
+import { getImputedNeedingReupload } from '#utils/scoring-queue.js';
 import * as idb from '/packages/core/src/data-layer/idb.js';
 
 const ACTIVE_STATES = new Set(['scoring', 'paused', 'init', 'blocked']);
@@ -75,7 +77,13 @@ export default define({
     value: (host) => {
       void host._tick;
       const state = getState();
-      const status = state.paused ? 'paused' : state.running ? 'scoring' : '';
+      const status = state.paused
+        ? 'paused'
+        : state.running
+          ? 'scoring'
+          : state.pending > 0 && !state.running
+            ? 'blocked'
+            : '';
       const hasError = !state.running && !state.paused && state.errors > 0 && state.pending === 0;
       const hasScoring = ACTIVE_STATES.has(status);
       const hasPager = host.prevHref || host.nextHref;
@@ -152,6 +160,22 @@ function scoringContent(host, state, status) {
       >
         ${state.done}/${state.total}
         scored${state.errors ? html` · ${state.errors} failed` : html``}
+      </button>
+    </div>`;
+  }
+
+  // Blocked — imputed files need permission
+  if (status === 'blocked') {
+    const need = getImputedNeedingReupload().length;
+    return html`<div class="floating-bar__section floating-bar__section--scoring">
+      <span class="floating-bar__status-icon" title="Waiting for file access">
+        <app-icon name="lock"></app-icon>
+      </span>
+      <span class="floating-bar__stats">
+        ${need} imputed file${need !== 1 ? 's' : ''} need${need === 1 ? 's' : ''} access
+      </span>
+      <button class="floating-bar__action floating-bar__action--resume" onclick="${() => handleResumePermission()}" title="Grant access">
+        <app-icon name="unlock"></app-icon>
       </button>
     </div>`;
   }

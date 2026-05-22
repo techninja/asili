@@ -15,6 +15,11 @@ export { uploadPanel } from './beta-upload-panel.js';
 
 /** @param {object} host @param {Array<object>} list @param {Function} switchFn */
 export function individualSelector(host, list, switchFn) {
+  // Single individual: compact inline display
+  if (list.length === 1) {
+    const ind = list[0];
+    return html`<span class="beta-view__ind-single">${ind.emoji} ${ind.name}</span>`;
+  }
   return html`
     <div class="beta-view__selector">
       ${list.map(

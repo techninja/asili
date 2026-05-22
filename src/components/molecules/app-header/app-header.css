@@ -90,6 +90,12 @@
     flex-basis: 100%;
   }
 
+  .app-header__center:has(.beta-view__ind-single) {
+    order: unset;
+    flex-basis: auto;
+    flex: 0;
+  }
+
   .app-header__center:empty,
   .app-header__center:not(:has(*)) {
     display: none;
