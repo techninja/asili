@@ -67,6 +67,53 @@ export async function getNormParams() {
  * @param {string} url
  * @returns {Promise<Array<{name: string, offset: number, size: number}>>}
  */
+/**
+ * Fetch a byte range with retry on transient network errors.
+ * @param {string} url
+ * @param {number} start
+ * @param {number} end
+ * @param {number} [retries=3]
+ * @returns {Promise<ArrayBuffer>}
+ */
+async function fetchWithRetry(url, start, end, retries = 3) {
+  for (let attempt = 0; attempt <= retries; attempt++) {
+    try {
+      const resp = await fetch(url, { headers: { Range: `bytes=${start}-${end}` } });
+      if (!resp.ok && resp.status !== 206) throw new Error(`HTTP ${resp.status}`);
+      if (resp.body) {
+        const reader = resp.body.getReader();
+        const chunks = [];
+        let received = 0;
+        while (true) {
+          const { done, value } = await reader.read();
+          if (done) break;
+          chunks.push(value);
+          received += value.byteLength;
+          trackTransfer(value.byteLength);
+        }
+        const combined = new Uint8Array(received);
+        let offset = 0;
+        for (const chunk of chunks) {
+          combined.set(chunk, offset);
+          offset += chunk.byteLength;
+        }
+        return combined.buffer;
+      }
+      const buf = await resp.arrayBuffer();
+      trackTransfer(buf.byteLength);
+      return buf;
+    } catch (e) {
+      if (attempt < retries) {
+        const delay = 1000 * (attempt + 1);
+        console.warn(`[fetch] retry ${attempt + 1}/${retries} for ${url} (${e.message}), waiting ${delay}ms`);
+        await new Promise((r) => setTimeout(r, delay));
+      } else {
+        throw e;
+      }
+    }
+  }
+}
+
 async function fetchTarIndex(url) {
   // First, get the manifest (always first entry) to know total structure
   const firstResp = await fetch(url, { headers: { Range: 'bytes=0-511' } });
@@ -142,33 +189,7 @@ async function loadTraitPack(url, traitId) {
     notify();
 
     const chrT0 = performance.now();
-    const chrResp = await fetch(url, {
-      headers: { Range: `bytes=${e.offset}-${rangeEnd}` },
-    });
-
-    let chrBuf;
-    if (chrResp.body) {
-      const reader = chrResp.body.getReader();
-      const chunks = [];
-      let received = 0;
-      while (true) {
-        const { done, value } = await reader.read();
-        if (done) break;
-        chunks.push(value);
-        received += value.byteLength;
-        trackTransfer(value.byteLength);
-      }
-      const combined = new Uint8Array(received);
-      let offset = 0;
-      for (const chunk of chunks) {
-        combined.set(chunk, offset);
-        offset += chunk.byteLength;
-      }
-      chrBuf = combined.buffer;
-    } else {
-      chrBuf = await chrResp.arrayBuffer();
-      trackTransfer(chrBuf.byteLength);
-    }
+    const chrBuf = await fetchWithRetry(url, e.offset, rangeEnd);
 
     // Per-chromosome throttle
     if (limitBytesPerSec > 0) {
