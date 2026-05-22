@@ -46,6 +46,22 @@ for (const f of detailFiles) {
 }
 console.log(`  ✓ ${detailFiles.length} detail files\n`);
 
+// DuckDB WASM deps — with correct MIME types
+const DEPS_DIR = resolve(import.meta.dirname, '../src/deps/duckdb');
+const MIME_MAP = {
+  '.js': 'application/javascript',
+  '.mjs': 'application/javascript',
+  '.wasm': 'application/wasm',
+};
+console.log('🦆 DuckDB WASM deps...');
+const depFiles = readdirSync(DEPS_DIR);
+for (const f of depFiles) {
+  const ext = f.slice(f.lastIndexOf('.'));
+  const ct = MIME_MAP[ext] || 'application/octet-stream';
+  up(`${DEPS_DIR}/${f}`, `deps/duckdb/${f}`, ct);
+}
+console.log(`  ✓ ${depFiles.length} dep files\n`);
+
 if (smallOnly) {
   console.log('✅ Small files deployed (--small mode)');
   process.exit(0);
