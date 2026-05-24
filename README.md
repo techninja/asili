@@ -55,6 +55,8 @@ your device.
 - **Settings** — export/import/clear-all data, ancestry normalization, metric/imperial units
 - **Zero data collection** — no analytics, no cookies, no tracking
 - **IndexedDB persistence** — results survive page reloads
+- **Mobile-first** — responsive layout, touch-sized controls, bandwidth throttling for mobile data
+- **Network resilience** — per-chromosome Range requests with automatic retry on transient errors
 
 ## Architecture
 
@@ -91,9 +93,48 @@ src/
 ```bash
 pnpm install
 pnpm run dev          # Start dev server
-pnpm test             # Run browser tests (web-test-runner)
-node --test           # Run node tests
+pnpm test             # Run all tests (node + browser)
+pnpm run test:node    # Run 185 node tests
+pnpm run test:browser # Run browser component tests
 ```
+
+## Local Development
+
+This repo is the **browser scoring app**. It needs trait data to score against.
+Data processing lives in [asili-lab](https://github.com/techninja/asili-lab) —
+see its README for pipeline setup and data generation.
+
+### Setup
+
+1. Clone both repos side by side:
+   ```
+   ~/web/asili/         # this repo (frontend)
+   ~/web/asili-lab/     # data pipeline
+   ```
+
+2. Copy the env example and fill in your values (only needed for R2 deploy):
+   ```bash
+   cp .env.example .env.local
+   ```
+
+3. Symlink the data output into the dev server's static path:
+   ```bash
+   ln -s ../asili-lab/data_out src/data
+   ```
+
+4. Start the dev server:
+   ```bash
+   pnpm run dev
+   ```
+   The app serves at `http://localhost:4242`. The dev server detects
+   localhost/LAN hostnames and serves data from `/data` (the symlink)
+   instead of the production CDN.
+
+### LAN Testing (mobile)
+
+To test on a phone on the same network, access via your machine's hostname
+(e.g. `http://mypc:4242`). Add your hostname to the `isDev` list in
+`src/utils/data-url.js` so it uses local data instead of production.
 
 ## Privacy
 

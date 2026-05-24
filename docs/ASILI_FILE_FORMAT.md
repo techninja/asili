@@ -171,22 +171,35 @@ See `ALLELE_KEY.md` in asili-lab for the full derivation.
 ## Reading in the Browser
 
 ```js
-// 1. Fetch the tar
+// Modern: per-chromosome Range requests (used in production)
+const entries = await fetchTarIndex(url); // hop through 512-byte headers
+for (const e of entries) {
+  if (!e.name.endsWith('.parquet')) continue;
+  const resp = await fetch(url, {
+    headers: { Range: `bytes=${e.offset}-${e.offset + e.size - 1}` }
+  });
+  const buf = await resp.arrayBuffer();
+  await db.registerFileBuffer(e.name, new Uint8Array(buf));
+  // Score this chromosome immediately, or batch all then score
+}
+
+// Fallback: full download (when Range not supported)
 const resp = await fetch('/data/trait.asili');
 const buf = await resp.arrayBuffer();
-
-// 2. Parse tar entries (512-byte headers)
 const entries = parseTar(buf);
-
-// 3. Register each parquet in DuckDB WASM
 for (const e of entries) {
   if (!e.name.endsWith('.parquet')) continue;
   await db.registerFileBuffer(e.name, buf.slice(e.offset, e.offset + e.size));
 }
-
-// 4. Query with SQL
 await conn.query("SELECT * FROM 'chr1.parquet' LIMIT 10");
 ```
+
+The Range request approach fetches each chromosome individually (~1-30MB each)
+rather than downloading the entire archive (50-400MB). This enables:
+- Real-time download progress per chromosome
+- Lower peak memory usage
+- Automatic retry on transient network errors
+- Bandwidth throttling per chromosome
 
 ## Design Rationale
 
