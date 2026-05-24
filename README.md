@@ -107,25 +107,30 @@ see its README for pipeline setup and data generation.
 ### Setup
 
 1. Clone both repos side by side:
+
    ```
    ~/web/asili/         # this repo (frontend)
    ~/web/asili-lab/     # data pipeline
    ```
 
 2. Copy the env example and fill in your values (only needed for R2 deploy):
+
    ```bash
    cp .env.example .env.local
    ```
 
 3. Symlink the data output into the dev server's static path:
+
    ```bash
    ln -s ../asili-lab/data_out src/data
    ```
 
 4. Start the dev server:
+
    ```bash
    pnpm run dev
    ```
+
    The app serves at `http://localhost:4242`. The dev server detects
    localhost/LAN hostnames and serves data from `/data` (the symlink)
    instead of the production CDN.

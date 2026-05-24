@@ -1,12 +1,9 @@
 /**
  * Score a single trait from .asili chr packs via unified SQL JOIN.
- * Both genotyped and imputed DNA use the same path — genotyped data
- * is loaded into DuckDB tables by loadGenotypedDNA, imputed data is
- * registered as parquet buffers. scoreUnifiedChrPacks handles both.
+ * Fetching logic lives in score-fetch.js.
  * @module utils/score-trait
  */
 
-import { registerBuffer, dropFile } from '/packages/core/src/duckdb/adapter.js';
 import { scoreUnifiedChrPacks, getChrFiles } from '/packages/core/src/duckdb/unified-source.js';
 import { buildScoredMaps } from '/packages/core/src/duckdb/scored-maps.js';
 import { fetchTopVariants } from '/packages/core/src/duckdb/top-variants.js';
@@ -14,9 +11,9 @@ import { finalize } from '/packages/core/src/scorer.js';
 import { loadManifest } from '#utils/manifest.js';
 import { get as storageGet } from '#utils/storage.js';
 import { DATA_BASE } from '#utils/data-url.js';
-import { trackTransfer } from '#utils/transfer-tracker.js';
-import { getScoringSettings } from '#utils/queue-settings.js';
-import { S, notify } from '#utils/queue-state.js';
+import { loadTraitPack } from '#utils/score-fetch.js';
+
+export { parseTar } from '#utils/score-fetch.js';
 
 /** @type {Record<string, object>|null} */
 let normCache = null;
@@ -37,7 +34,6 @@ export async function getNormParams() {
   } catch (e) {
     console.warn('No pgs_norm_params.json — using theoretical SD', e.message);
   }
-  // Merge R² from manifest PGS metadata
   try {
     const manifest = await loadManifest();
     for (const [id, meta] of Object.entries(manifest.pgs || {})) {
@@ -47,10 +43,9 @@ export async function getNormParams() {
   } catch {
     /* manifest may not have pgs */
   }
-  // Apply ancestry-specific norms if user has selected one
   const ancestry = storageGet('ancestry');
   if (ancestry) {
-    for (const [id, entry] of Object.entries(normCache)) {
+    for (const [_id, entry] of Object.entries(normCache)) {
       const pop = entry.ancestry?.[ancestry];
       if (pop) {
         entry.norm_mean = pop.m;
@@ -61,220 +56,9 @@ export async function getNormParams() {
   return normCache;
 }
 
-/**
- * Parse tar headers by hopping through the archive.
- * Fetches only 512-byte headers, skipping file data.
- * @param {string} url
- * @returns {Promise<Array<{name: string, offset: number, size: number}>>}
- */
-/**
- * Fetch a byte range with retry on transient network errors.
- * @param {string} url
- * @param {number} start
- * @param {number} end
- * @param {number} [retries=3]
- * @returns {Promise<ArrayBuffer>}
- */
-async function fetchWithRetry(url, start, end, retries = 3) {
-  for (let attempt = 0; attempt <= retries; attempt++) {
-    try {
-      const resp = await fetch(url, { headers: { Range: `bytes=${start}-${end}` } });
-      if (!resp.ok && resp.status !== 206) throw new Error(`HTTP ${resp.status}`);
-      if (resp.body) {
-        const reader = resp.body.getReader();
-        const chunks = [];
-        let received = 0;
-        while (true) {
-          const { done, value } = await reader.read();
-          if (done) break;
-          chunks.push(value);
-          received += value.byteLength;
-          trackTransfer(value.byteLength);
-        }
-        const combined = new Uint8Array(received);
-        let offset = 0;
-        for (const chunk of chunks) {
-          combined.set(chunk, offset);
-          offset += chunk.byteLength;
-        }
-        return combined.buffer;
-      }
-      const buf = await resp.arrayBuffer();
-      trackTransfer(buf.byteLength);
-      return buf;
-    } catch (e) {
-      if (attempt < retries) {
-        const delay = 1000 * (attempt + 1);
-        console.warn(`[fetch] retry ${attempt + 1}/${retries} for ${url} (${e.message}), waiting ${delay}ms`);
-        await new Promise((r) => setTimeout(r, delay));
-      } else {
-        throw e;
-      }
-    }
-  }
-}
-
-async function fetchTarIndex(url) {
-  // First, get the manifest (always first entry) to know total structure
-  const firstResp = await fetch(url, { headers: { Range: 'bytes=0-511' } });
-  if (firstResp.status !== 206) return null;
-  
-  const firstHeader = await firstResp.arrayBuffer();
-  const dec = new TextDecoder();
-  const bytes = new Uint8Array(firstHeader);
-  const manifestSize = parseInt(dec.decode(bytes.subarray(124, 136)).replace(/\0/g, '').trim(), 8) || 0;
-  
-  // Now we know where the first file after manifest starts
-  // Walk through headers by computing next header position
-  const entries = [];
-  let off = 0;
-  
-  // We need to hop: read 512-byte header, skip data, repeat
-  // Start with manifest
-  off = 512 + Math.ceil(manifestSize / 512) * 512; // skip manifest data
-  
-  while (true) {
-    const hdrResp = await fetch(url, { headers: { Range: `bytes=${off}-${off + 511}` } });
-    if (hdrResp.status !== 206) break;
-    const hdrBuf = await hdrResp.arrayBuffer();
-    const hdr = new Uint8Array(hdrBuf);
-    const name = dec.decode(hdr.subarray(0, 100)).replace(/\0/g, '').trim();
-    if (!name) break;
-    const size = parseInt(dec.decode(hdr.subarray(124, 136)).replace(/\0/g, '').trim(), 8) || 0;
-    entries.push({ name, offset: off + 512, size });
-    off += 512 + Math.ceil(size / 512) * 512;
-  }
-  
-  return entries;
-}
-
-/**
- * Fetch .asili tar via per-chromosome Range requests.
- * @param {string} url @param {string} traitId
- * @returns {Promise<{chrMap: Map<string, string>, cleanup: Function, bytes: number, fetchMs: number}>}
- */
-async function loadTraitPack(url, traitId) {
-  const t0 = performance.now();
-
-  // Try Range-based loading
-  const entries = await fetchTarIndex(url);
-  
-  if (!entries) {
-    // Fallback: no Range support
-    const resp = await fetch(url);
-    if (!resp.ok) throw new Error(`Failed to fetch ${url}: ${resp.status}`);
-    return loadTraitPackFull(url, traitId, resp, t0);
-  }
-
-
-  const chrEntries = entries.filter(e => e.name.endsWith('.parquet'));
-  const chrMap = new Map();
-  const names = [];
-  const prefix = `t_${traitId}_`;
-  let totalBytes = 0;
-
-  // Fetch and register each chromosome parquet via Range request
-  const { bandwidthLimit } = await getScoringSettings();
-  const limitBytesPerSec = bandwidthLimit > 0 ? (bandwidthLimit * 1_000_000) / 8 : 0;
-
-  for (let i = 0; i < chrEntries.length; i++) {
-    const e = chrEntries[i];
-    const chrNum = e.name.match(/chr(\d+)/)?.[1] || e.name.replace(/[^0-9]/g, '');
-    const rangeEnd = e.offset + e.size - 1;
-
-    // Update progress: downloading chr N of total
-    S.currentChrDone = i;
-    S.currentChrTotal = chrEntries.length;
-    S.subProgress = i / chrEntries.length;
-    notify();
-
-    const chrT0 = performance.now();
-    const chrBuf = await fetchWithRetry(url, e.offset, rangeEnd);
-
-    // Per-chromosome throttle
-    if (limitBytesPerSec > 0) {
-      const chrFetchMs = performance.now() - chrT0;
-      const chrMinMs = (chrBuf.byteLength / limitBytesPerSec) * 1000;
-      const chrSleepMs = chrMinMs - chrFetchMs;
-      if (chrSleepMs > 50) {
-        await new Promise((r) => setTimeout(r, chrSleepMs));
-      }
-    }
-
-    totalBytes += chrBuf.byteLength;
-    const regName = `${prefix}${e.name}`;
-    await registerBuffer(regName, chrBuf);
-    chrMap.set(chrNum, regName);
-    names.push(regName);
-  }
-
-  const cleanup = async () => {
-    for (const n of names) await dropFile(n);
-    await new Promise((r) => setTimeout(r, 10));
-  };
-  const fetchMs = performance.now() - t0;
-  return { chrMap, cleanup, bytes: totalBytes, fetchMs };
-}
-
-/**
- * Fallback: download entire .asili when Range requests aren't supported.
- */
-async function loadTraitPackFull(url, traitId, resp, t0) {
-  let tarBuf;
-  if (resp.body) {
-    const reader = resp.body.getReader();
-    const chunks = [];
-    let received = 0;
-    while (true) {
-      const { done, value } = await reader.read();
-      if (done) break;
-      chunks.push(value);
-      received += value.byteLength;
-      trackTransfer(value.byteLength);
-    }
-    const combined = new Uint8Array(received);
-    let offset = 0;
-    for (const chunk of chunks) {
-      combined.set(chunk, offset);
-      offset += chunk.byteLength;
-    }
-    tarBuf = combined.buffer;
-  } else {
-    tarBuf = await resp.arrayBuffer();
-    trackTransfer(tarBuf.byteLength);
-  }
-
-  const bytes = tarBuf.byteLength;
-  const fetchMs = performance.now() - t0;
-  const entries = parseTarBuffer(tarBuf);
-  const chrMap = new Map();
-  const names = [];
-  const prefix = `t_${traitId}_`;
-  for (const e of entries) {
-    if (!e.name.endsWith('.parquet') || e.size < 100) continue;
-    const chrNum = e.name.match(/chr(\d+)/)?.[1] || e.name.replace(/[^0-9]/g, '');
-    const regName = `${prefix}${e.name}`;
-    await registerBuffer(regName, tarBuf.slice(e.offset, e.offset + e.size));
-    chrMap.set(chrNum, regName);
-    names.push(regName);
-  }
-  const cleanup = async () => {
-    for (const n of names) await dropFile(n);
-    await new Promise((r) => setTimeout(r, 10));
-  };
-  return { chrMap, cleanup, bytes, fetchMs };
-}
-
 /** @param {string} url @param {object} t @param {Function} [onProgress] */
 export async function scoreUnifiedTrait(url, t, onProgress) {
-  const { chrMap, cleanup, bytes, fetchMs } = await loadTraitPack(url, t.trait_id);
-  return await scoreChrPacks(chrMap, cleanup, t, onProgress);
-}
-
-/**
- *
- */
-async function scoreChrPacks(chrMap, cleanup, t, onProgress) {
+  const { chrMap, cleanup } = await loadTraitPack(url, t.trait_id);
   const onChr = onProgress
     ? (done, total, matched) =>
         onProgress({ traitName: t.name, chrDone: done, chrTotal: total, variantsSoFar: matched })
@@ -301,27 +85,4 @@ async function scoreChrPacks(chrMap, cleanup, t, onProgress) {
   } finally {
     await cleanup();
   }
-}
-
-/** @param {ArrayBuffer} buf */
-function parseTarBuffer(buf) {
-  const dec = new TextDecoder();
-  const bytes = new Uint8Array(buf);
-  const entries = [];
-  let off = 0;
-  while (off + 512 <= bytes.length) {
-    const h = bytes.slice(off, off + 512);
-    const name = dec.decode(h.slice(0, 100)).replace(/\0/g, '').trim();
-    if (!name) break;
-    const size = parseInt(dec.decode(h.slice(124, 136)).replace(/\0/g, '').trim(), 8) || 0;
-    entries.push({ name, offset: off + 512, size });
-    off += 512 + Math.ceil(size / 512) * 512;
-  }
-  return entries;
-}
-
-/** @param {File} file */
-export async function parseTar(file) {
-  const buf = await file.arrayBuffer();
-  return parseTarBuffer(buf);
 }

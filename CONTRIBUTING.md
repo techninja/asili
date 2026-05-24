@@ -83,11 +83,13 @@ When `dev` is stable and tested:
 2. Review the diff — this is everything shipping
 3. Merge (squash recommended for clean history)
 4. Tag the release:
+
    ```bash
    git checkout main && git pull
    git tag v1.2.0
    git push origin v1.2.0
    ```
+
 5. The `release.yml` workflow creates a GitHub Release automatically
 6. Write release notes (see `docs/RELEASE_v*.md` for examples)
 
@@ -102,14 +104,17 @@ We use [semver](https://semver.org/):
 ## CI / Automation
 
 Every PR gets:
+
 - ✅ **Node tests** — 185 unit tests (`pnpm run test:node`)
 - ✅ **Spec compliance** — Clearstack file limits, naming, structure
 - ✅ **Lint** — ESLint + Stylelint (warnings, not blocking yet)
 
 Every push to `main` or `dev`:
+
 - 🚀 **Auto-deploy** to Cloudflare Pages
 
 Every version tag (`v*`):
+
 - 📦 **GitHub Release** created with auto-generated notes
 
 ## Code Style
@@ -138,6 +143,7 @@ src/
 ```
 
 Key modules:
+
 - `src/utils/score-trait.js` — Range request streaming, tar parsing, DuckDB scoring
 - `src/utils/queue-state.js` — Global scoring state, pub/sub
 - `src/components/molecules/floating-bar/` — Persistent scoring UI

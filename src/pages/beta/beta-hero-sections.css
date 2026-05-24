@@ -25,7 +25,9 @@
   border: 1px solid var(--color-border);
   text-decoration: none;
   color: inherit;
-  transition: border-color 0.15s, background 0.15s;
+  transition:
+    border-color 0.15s,
+    background 0.15s;
 }
 
 .beta-hero__trait-preview:hover {

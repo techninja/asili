@@ -6,7 +6,8 @@
   "description": "Privacy-first polygenic risk score analysis. All processing happens on your device.",
   "scripts": {
     "test": "node scripts/test.js",
-    "test:node": "node --test 'src/{store,utils}/**/*.test.js' 'packages/**/*.test.js'",
+    "test:node": "node --test 'src/{store,utils}/**/*.test.js' 'packages/core/**/*.test.js'",
+    "test:pipeline": "node --test 'packages/pipeline/**/*.test.js'",
     "test:browser": "npx web-test-runner --config .configs/web-test-runner.config.js",
     "start": "node src/server.js",
     "dev": "node --watch --env-file=.env --env-file=.env.local src/server.js",
@@ -28,7 +29,7 @@
   "author": "techninja (James Todd)",
   "license": "AGPL-3.0-or-later",
   "engines": {
-    "node": ">=24",
+    "node": ">=20",
     "pnpm": ">=9"
   },
   "packageManager": "pnpm@10.33.0+sha512.10568bb4a6afb58c9eb3630da90cc9516417abebd3fabbe6739f0ae795728da1491e9db5a544c76ad8eb7570f5c4bb3d6c637b2cb41bfdcdb47fa823c8649319",
@@ -57,6 +58,9 @@
     "lucide-static": "^1.7.0"
   },
   "pnpm": {
-    "onlyBuiltDependencies": ["esbuild", "workerd"]
+    "onlyBuiltDependencies": ["esbuild", "workerd"],
+    "overrides": {
+      "qs": "6.15.2"
+    }
   }
 }

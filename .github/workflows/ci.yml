@@ -24,7 +24,7 @@ jobs:
       - run: pnpm install --frozen-lockfile
 
       - name: Node tests
-        run: pnpm run test:node
+        run: node --test 'src/{store,utils}/**/*.test.js' 'packages/core/**/*.test.js'
 
       - name: Lint (ESLint)
         run: pnpm exec eslint src/ --max-warnings 0

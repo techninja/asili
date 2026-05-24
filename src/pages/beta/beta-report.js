@@ -52,7 +52,7 @@ export default define({
       const ind = indMap.get(activeId);
       const name = ind ? `${ind.emoji || ''} ${ind.name || ''}`.trim() : '';
       const cats = buildCategorySummary(results, traitCache);
-      const scored = traitCache.filter((t) => results[t.trait_id]?.percentile != null);
+      const scored = traitCache.filter((t) => results[t.trait_id]?.percentile !== null);
       if (!scored.length) {
         return html`<div class="report-tab">
           <div class="report-tab__header">

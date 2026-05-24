@@ -49,4 +49,12 @@ writeFileSync(indexPath, html);
 console.log('→ Creating 404.html for SPA routing');
 cpSync(resolve(DIST, 'index.html'), resolve(DIST, '404.html'));
 
+// Generate per-trait OG pages for link previews
+console.log('→ Generating OG metadata pages...');
+try {
+  execSync('node scripts/build-og.js', { cwd: ROOT, stdio: 'inherit' });
+} catch {
+  console.warn('⚠ OG generation skipped (no manifest)');
+}
+
 console.log('✓ Build complete → dist/');
