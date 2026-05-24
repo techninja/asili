@@ -1,0 +1,83 @@
+@media (width <= 640px) {
+  .floating-bar {
+    bottom: -1px;
+    right: 0;
+    left: 0;
+    max-width: none;
+    border-radius: var(--radius-lg) var(--radius-lg) 0 0;
+    border-bottom: none;
+    padding: var(--space-sm);
+  }
+
+  .floating-bar--expanded {
+    animation: slide-up 0.25s ease;
+  }
+
+  .floating-bar__section--scoring {
+    display: grid;
+    grid-template: 'tracks tracks  tracks' auto 'pause  stats   actions' auto / auto 1fr auto;
+    align-items: center;
+    gap: var(--space-xs) var(--space-sm);
+  }
+
+  /* Paused: no progress wrapper, collapse to single row */
+  .floating-bar__section--scoring:not(:has(.floating-bar__progress)) {
+    grid-template-rows: auto;
+    grid-template-areas: 'pause stats actions';
+  }
+
+  /* On mobile, break out of the progress wrapper */
+  .floating-bar__section--scoring .floating-bar__progress {
+    display: contents;
+  }
+
+  .floating-bar__section--scoring .floating-bar__spinner-wrap,
+  .floating-bar__section--scoring .floating-bar__status-icon {
+    grid-area: pause;
+    width: 2.75rem;
+    height: 2.75rem;
+  }
+
+  .floating-bar__section--scoring .floating-bar__tracks {
+    grid-area: tracks;
+  }
+
+  .floating-bar__section--scoring .floating-bar__stats {
+    grid-area: stats;
+    display: flex;
+    flex-direction: column;
+    white-space: nowrap;
+    overflow: hidden;
+  }
+
+  .floating-bar__section--scoring .floating-bar__action:last-of-type {
+    grid-area: actions;
+  }
+
+  .floating-bar__action,
+  .floating-bar__btn {
+    width: 2.75rem;
+    height: 2.75rem;
+    font-size: 1.25rem;
+  }
+
+  .floating-bar__spinner .icon,
+  .floating-bar__spinner .icon svg {
+    width: 3rem;
+    height: 3rem;
+  }
+
+  .floating-bar__stats-line + .floating-bar__stats-line::before {
+    content: none;
+  }
+
+  @keyframes slide-up {
+    from {
+      transform: translateY(100%);
+    }
+
+    to {
+      transform: translateY(0);
+    }
+  }
+}

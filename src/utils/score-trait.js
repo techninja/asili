@@ -40,12 +40,17 @@ export async function getNormParams() {
       if (!normCache[id]) normCache[id] = {};
       if (meta.r2) normCache[id].performance_weight = meta.r2;
     }
-  } catch { /* manifest may not have pgs */ }
+  } catch {
+    /* manifest may not have pgs */
+  }
   const ancestry = storageGet('ancestry');
   if (ancestry) {
     for (const [_id, entry] of Object.entries(normCache)) {
       const pop = entry.ancestry?.[ancestry];
-      if (pop) { entry.norm_mean = pop.m; entry.norm_sd = pop.s; }
+      if (pop) {
+        entry.norm_mean = pop.m;
+        entry.norm_sd = pop.s;
+      }
     }
   }
   return normCache;
@@ -72,7 +77,9 @@ export async function scoreUnifiedTrait(url, t, onProgress) {
         if (result.pgsDetails[result.bestPGS]) {
           result.pgsDetails[result.bestPGS].topVariants = tv;
         }
-      } catch (e) { console.warn('topVariants:', e.message); }
+      } catch (e) {
+        console.warn('topVariants:', e.message);
+      }
     }
     return result;
   } finally {

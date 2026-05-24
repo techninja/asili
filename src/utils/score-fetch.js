@@ -2,15 +2,17 @@
  * Trait pack fetching — Range requests, tar parsing, retry, throttle.
  * @module utils/score-fetch
  */
-
 import { registerBuffer, dropFile } from '/packages/core/src/duckdb/adapter.js';
 import { trackTransfer } from '#utils/transfer-tracker.js';
 import { getScoringSettings } from '#utils/queue-settings.js';
 import { S, notify } from '#utils/queue-state.js';
-
 /** Stream a response body, tracking bytes. Returns ArrayBuffer. */
 async function streamToBuffer(resp) {
-  if (!resp.body) { const b = await resp.arrayBuffer(); trackTransfer(b.byteLength); return b; }
+  if (!resp.body) {
+    const b = await resp.arrayBuffer();
+    trackTransfer(b.byteLength);
+    return b;
+  }
   const reader = resp.body.getReader();
   const chunks = [];
   let received = 0;
@@ -23,7 +25,10 @@ async function streamToBuffer(resp) {
   }
   const combined = new Uint8Array(received);
   let off = 0;
-  for (const c of chunks) { combined.set(c, off); off += c.byteLength; }
+  for (const c of chunks) {
+    combined.set(c, off);
+    off += c.byteLength;
+  }
   return combined.buffer;
 }
 
@@ -64,12 +69,7 @@ async function fetchTarIndex(url) {
   return entries;
 }
 
-/**
- * Fetch .asili trait pack — per-chromosome Range requests with throttle.
- * Falls back to full download if Range isn't supported.
- * @param {string} url @param {string} traitId
- * @returns {Promise<{chrMap: Map<string, string>, cleanup: Function}>}
- */
+/** Fetch .asili trait pack — per-chromosome Range requests with throttle. */
 export async function loadTraitPack(url, traitId) {
   const entries = await fetchTarIndex(url);
   if (!entries) {
@@ -102,7 +102,9 @@ export async function loadTraitPack(url, traitId) {
     chrMap.set(chrNum, regName);
     names.push(regName);
   }
-  const cleanup = async () => { for (const n of names) await dropFile(n); };
+  const cleanup = async () => {
+    for (const n of names) await dropFile(n);
+  };
   return { chrMap, cleanup };
 }
 
@@ -120,7 +122,9 @@ async function loadFull(traitId, tarBuf) {
     chrMap.set(chrNum, regName);
     names.push(regName);
   }
-  const cleanup = async () => { for (const n of names) await dropFile(n); };
+  const cleanup = async () => {
+    for (const n of names) await dropFile(n);
+  };
   return { chrMap, cleanup };
 }
 
@@ -140,9 +144,7 @@ function parseTarBuffer(buf) {
   }
   return entries;
 }
-
 /** @param {File} file */
 export async function parseTar(file) {
-  const buf = await file.arrayBuffer();
-  return parseTarBuffer(buf);
+  return parseTarBuffer(await file.arrayBuffer());
 }

@@ -1,0 +1,106 @@
+.floating-bar__status-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 2rem;
+  height: 2rem;
+  flex-shrink: 0;
+  color: var(--color-text-muted);
+  opacity: 0.6;
+  cursor: default;
+  animation: fade-in 0.3s ease;
+}
+
+.floating-bar__status-icon .icon,
+.floating-bar__status-icon .icon svg {
+  width: 2rem;
+  height: 2rem;
+}
+
+.floating-bar__action--resume {
+  color: var(--color-success, #22c55e);
+
+  &:hover {
+    color: var(--color-success, #22c55e);
+    background: color-mix(in srgb, var(--color-success, #22c55e) 12%, transparent);
+  }
+}
+
+.floating-bar__spinner-wrap {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 2rem;
+  height: 2rem;
+  flex-shrink: 0;
+  overflow: visible;
+}
+
+.floating-bar__spinner-wrap .floating-bar__action {
+  position: relative;
+  z-index: 1;
+  background: none;
+  border-radius: 50%;
+
+  &:hover {
+    background: none;
+    color: var(--color-text);
+  }
+}
+
+.floating-bar__spinner-wrap:hover {
+  cursor: pointer;
+}
+
+.floating-bar__spinner-wrap .floating-bar__icon {
+  position: relative;
+  z-index: 1;
+}
+
+.floating-bar__spinner {
+  position: absolute;
+  width: 2rem;
+  height: 2rem;
+  top: 50%;
+  left: 50%;
+  margin-top: -1rem;
+  margin-left: -1rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: color-mix(in srgb, var(--color-primary) 40%, transparent);
+  animation: spin 6s linear infinite;
+  pointer-events: none;
+  transition: color 0.15s;
+}
+
+.floating-bar__spinner-wrap:hover .floating-bar__spinner {
+  color: color-mix(in srgb, var(--color-primary) 60%, transparent);
+}
+
+.floating-bar__spinner .icon,
+.floating-bar__spinner .icon svg {
+  width: 2rem;
+  height: 2rem;
+}
+
+.floating-bar__spinner-wrap--paused .floating-bar__spinner {
+  animation-play-state: paused;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes fade-in {
+  from {
+    opacity: 0;
+  }
+
+  to {
+    opacity: 0.6;
+  }
+}

@@ -57,6 +57,9 @@
     "lucide-static": "^1.7.0"
   },
   "pnpm": {
-    "onlyBuiltDependencies": ["esbuild", "workerd"]
+    "onlyBuiltDependencies": ["esbuild", "workerd"],
+    "overrides": {
+      "qs": "6.15.2"
+    }
   }
 }
