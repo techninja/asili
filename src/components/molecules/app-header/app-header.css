@@ -92,8 +92,7 @@
 
   .app-header__center:has(.beta-view__ind-single) {
     order: unset;
-    flex-basis: auto;
-    flex: 0;
+    flex: 0 0 auto;
   }
 
   .app-header__center:empty,

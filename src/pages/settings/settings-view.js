@@ -136,8 +136,8 @@ async function handleUpgrade(host, e) {
   }
 }
 
-/** @param {object & HTMLElement} host */
-async function doClearAll(host) {
+/** @param {object & HTMLElement} _host */
+async function doClearAll(_host) {
   await resetQueue();
   clearFamilyCache();
   clearLocalStorage();

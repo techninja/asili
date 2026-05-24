@@ -37,10 +37,7 @@ for (const [traitId, trait] of Object.entries(traits)) {
 
   // Replace OG tags in the base HTML
   let html = baseHtml;
-  html = html.replace(
-    /<title>.*?<\/title>/,
-    `<title>${title}</title>`,
-  );
+  html = html.replace(/<title>.*?<\/title>/, `<title>${title}</title>`);
   html = html.replace(
     /<meta property="og:title"[^>]*\/>/,
     `<meta property="og:title" content="${escHtml(title)}" />`,

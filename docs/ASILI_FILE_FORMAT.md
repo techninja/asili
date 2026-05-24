@@ -196,6 +196,7 @@ await conn.query("SELECT * FROM 'chr1.parquet' LIMIT 10");
 
 The Range request approach fetches each chromosome individually (~1-30MB each)
 rather than downloading the entire archive (50-400MB). This enables:
+
 - Real-time download progress per chromosome
 - Lower peak memory usage
 - Automatic retry on transient network errors

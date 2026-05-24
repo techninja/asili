@@ -174,7 +174,11 @@ function scoringContent(host, state, status) {
       <span class="floating-bar__stats">
         ${need} imputed file${need !== 1 ? 's' : ''} need${need === 1 ? 's' : ''} access
       </span>
-      <button class="floating-bar__action floating-bar__action--resume" onclick="${() => handleResumePermission()}" title="Grant access">
+      <button
+        class="floating-bar__action floating-bar__action--resume"
+        onclick="${() => handleResumePermission()}"
+        title="Grant access"
+      >
         <app-icon name="unlock"></app-icon>
       </button>
     </div>`;

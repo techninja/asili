@@ -10,7 +10,7 @@ const DEFAULT_WORKERS = 1;
 
 /**
  * Get scoring settings.
- * @returns {Promise<{memoryLimit: string, workerCount: number, autoScore: boolean}>}
+ * @returns {Promise<{memoryLimit: string, workerCount: number, autoScore: boolean, bandwidthLimit: number}>}
  */
 export async function getScoringSettings() {
   await idb.openDB();

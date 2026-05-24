@@ -327,7 +327,7 @@
 .floating-bar__detail-row--error {
   color: var(--color-danger);
   white-space: normal;
-  word-break: break-word;
+  overflow-wrap: anywhere;
 }
 
 .floating-bar__detail-heading {

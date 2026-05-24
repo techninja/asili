@@ -65,9 +65,6 @@ function handleInput(host, e) {
   e.target.value = '';
 }
 
-/** @type {boolean} */
-const HAS_PICKER = 'showOpenFilePicker' in window;
-
 export default define({
   tag: 'upload-zone',
   dragover: false,

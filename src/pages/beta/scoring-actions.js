@@ -36,6 +36,7 @@ export async function handleResumePermission() {
   console.log('[permission] need reupload:', needIds.length);
   if (needIds.length === 0) return;
   try {
+    // @ts-ignore — showOpenFilePicker is Chrome-only
     if (!window.showOpenFilePicker) {
       console.warn('[permission] showOpenFilePicker not supported');
       alert('File access not available on this browser. Please re-upload your .asili file.');

@@ -5,6 +5,7 @@ All notable changes to this project will be documented in this file.
 ## [1.1.0] — 2025-05-22
 
 ### Added
+
 - Per-chromosome Range request streaming — downloads each chromosome individually instead of the full .asili archive
 - Automatic retry with backoff on transient network errors
 - Bandwidth throttle setting (5–500 Mbps) for mobile data users
@@ -26,6 +27,7 @@ All notable changes to this project will be documented in this file.
 - Trait showcase on landing page links to trait detail pages
 
 ### Fixed
+
 - Settings storage calculation no longer locks main thread
 - Result count syncs correctly on rescore
 - Upload panel layers above sub-header
@@ -33,6 +35,7 @@ All notable changes to this project will be documented in this file.
 - Unified isDev export (single source of truth)
 
 ### Changed
+
 - Replaced emoji icons with Lucide SVG icons throughout floating bar
 - Data rate display changed from Mbps to MB/min (more useful for mobile users)
 - Paused state uses non-interactive status icon + green resume button
@@ -41,6 +44,7 @@ All notable changes to this project will be documented in this file.
 ## [1.0.0] — 2025-05-01
 
 ### Added
+
 - Initial beta launch at app.asili.dev/beta
 - 64 traits scored against PGS Catalog data
 - 8 individuals tested simultaneously
@@ -63,6 +67,7 @@ See the `buildout` branch history for the full ride from research prototype to
 production app.
 
 ### Highlights
+
 - Ported scoring logic from Python/CLI to browser-native DuckDB WASM
 - Designed .asili tar format for streaming per-chromosome parquet delivery
 - Built allele-aware variant matching with deterministic `allele_key` hashing
