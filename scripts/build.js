@@ -39,10 +39,12 @@ console.log('→ Copying packages/ → dist/packages/');
 cpSync(resolve(ROOT, 'packages'), resolve(DIST, 'packages'), { recursive: true });
 
 // Inject deploy hash into index.html for cache busting
-console.log(`→ Injecting deploy hash: ${HASH}`);
+const VERSION = JSON.parse(readFileSync(resolve(ROOT, 'package.json'), 'utf-8')).version;
+console.log(`→ Injecting deploy hash: ${HASH}, version: ${VERSION}`);
 const indexPath = resolve(DIST, 'index.html');
 let html = readFileSync(indexPath, 'utf-8');
 html = html.replace(/(\.css|\.js)"/g, `$1?v=${HASH}"`);
+html = html.replace('</head>', `  <meta name="app-version" content="${VERSION}" />\n  </head>`);
 writeFileSync(indexPath, html);
 
 // SPA fallback — copy index.html to 404.html for client-side routing
