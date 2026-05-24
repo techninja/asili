@@ -14,14 +14,21 @@ import { fileURLToPath } from 'node:url';
 
 const ROOT = dirname(dirname(fileURLToPath(import.meta.url)));
 const DIST = resolve(ROOT, 'dist');
-const MANIFEST = resolve(ROOT, '../asili-lab/data_out/trait_manifest.json');
+const LOCAL_MANIFEST = resolve(ROOT, '../asili-lab/data_out/trait_manifest.json');
+const CDN_MANIFEST = 'https://data.asili.dev/trait_manifest.json';
 
-if (!existsSync(MANIFEST)) {
-  console.warn('⚠ No trait_manifest.json found — skipping OG page generation');
-  process.exit(0);
+let manifest;
+if (existsSync(LOCAL_MANIFEST)) {
+  manifest = JSON.parse(readFileSync(LOCAL_MANIFEST, 'utf-8'));
+} else {
+  console.log('→ Fetching manifest from CDN...');
+  const resp = await fetch(CDN_MANIFEST);
+  if (!resp.ok) {
+    console.warn('⚠ Could not fetch trait_manifest.json — skipping OG generation');
+    process.exit(0);
+  }
+  manifest = await resp.json();
 }
-
-const manifest = JSON.parse(readFileSync(MANIFEST, 'utf-8'));
 const traits = manifest.traits;
 const baseHtml = readFileSync(resolve(DIST, 'index.html'), 'utf-8');
 
