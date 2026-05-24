@@ -22,6 +22,7 @@ export async function initApp(host) {
 
 /** Connect handler for _init property. */
 export function connectInit(host, _key, invalidate) {
+  document.title = 'Asili | Polygenic Risk Scores';
   initApp(host).then(() => {
     invalidate();
     if (sessionStorage.getItem('asili-open-upload')) {

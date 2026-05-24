@@ -28,7 +28,7 @@ const baseHtml = readFileSync(resolve(DIST, 'index.html'), 'utf-8');
 let count = 0;
 
 for (const [traitId, trait] of Object.entries(traits)) {
-  const title = `${trait.emoji} ${trait.name} — Asili Polygenic Score`;
+  const title = `Asili | ${trait.emoji} ${trait.name}`;
   const description = trait.description
     ? trait.description.slice(0, 160)
     : `Explore your polygenic score for ${trait.name}. Privacy-first, browser-only analysis.`;

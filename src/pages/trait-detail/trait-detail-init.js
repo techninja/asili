@@ -29,6 +29,9 @@ export async function initView(host) {
   t._next = idx < list.length - 1 ? list[idx + 1].trait_id : '';
   host.trait = t;
 
+  // Set page title
+  if (t.name) document.title = `Asili | ${t.emoji || '🧬'} ${t.name}`;
+
   const r = results[host.traitId];
   host.pgsMeta = r?.bestPGS ? (await getPgsDetail(r.bestPGS)) || {} : {};
 
