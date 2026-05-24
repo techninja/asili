@@ -1,6 +1,6 @@
 {
   "name": "asili",
-  "version": "1.1.0",
+  "version": "1.2.0",
   "type": "module",
   "private": true,
   "description": "Privacy-first polygenic risk score analysis. All processing happens on your device.",
@@ -58,7 +58,10 @@
     "lucide-static": "^1.7.0"
   },
   "pnpm": {
-    "onlyBuiltDependencies": ["esbuild", "workerd"],
+    "onlyBuiltDependencies": [
+      "esbuild",
+      "workerd"
+    ],
     "overrides": {
       "qs": "6.15.2"
     }
