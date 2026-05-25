@@ -1,0 +1,16 @@
+{
+  "/": {
+    "title": "Asili — Privacy-first polygenic risk score analysis",
+    "description": "See what your DNA says about you. Everything runs in your browser. We never see your data."
+  },
+  "/beta": {
+    "title": "Asili Beta — Explore Your Traits",
+    "description": "Upload your DNA file and explore polygenic risk scores for 64+ traits. Privacy-first, browser-only."
+  },
+  "/trait/:slug": {
+    "title": "Asili | {slug.emoji} {slug.name}",
+    "description": "{slug.description}",
+    "image": "{slug.image}",
+    "data": "data/traits-og.json"
+  }
+}

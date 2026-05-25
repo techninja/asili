@@ -51,12 +51,21 @@ writeFileSync(indexPath, html);
 console.log('→ Creating 404.html for SPA routing');
 cpSync(resolve(DIST, 'index.html'), resolve(DIST, '404.html'));
 
+// Generate trait manifest for OG
+console.log('→ Building trait manifest...');
+try {
+  execSync('node scripts/build-trait-manifest.js', { cwd: ROOT, stdio: 'inherit' });
+} catch {
+  console.warn('⚠ Trait manifest skipped (no source)');
+}
+
 // Generate per-trait OG pages for link previews
 console.log('→ Generating OG metadata pages...');
 try {
-  execSync('node scripts/build-og.js', { cwd: ROOT, stdio: 'inherit' });
-} catch {
-  console.warn('⚠ OG generation skipped (no manifest)');
+  const { buildOG } = await import('@techninja/clearstack/lib/build-og.js');
+  buildOG({ projectDir: ROOT, outDir: 'dist', baseUrl: 'https://app.asili.dev' });
+} catch (e) {
+  console.warn('⚠ OG generation failed:', e.message);
 }
 
 console.log('✓ Build complete → dist/');

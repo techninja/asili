@@ -1,0 +1,450 @@
+[
+  {
+    "slug": "HP_0001000",
+    "name": "Skin Pigmentation",
+    "emoji": "🎨",
+    "description": "Your natural skin color, determined by the type and amount of melanin your body produces.",
+    "image": "https://images.unsplash.com/photo-1664117977916-521534a6aa7d?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w5MTU2NjJ8MHwxfHNlYXJjaHwyfHxza2luJTIwdG9uZSUyMGRpdmVyc2l0eSUyMG1lbGFuaW58ZW58MHwwfHx8MTc3NzM0OTc2M3ww&ixlib=rb-4.1.0&q=80&w=1080"
+  },
+  {
+    "slug": "EFO_0007788",
+    "name": "Waist-to-Hip Ratio (BMI-Adjusted)",
+    "emoji": "📏",
+    "description": "Where your body stores fat after accounting for overall body size.",
+    "image": "https://images.unsplash.com/photo-1712955847714-11305005ef8c?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w5MTU2NjJ8MHwxfHNlYXJjaHw0fHxib2R5JTIwcHJvcG9ydGlvbnMlMjBmaXRuZXNzJTIwbWlycm9yfGVufDB8MHx8fDE3NzczNDk3MDV8MA&ixlib=rb-4.1.0&q=80&w=1080"
+  },
+  {
+    "slug": "EFO_0004458",
+    "name": "C-Reactive Protein",
+    "emoji": "🔥",
+    "description": "A blood marker of inflammation. Higher levels can signal infection, stress, or chronic disease.",
+    "image": "https://images.unsplash.com/photo-1559087316-6b27308e53f6?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w5MTU2NjJ8MHwxfHNlYXJjaHwzfHxpbmZsYW1tYXRpb24lMjBoZWFsdGglMjB3ZWxsbmVzc3xlbnwwfDB8fHwxNzc3MzQ5Njk2fDA&ixlib=rb-4.1.0&q=80&w=1080"
+  },
+  {
+    "slug": "EFO_0004713",
+    "name": "Lung Airflow Ratio",
+    "emoji": "🫁",
+    "description": "How freely air moves through your lungs. A lower ratio can indicate asthma or COPD.",
+    "image": "https://images.unsplash.com/photo-1715529407901-d851b28e6184?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w5MTU2NjJ8MHwxfHNlYXJjaHwzfHxicmVhdGhpbmclMjBsdW5ncyUyMHNwaXJvbWV0cnl8ZW58MHwwfHx8MTc3NzM0OTcyNnww&ixlib=rb-4.1.0&q=80&w=1080"
+  },
+  {
+    "slug": "EFO_0004541",
+    "name": "HbA1c",
+    "emoji": "🍬",
+    "description": "A snapshot of your average blood sugar over the past 2–3 months.",
+    "image": "https://images.unsplash.com/photo-1685485276219-cbdf9309be1a?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w5MTU2NjJ8MHwxfHNlYXJjaHwxfHxibG9vZCUyMHN1Z2FyJTIwZGlhYmV0ZXMlMjBnbHVjb3NlJTIwbW9uaXRvcnxlbnwwfDB8fHwxNzc3MzQ5Njg4fDA&ixlib=rb-4.1.0&q=80&w=1080"
+  },
+  {
+    "slug": "HP_0000545",
+    "name": "Nearsightedness",
+    "emoji": "👓",
+    "description": "Difficulty seeing distant objects clearly, caused by the eye focusing light in front of the retina.",
+    "image": "https://images.unsplash.com/photo-1519549098160-ed0a89679c57?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w5MTU2NjJ8MHwxfHNlYXJjaHwyfHxleWVnbGFzc2VzJTIwbXlvcGlhJTIwbmVhcnNpZ2h0ZWQlMjByZWFkaW5nfGVufDB8MHx8fDE3NzczNDk3NjV8MA&ixlib=rb-4.1.0&q=80&w=1080"
+  },
+  {
+    "slug": "EFO_0004682",
+    "name": "QT Interval",
+    "emoji": "⚡",
+    "description": "A timing measurement of your heart's electrical cycle. Abnormal values can signal heart rhythm issues.",
+    "image": "https://images.unsplash.com/photo-1513224502586-d1e602410265?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w5MTU2NjJ8MHwxfHNlYXJjaHw5fHxFQ0clMjBlbGVjdHJvY2FyZGlvZ3JhbSUyMGhlYXJ0JTIwbW9uaXRvcnxlbnwwfDB8fHwxNzc3NDM2NTg0fDA&ixlib=rb-4.1.0&q=80&w=1080"
+  },
+  {
+    "slug": "EFO_0009188",
+    "name": "Red Cell Distribution Width",
+    "emoji": "📊",
+    "description": "How much your red blood cells vary in size. Unusual variation can signal certain types of anemia.",
+    "image": "https://images.unsplash.com/photo-1579154341184-22069e4614d2?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w5MTU2NjJ8MHwxfHNlYXJjaHwxfHxsYWJvcmF0b3J5JTIwYmxvb2QlMjBhbmFseXNpcyUyMHNjaWVuY2V8ZW58MHwwfHx8MTc3NzQ2NzE3NHww&ixlib=rb-4.1.0&q=80&w=1080"
+  },
+  {
+    "slug": "EFO_0004703",
+    "name": "Age at First Period",
+    "emoji": "🌺",
+    "description": "When puberty-related menstruation begins, influenced by genetics and environment.",
+    "image": "https://images.unsplash.com/photo-1758526214152-8b9196b74c43?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w5MTU2NjJ8MHwxfHNlYXJjaHwxfHx0ZWVuYWdlJTIwZ2lybCUyMGdyb3dpbmclMjB1cCUyMGFkb2xlc2NlbmNlfGVufDB8MHx8fDE3NzczNDk3MjF8MA&ixlib=rb-4.1.0&q=80&w=1080"
+  },
+  {
+    "slug": "EFO_0004704",
+    "name": "Age at Menopause",
+    "emoji": "🍂",
+    "description": "When menstrual cycles permanently end, typically around age 50.",
+    "image": "https://images.unsplash.com/photo-1758686254563-5c5ab338c8b9?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w5MTU2NjJ8MHwxfHNlYXJjaHwyfHxtYXR1cmUlMjB3b21hbiUyMGFnaW5nJTIwZ3JhY2VmdWxseXxlbnwwfDB8fHwxNzc3MzQ5NzIzfDA&ixlib=rb-4.1.0&q=80&w=1080"
+  },
+  {
+    "slug": "OBA_1000840",
+    "name": "Alcohol Consumption",
+    "emoji": "🍺",
+    "description": "How much and how often you tend to drink alcohol, partly shaped by your genes.",
+    "image": "https://images.unsplash.com/photo-1771330630151-311babde1eca?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w5MTU2NjJ8MHwxfHNlYXJjaHwxfHx3aW5lJTIwZ2xhc3MlMjBzb2NpYWwlMjBkcmlua2luZ3xlbnwwfDB8fHwxNzc3MzQ5Njk0fDA&ixlib=rb-4.1.0&q=80&w=1080"
+  },
+  {
+    "slug": "EFO_0007825",
+    "name": "Male Pattern Baldness",
+    "emoji": "👨‍🦲",
+    "description": "Hair thinning on the crown and temples, strongly driven by genetics and hormones.",
+    "image": "https://images.unsplash.com/photo-1711961280513-1faddbdf9b9d?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w5MTU2NjJ8MHwxfHNlYXJjaHwzfHxoYWlyJTIwbG9zcyUyMGJhbGRuZXNzJTIwbWFufGVufDB8MHx8fDE3NzczNDk3MDl8MA&ixlib=rb-4.1.0&q=80&w=1080"
+  },
+  {
+    "slug": "EFO_0007777",
+    "name": "Basal Metabolic Rate",
+    "emoji": "🔥",
+    "description": "How many calories your body burns at complete rest just to keep you alive.",
+    "image": "https://images.unsplash.com/photo-1712877163317-addaefcdd68c?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w5MTU2NjJ8MHwxfHNlYXJjaHw0fHxtZXRhYm9saXNtJTIwZW5lcmd5JTIwZmlyZSUyMGZsYW1lfGVufDB8MHx8fDE3NzczNDk3MzR8MA&ixlib=rb-4.1.0&q=80&w=1080"
+  },
+  {
+    "slug": "EFO_0004344",
+    "name": "Birth Weight",
+    "emoji": "👶",
+    "description": "How much you weighed at birth, shaped by both genetics and the prenatal environment.",
+    "image": "https://images.unsplash.com/photo-1677389465765-60a431d2e6ca?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w5MTU2NjJ8MHwxfHNlYXJjaHw0fHxuZXdib3JuJTIwYmFieSUyMGJpcnRoJTIwd2VpZ2h0fGVufDB8MHx8fDE3NzczNDk3NjJ8MA&ixlib=rb-4.1.0&q=80&w=1080"
+  },
+  {
+    "slug": "OBA_VT0000188",
+    "name": "Blood Glucose",
+    "emoji": "🍬",
+    "description": "The amount of sugar circulating in your blood, your body's primary energy source.",
+    "image": "https://images.unsplash.com/photo-1714642596931-2293df25c4a3?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w5MTU2NjJ8MHwxfHNlYXJjaHwxfHxibG9vZCUyMGdsdWNvc2UlMjB0ZXN0JTIwc3RyaXB8ZW58MHwwfHx8MTc3NzM0OTY5MHww&ixlib=rb-4.1.0&q=80&w=1080"
+  },
+  {
+    "slug": "EFO_0005106",
+    "name": "Body Composition",
+    "emoji": "🏋️",
+    "description": "The balance of fat, muscle, and bone in your body.",
+    "image": "https://images.unsplash.com/photo-1434847868581-86e8a2b8e7a3?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w5MTU2NjJ8MHwxfHNlYXJjaHwxfHxib2R5JTIwY29tcG9zaXRpb24lMjBmaXRuZXNzJTIwYXRobGV0ZXxlbnwwfDB8fHwxNzc3MzQ5NjgyfDA&ixlib=rb-4.1.0&q=80&w=1080"
+  },
+  {
+    "slug": "EFO_0007800",
+    "name": "Body Fat Percentage",
+    "emoji": "🏋️",
+    "description": "The proportion of your body weight that comes from fat tissue.",
+    "image": "https://images.unsplash.com/photo-1591384640699-9a85bd036da2?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w5MTU2NjJ8MHwxfHNlYXJjaHwxfHxib2R5JTIwZmF0JTIwZml0bmVzcyUyMG1lYXN1cmVtZW50fGVufDB8MHx8fDE3Nzc0MzY1NjF8MA&ixlib=rb-4.1.0&q=80&w=1080"
+  },
+  {
+    "slug": "OBA_VT0001253",
+    "name": "Height",
+    "emoji": "📏",
+    "description": "How tall you are, shaped by hundreds of genetic variants plus nutrition during growth.",
+    "image": "https://images.unsplash.com/photo-1612647371901-92915b66c1bf?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w5MTU2NjJ8MHwxfHNlYXJjaHwzfHx0YWxsJTIwcGVyc29uJTIwc3RhbmRpbmclMjBhcmNoaXRlY3R1cmV8ZW58MHwwfHx8MTc3NzM0OTY3MHww&ixlib=rb-4.1.0&q=80&w=1080"
+  },
+  {
+    "slug": "EFO_0004340",
+    "name": "Body Mass Index",
+    "emoji": "📊",
+    "description": "A ratio of weight to height used to estimate body fat. The typical range is 18.5–24.9.",
+    "image": "https://images.unsplash.com/photo-1625834317364-b32c140fd360?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w5MTU2NjJ8MHwxfHNlYXJjaHw2fHxmaXRuZXNzJTIwc2NhbGUlMjBoZWFsdGh5JTIwbGlmZXN0eWxlfGVufDB8MHx8fDE3NzczNDk2Njh8MA&ixlib=rb-4.1.0&q=80&w=1080"
+  },
+  {
+    "slug": "EFO_0004338",
+    "name": "Body Weight",
+    "emoji": "⚖️",
+    "description": "Your overall weight, influenced by genetics, diet, activity, and environment.",
+    "image": "https://images.unsplash.com/photo-1617113352934-b6f63b843a53?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w5MTU2NjJ8MHwxfHNlYXJjaHwyfHx3ZWlnaHQlMjBzY2FsZSUyMGJhdGhyb29tJTIwbW9ybmluZ3xlbnwwfDB8fHwxNzc3MzQ5Njk4fDA&ixlib=rb-4.1.0&q=80&w=1080"
+  },
+  {
+    "slug": "OBA_1000110",
+    "name": "Bone Density",
+    "emoji": "🦴",
+    "description": "How strong and dense your bones are. Lower density increases fracture risk.",
+    "image": "https://images.unsplash.com/photo-1539814706939-073a2aa5c190?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w5MTU2NjJ8MHwxfHNlYXJjaHw5fHxza2VsZXRvbiUyMGJvbmVzJTIweHJheSUyMHN0cmVuZ3RofGVufDB8MHx8fDE3NzczNDk3MTV8MA&ixlib=rb-4.1.0&q=80&w=1080"
+  },
+  {
+    "slug": "EFO_0008328",
+    "name": "Chronotype",
+    "emoji": "🌅",
+    "description": "Whether you're naturally a morning person or a night owl — your built-in body clock preference.",
+    "image": "https://images.unsplash.com/photo-1588930874653-e833732364d7?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w5MTU2NjJ8MHwxfHNlYXJjaHwzfHxzdW5yaXNlJTIwbW9ybmluZyUyMHBlcnNvbiUyMGFsYXJtJTIwY2xvY2t8ZW58MHwwfHx8MTc3NzM0OTcxMXww&ixlib=rb-4.1.0&q=80&w=1080"
+  },
+  {
+    "slug": "EFO_0006781",
+    "name": "Coffee Consumption",
+    "emoji": "☕",
+    "description": "How much coffee you tend to drink, partly driven by how fast your body breaks down caffeine.",
+    "image": "https://images.unsplash.com/photo-1614530315991-de7abbf38567?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w5MTU2NjJ8MHwxfHNlYXJjaHwxfHxjb2ZmZWUlMjBjdXAlMjBtb3JuaW5nJTIwYmVhbnN8ZW58MHwwfHx8MTc3NzM0OTc0Mnww&ixlib=rb-4.1.0&q=80&w=1080"
+  },
+  {
+    "slug": "OBA_1001005",
+    "name": "Creatinine",
+    "emoji": "🫘",
+    "description": "A waste product filtered by your kidneys. Rising levels can be an early sign of kidney trouble.",
+    "image": "https://images.unsplash.com/photo-1715527498501-4eb81f7ce451?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w5MTU2NjJ8MHwxfHNlYXJjaHwzfHxraWRuZXklMjBvcmdhbiUyMGhlYWx0aCUyMG1lZGljYWx8ZW58MHwwfHx8MTc3NzQzNjU5Mnww&ixlib=rb-4.1.0&q=80&w=1080"
+  },
+  {
+    "slug": "EFO_0006336",
+    "name": "Diastolic Blood Pressure",
+    "emoji": "📉",
+    "description": "The bottom number in a blood pressure reading — the pressure when your heart rests between beats.",
+    "image": "https://images.unsplash.com/photo-1593280804306-e4588cd0b350?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w5MTU2NjJ8MHwxfHNlYXJjaHwyfHxoZWFydCUyMGhlYWx0aCUyMHN0ZXRob3Njb3BlJTIwY2FsbXxlbnwwfDB8fHwxNzc3MzQ5NjgwfDA&ixlib=rb-4.1.0&q=80&w=1080"
+  },
+  {
+    "slug": "EFO_0004315",
+    "name": "Drinking Behavior",
+    "emoji": "🍷",
+    "description": "Patterns of alcohol intake — how much and how often — partly shaped by genetics.",
+    "image": "https://images.unsplash.com/photo-1761038611985-3cec1b1c086a?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w5MTU2NjJ8MHwxfHNlYXJjaHw0fHxjb2NrdGFpbCUyMGJhciUyMG5pZ2h0bGlmZSUyMGRyaW5rc3xlbnwwfDB8fHwxNzc3NDY3MTY2fDA&ixlib=rb-4.1.0&q=80&w=1080"
+  },
+  {
+    "slug": "EFO_0004842",
+    "name": "Eosinophil Count",
+    "emoji": "🦠",
+    "description": "A type of white blood cell involved in allergic reactions and fighting parasites.",
+    "image": "https://images.unsplash.com/photo-1706647154154-4863d3bf5308?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w5MTU2NjJ8MHwxfHNlYXJjaHwyfHxhbGxlcmd5JTIwaW1tdW5lJTIwcmVzcG9uc2UlMjBwb2xsZW58ZW58MHwwfHx8MTc3NzM0OTczOHww&ixlib=rb-4.1.0&q=80&w=1080"
+  },
+  {
+    "slug": "EFO_0004305",
+    "name": "Red Blood Cell Count",
+    "emoji": "🔴",
+    "description": "The number of red blood cells carrying oxygen through your bloodstream.",
+    "image": "https://images.unsplash.com/photo-1709227371446-8e76f75260b8?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w5MTU2NjJ8MHwxfHNlYXJjaHwxfHxyZWQlMjBibG9vZCUyMGNlbGxzJTIwbWljcm9zY29wZXxlbnwwfDB8fHwxNzc3MzQ5NzU1fDA&ixlib=rb-4.1.0&q=80&w=1080"
+  },
+  {
+    "slug": "EFO_0004697",
+    "name": "Estradiol",
+    "emoji": "🌸",
+    "description": "The primary form of estrogen, important for reproductive health, bones, and heart protection.",
+    "image": "https://images.unsplash.com/photo-1525198255522-d1d721e65e56?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w5MTU2NjJ8MHwxfHNlYXJjaHwzfHxob3Jtb25lcyUyMHdvbWVuJTIwaGVhbHRoJTIwZmxvd2Vyc3xlbnwwfDB8fHwxNzc3MzQ5NzMyfDA&ixlib=rb-4.1.0&q=80&w=1080"
+  },
+  {
+    "slug": "OBA_0003747",
+    "name": "Kidney Filtration Rate",
+    "emoji": "🫘",
+    "description": "How efficiently your kidneys clean waste from your blood. Higher is better.",
+    "image": "https://images.unsplash.com/photo-1715527498487-85f97b828616?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w5MTU2NjJ8MHwxfHNlYXJjaHwxfHxraWRuZXklMjBhbmF0b215JTIwb3JnYW4lMjBpbGx1c3RyYXRpb258ZW58MHwwfHx8MTc3NzQ2NzE3OHww&ixlib=rb-4.1.0&q=80&w=1080"
+  },
+  {
+    "slug": "OBA_1001087",
+    "name": "Resting Heart Rate",
+    "emoji": "💓",
+    "description": "How many times your heart beats per minute at rest. Lower is generally healthier.",
+    "image": "https://images.unsplash.com/photo-1528837214451-5c143900b3a6?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w5MTU2NjJ8MHwxfHNlYXJjaHwxfHxoZWFydGJlYXQlMjBwdWxzZSUyMHdyaXN0JTIwd2F0Y2h8ZW58MHwwfHx8MTc3NzM0OTcwN3ww&ixlib=rb-4.1.0&q=80&w=1080"
+  },
+  {
+    "slug": "EFO_0004348",
+    "name": "Hematocrit",
+    "emoji": "🩸",
+    "description": "The percentage of your blood that is made up of red blood cells.",
+    "image": "https://images.unsplash.com/photo-1581594693702-fbdc51b2763b?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w5MTU2NjJ8MHwxfHNlYXJjaHwxfHxibG9vZCUyMHRlc3QlMjB0dWJlJTIwc2FtcGxlJTIwcmVkfGVufDB8MHx8fDE3Nzc0MzY1Njl8MA&ixlib=rb-4.1.0&q=80&w=1080"
+  },
+  {
+    "slug": "EFO_0004612",
+    "name": "HDL Cholesterol",
+    "emoji": "⬆️",
+    "description": "The 'good' cholesterol that helps clear other fats from your bloodstream and protects your heart.",
+    "image": "https://images.unsplash.com/photo-1757801333112-7b89af15c7fe?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w5MTU2NjJ8MHwxfHNlYXJjaHwzfHxoZWFsdGh5JTIwaGVhcnQlMjBvbGl2ZSUyMG9pbCUyMG1lZGl0ZXJyYW5lYW58ZW58MHwwfHx8MTc3NzM0OTY3Mnww&ixlib=rb-4.1.0&q=80&w=1080"
+  },
+  {
+    "slug": "OBA_1000032",
+    "name": "Hip Circumference",
+    "emoji": "📏",
+    "description": "The measurement around the widest part of your hips.",
+    "image": "https://images.unsplash.com/photo-1541614354572-3d88c912851a?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w5MTU2NjJ8MHwxfHNlYXJjaHwxfHx3b21hbiUyMGJvZHklMjBzaGFwZSUyMHNpbGhvdWV0dGV8ZW58MHwwfHx8MTc3NzQ2NzE3MHww&ixlib=rb-4.1.0&q=80&w=1080"
+  },
+  {
+    "slug": "EFO_0005035",
+    "name": "Hippocampal Volume",
+    "emoji": "🧠",
+    "description": "The size of the hippocampus, a brain region essential for forming new memories.",
+    "image": "https://images.unsplash.com/photo-1631563019676-dade0dbdb8fc?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w5MTU2NjJ8MHwxfHNlYXJjaHwxfHxicmFpbiUyMG5ldXJvc2NpZW5jZSUyME1SSSUyMHNjYW58ZW58MHwwfHx8MTc3NzQzNjU1N3ww&ixlib=rb-4.1.0&q=80&w=1080"
+  },
+  {
+    "slug": "EFO_0004698",
+    "name": "Insomnia",
+    "emoji": "😴",
+    "description": "Difficulty falling asleep or staying asleep through the night.",
+    "image": "https://images.unsplash.com/photo-1429117237875-aa29229d99f0?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w5MTU2NjJ8MHwxfHNlYXJjaHwyfHxpbnNvbW5pYSUyMHNsZWVwbGVzcyUyMG5pZ2h0JTIwZGFyayUyMGJlZHxlbnwwfDB8fHwxNzc3NDM2NjIwfDA&ixlib=rb-4.1.0&q=80&w=1080"
+  },
+  {
+    "slug": "EFO_0004337",
+    "name": "Cognitive Ability",
+    "emoji": "🧠",
+    "description": "General thinking and reasoning ability as captured by standardized tests.",
+    "image": "https://images.unsplash.com/photo-1754294437684-7898b3701ac7?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w5MTU2NjJ8MHwxfHNlYXJjaHwyfHxicmFpbiUyMHRoaW5raW5nJTIwcHV6emxlJTIwaW50ZWxsaWdlbmNlfGVufDB8MHx8fDE3Nzc0MzY2MDV8MA&ixlib=rb-4.1.0&q=80&w=1080"
+  },
+  {
+    "slug": "EFO_0004695",
+    "name": "Eye Pressure",
+    "emoji": "👁️",
+    "description": "The fluid pressure inside your eye. Elevated pressure is a major risk factor for glaucoma.",
+    "image": "https://images.unsplash.com/photo-1731582779780-45d305d5fd12?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w5MTU2NjJ8MHwxfHNlYXJjaHwxfHxleWUlMjBwcmVzc3VyZSUyMGdsYXVjb21hJTIwdmlzaW9ufGVufDB8MHx8fDE3NzczNDk3NTJ8MA&ixlib=rb-4.1.0&q=80&w=1080"
+  },
+  {
+    "slug": "OBA_VT0000217",
+    "name": "White Blood Cell Count",
+    "emoji": "🦠",
+    "description": "The number of infection-fighting white blood cells circulating in your blood.",
+    "image": "https://images.unsplash.com/photo-1706478106657-1a8d73d82f29?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w5MTU2NjJ8MHwxfHNlYXJjaHwxfHxpbW11bmUlMjBzeXN0ZW0lMjB3aGl0ZSUyMGJsb29kJTIwY2VsbHMlMjBtaWNyb3Njb3BlfGVufDB8MHx8fDE3NzczNDk2ODR8MA&ixlib=rb-4.1.0&q=80&w=1080"
+  },
+  {
+    "slug": "EFO_0006925",
+    "name": "Lipoprotein(a)",
+    "emoji": "🧬",
+    "description": "A sticky cholesterol particle you inherit. High levels raise heart disease risk regardless of lifestyle.",
+    "image": "https://images.unsplash.com/photo-1460672985063-6764ac8b9c74?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w5MTU2NjJ8MHwxfHNlYXJjaHwxfHxoZWFydCUyMGFydGVyeSUyMGNhcmRpb3Zhc2N1bGFyfGVufDB8MHx8fDE3NzczNDk3MzB8MA&ixlib=rb-4.1.0&q=80&w=1080"
+  },
+  {
+    "slug": "EFO_0004611",
+    "name": "LDL Cholesterol",
+    "emoji": "⬇️",
+    "description": "The 'bad' cholesterol that can build up in artery walls and increase heart disease risk.",
+    "image": "https://images.unsplash.com/photo-1715111965541-7cdbd8d1aa5b?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w5MTU2NjJ8MHwxfHNlYXJjaHw1fHxoZWFydCUyMGhlYWx0aCUyMGNob2xlc3Rlcm9sJTIwYXJ0ZXJ5fGVufDB8MHx8fDE3Nzc0MzY1ODF8MA&ixlib=rb-4.1.0&q=80&w=1080"
+  },
+  {
+    "slug": "EFO_0004587",
+    "name": "Lymphocyte Count",
+    "emoji": "🦠",
+    "description": "The number of lymphocytes in your blood — key immune cells that fight viruses and coordinate defenses.",
+    "image": "https://images.unsplash.com/photo-1734607404574-df50e1839d6d?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w5MTU2NjJ8MHwxfHNlYXJjaHwxfHxpbW11bmUlMjBzeXN0ZW0lMjBkZWZlbnNlJTIwc2hpZWxkfGVufDB8MHx8fDE3NzczNDk3MzZ8MA&ixlib=rb-4.1.0&q=80&w=1080"
+  },
+  {
+    "slug": "EFO_0004527",
+    "name": "Mean Corpuscular Hemoglobin",
+    "emoji": "🔬",
+    "description": "The average amount of oxygen-carrying hemoglobin packed into each red blood cell.",
+    "image": "https://images.unsplash.com/photo-1642697552227-ca21f326fe41?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w5MTU2NjJ8MHwxfHNlYXJjaHwxfHxoZW1vZ2xvYmluJTIwcmVkJTIwYmxvb2QlMjBveHlnZW58ZW58MHwwfHx8MTc3NzQzNjU3N3ww&ixlib=rb-4.1.0&q=80&w=1080"
+  },
+  {
+    "slug": "EFO_0005091",
+    "name": "Monocyte Count",
+    "emoji": "🦠",
+    "description": "A type of white blood cell that engulfs pathogens and helps coordinate your immune response.",
+    "image": "https://images.unsplash.com/photo-1706643568612-9b13870c8d21?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w5MTU2NjJ8MHwxfHNlYXJjaHwxfHxpbW11bmUlMjBjZWxscyUyMGRlZmVuc2UlMjBiaW9sb2d5fGVufDB8MHx8fDE3NzczNDk3NDB8MA&ixlib=rb-4.1.0&q=80&w=1080"
+  },
+  {
+    "slug": "EFO_0007660",
+    "name": "Neuroticism",
+    "emoji": "😰",
+    "description": "A personality trait reflecting how strongly you tend to experience stress, worry, and negative emotions.",
+    "image": "https://images.unsplash.com/photo-1761099343729-5164cf0f377b?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w5MTU2NjJ8MHwxfHNlYXJjaHwyfHxhbnhpZXR5JTIwZW1vdGlvbiUyMG1vb2QlMjBwb3J0cmFpdHxlbnwwfDB8fHwxNzc3MzQ5NzEzfDA&ixlib=rb-4.1.0&q=80&w=1080"
+  },
+  {
+    "slug": "EFO_0004833",
+    "name": "Neutrophil Count",
+    "emoji": "🔬",
+    "description": "The most common white blood cell — your first line of defense against bacterial infections.",
+    "image": "https://images.unsplash.com/photo-1707944746033-0232ca340fc6?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w5MTU2NjJ8MHwxfHNlYXJjaHw4fHxtaWNyb3Njb3BlJTIwYmxvb2QlMjBjZWxscyUyMGxhYm9yYXRvcnl8ZW58MHwwfHx8MTc3NzQzNjU2NXww&ixlib=rb-4.1.0&q=80&w=1080"
+  },
+  {
+    "slug": "EFO_0007794",
+    "name": "Nicotine Metabolism",
+    "emoji": "🚬",
+    "description": "How quickly your body breaks down nicotine, which affects smoking habits and quit difficulty.",
+    "image": "https://images.unsplash.com/photo-1517474850909-980acfb981da?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w5MTU2NjJ8MHwxfHNlYXJjaHwyfHxuaWNvdGluZSUyMGNpZ2FyZXR0ZSUyMG1ldGFib2xpc218ZW58MHwwfHx8MTc3NzM0OTc0OHww&ixlib=rb-4.1.0&q=80&w=1080"
+  },
+  {
+    "slug": "EFO_0009102",
+    "name": "Number of Children",
+    "emoji": "👶",
+    "description": "Genetic factors associated with how many children a person tends to have.",
+    "image": "https://images.unsplash.com/photo-1758687126864-96b61e1b3af0?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w5MTU2NjJ8MHwxfHNlYXJjaHwxfHxmYW1pbHklMjBjaGlsZHJlbiUyMHBhcmVudGhvb2R8ZW58MHwwfHx8MTc3NzM0OTc1MHww&ixlib=rb-4.1.0&q=80&w=1080"
+  },
+  {
+    "slug": "EFO_0004309",
+    "name": "Platelet Count",
+    "emoji": "🩸",
+    "description": "The number of platelets in your blood — tiny cells that help stop bleeding by forming clots.",
+    "image": "https://images.unsplash.com/photo-1585036929505-31afd53dad85?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w5MTU2NjJ8MHwxfHNlYXJjaHw2fHxibG9vZCUyMHBsYXRlbGV0cyUyMGNsb3R0aW5nJTIwYmFuZGFnZXxlbnwwfDB8fHwxNzc3MzQ5NzU0fDA&ixlib=rb-4.1.0&q=80&w=1080"
+  },
+  {
+    "slug": "EFO_0005763",
+    "name": "Pulse Pressure",
+    "emoji": "💓",
+    "description": "The gap between your systolic and diastolic blood pressure — reflects artery stiffness.",
+    "image": "https://images.unsplash.com/photo-1621525466547-4ac135e85f59?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w5MTU2NjJ8MHwxfHNlYXJjaHwxfHxibG9vZCUyMHByZXNzdXJlJTIwY3VmZiUyMG1lYXN1cmVtZW50fGVufDB8MHx8fDE3Nzc0MzY1ODh8MA&ixlib=rb-4.1.0&q=80&w=1080"
+  },
+  {
+    "slug": "EFO_0008579",
+    "name": "Risk-Taking Tendency",
+    "emoji": "🎲",
+    "description": "How inclined you are to seek out novel or risky experiences.",
+    "image": "https://images.unsplash.com/photo-1761761718425-d4db08895b46?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w5MTU2NjJ8MHwxfHNlYXJjaHwyfHxhZHZlbnR1cmUlMjByaXNrJTIwc2t5ZGl2aW5nJTIwZXh0cmVtZXxlbnwwfDB8fHwxNzc3NDM2NjA5fDA&ixlib=rb-4.1.0&q=80&w=1080"
+  },
+  {
+    "slug": "EFO_0005670",
+    "name": "Smoking Initiation",
+    "emoji": "🚬",
+    "description": "Genetic predisposition toward trying or starting to smoke tobacco.",
+    "image": "https://images.unsplash.com/photo-1710301573845-500fa301a0ce?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w5MTU2NjJ8MHwxfHNlYXJjaHwzfHxjaWdhcmV0dGUlMjBzbW9rZSUyMGxpZ2h0ZXJ8ZW58MHwwfHx8MTc3NzQzNjYxN3ww&ixlib=rb-4.1.0&q=80&w=1080"
+  },
+  {
+    "slug": "EFO_0006527",
+    "name": "Smoking Status",
+    "emoji": "🚬",
+    "description": "Genetic factors that influence whether someone is likely to smoke tobacco.",
+    "image": "https://images.unsplash.com/photo-1756361945636-7f7b65569386?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w5MTU2NjJ8MHwxfHNlYXJjaHwzfHxjaWdhcmV0dGUlMjBzbW9rZSUyMGhhYml0fGVufDB8MHx8fDE3NzczNDk2OTJ8MA&ixlib=rb-4.1.0&q=80&w=1080"
+  },
+  {
+    "slug": "EFO_0004279",
+    "name": "Tanning Ability",
+    "emoji": "☀️",
+    "description": "How easily your skin darkens after sun exposure, determined by melanin genetics.",
+    "image": "https://images.unsplash.com/photo-1598277305415-1293ddb95e94?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w5MTU2NjJ8MHwxfHNlYXJjaHwxfHxzdW50YW4lMjBiZWFjaCUyMHNraW4lMjBzdW58ZW58MHwwfHx8MTc3NzM0OTc0NHww&ixlib=rb-4.1.0&q=80&w=1080"
+  },
+  {
+    "slug": "EFO_0006335",
+    "name": "Systolic Blood Pressure",
+    "emoji": "📈",
+    "description": "The top number in a blood pressure reading — the pressure when your heart beats.",
+    "image": "https://images.unsplash.com/photo-1615486511484-92e172cc4fe0?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w5MTU2NjJ8MHwxfHNlYXJjaHwxfHxibG9vZCUyMHByZXNzdXJlJTIwbWVhc3VyZW1lbnQlMjBoZWFsdGh8ZW58MHwwfHx8MTc3NzM0OTY3OHww&ixlib=rb-4.1.0&q=80&w=1080"
+  },
+  {
+    "slug": "EFO_0004908",
+    "name": "Testosterone",
+    "emoji": "⚡",
+    "description": "A hormone that drives muscle growth, bone density, and energy — present in all sexes at different levels.",
+    "image": "https://images.unsplash.com/photo-1538134764063-789a8eaf6e74?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w5MTU2NjJ8MHwxfHNlYXJjaHwxfHxzdHJlbmd0aCUyMG11c2NsZSUyMGZpdG5lc3MlMjBwb3dlcnxlbnwwfDB8fHwxNzc3NDM2NjAxfDA&ixlib=rb-4.1.0&q=80&w=1080"
+  },
+  {
+    "slug": "EFO_0004574",
+    "name": "Total Cholesterol",
+    "emoji": "🧪",
+    "description": "The combined level of all cholesterol types in your blood, including HDL and LDL.",
+    "image": "https://images.unsplash.com/photo-1589841796113-f4619d53d428?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w5MTU2NjJ8MHwxfHNlYXJjaHwzfHxjaG9sZXN0ZXJvbCUyMGhlYWx0aHklMjBmb29kJTIwYXZvY2Fkb3xlbnwwfDB8fHwxNzc3MzQ5Njc2fDA&ixlib=rb-4.1.0&q=80&w=1080"
+  },
+  {
+    "slug": "EFO_0004530",
+    "name": "Triglycerides",
+    "emoji": "🧈",
+    "description": "A common type of fat in your blood. High levels can raise your risk of heart disease.",
+    "image": "https://images.unsplash.com/photo-1599556147783-7edf67c327e0?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w5MTU2NjJ8MHwxfHNlYXJjaHwxfHxibG9vZCUyMHRlc3QlMjBsYWJvcmF0b3J5JTIwdmlhbHxlbnwwfDB8fHwxNzc3MzQ5Njc0fDA&ixlib=rb-4.1.0&q=80&w=1080"
+  },
+  {
+    "slug": "EFO_0004531",
+    "name": "Uric Acid",
+    "emoji": "💎",
+    "description": "A waste product in your blood. High levels can crystallize in joints and cause gout.",
+    "image": "https://images.unsplash.com/photo-1577563782818-f7067373326c?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w5MTU2NjJ8MHwxfHNlYXJjaHwxfHxraWRuZXklMjBoZWFsdGglMjBjcnlzdGFsJTIwdXJpYyUyMGFjaWR8ZW58MHwwfHx8MTc3NzM0OTcxOXww&ixlib=rb-4.1.0&q=80&w=1080"
+  },
+  {
+    "slug": "EFO_0004312",
+    "name": "Lung Capacity",
+    "emoji": "🫁",
+    "description": "The maximum amount of air your lungs can hold after a deep breath.",
+    "image": "https://images.unsplash.com/photo-1775133262755-254aeaa47843?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w5MTU2NjJ8MHwxfHNlYXJjaHwxfHxkZWVwJTIwYnJlYXRoJTIwbHVuZ3MlMjBmcmVzaCUyMGFpcnxlbnwwfDB8fHwxNzc3MzQ5NzI4fDA&ixlib=rb-4.1.0&q=80&w=1080"
+  },
+  {
+    "slug": "EFO_0004620",
+    "name": "Vitamin B12",
+    "emoji": "💊",
+    "description": "A vitamin essential for nerve function, brain health, and making red blood cells.",
+    "image": "https://images.unsplash.com/photo-1768403305881-a7a82fd63512?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w5MTU2NjJ8MHwxfHNlYXJjaHwxfHx2aXRhbWluJTIwc3VwcGxlbWVudCUyMHBpbGxzJTIwaGVhbHRofGVufDB8MHx8fDE3NzczNDk3MTd8MA&ixlib=rb-4.1.0&q=80&w=1080"
+  },
+  {
+    "slug": "OBA_1000968",
+    "name": "Vitamin D",
+    "emoji": "☀️",
+    "description": "A vitamin your body makes from sunlight, important for bones, immunity, and mood.",
+    "image": "https://images.unsplash.com/photo-1589964979442-d0203dc603b1?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w5MTU2NjJ8MHwxfHNlYXJjaHw0fHxzdW5zaGluZSUyMHZpdGFtaW4lMjBEJTIwb3V0ZG9vcnN8ZW58MHwwfHx8MTc3NzM0OTY4Nnww&ixlib=rb-4.1.0&q=80&w=1080"
+  },
+  {
+    "slug": "OBA_1001085",
+    "name": "Waist Circumference",
+    "emoji": "📏",
+    "description": "The measurement around your midsection, an indicator of abdominal fat.",
+    "image": "https://images.unsplash.com/photo-1591384658362-1105c821611c?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w5MTU2NjJ8MHwxfHNlYXJjaHwxfHx3YWlzdCUyMG1lYXN1cmVtZW50JTIwZml0bmVzc3xlbnwwfDB8fHwxNzc3MzQ5NzAyfDA&ixlib=rb-4.1.0&q=80&w=1080"
+  },
+  {
+    "slug": "EFO_0004343",
+    "name": "Waist-to-Hip Ratio",
+    "emoji": "📏",
+    "description": "How your body stores fat — a higher ratio means more fat around the waist relative to the hips.",
+    "image": "https://images.unsplash.com/photo-1768839722667-85bf00fe8b9a?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w5MTU2NjJ8MHwxfHNlYXJjaHwxfHxib2R5JTIwc2hhcGUlMjBtZWFzdXJlbWVudCUyMHRhcGV8ZW58MHwwfHx8MTc3NzM0OTcwMHww&ixlib=rb-4.1.0&q=80&w=1080"
+  }
+]
