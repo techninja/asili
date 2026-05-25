@@ -76,7 +76,12 @@ export function footerSection() {
     <section class="settings-drawer__section">
       <p class="settings-drawer__meta">
         <app-icon name="shield-check" size="sm"></app-icon>
-        Asili v${document.querySelector('meta[name="app-version"]')?.content || '?'} · Privacy-first · Your data never leaves this device
+        Asili
+        v${
+          /** @type {HTMLMetaElement|null} */ (document.querySelector('meta[name="app-version"]'))
+            ?.content || '?'
+        }
+        · Privacy-first · Your data never leaves this device
       </p>
     </section>
   `;

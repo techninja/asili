@@ -7,11 +7,16 @@ import { html, define, router } from 'hybrids';
 // @ts-ignore
 import '#molecules/individual-list/individual-list.js';
 import * as idb from '/packages/core/src/data-layer/idb.js';
-import { getScoringSettings, saveScoringSettings } from '#utils/queue-settings.js';
-import { resetQueue } from '#utils/scoring-queue.js';
-import { clearFamilyCache } from '#organisms/trait-grid/render-card.js';
-import { clearLocalStorage, IDB_STORES } from '#utils/storage.js';
+import { getScoringSettings } from '#utils/queue-settings.js';
 import { storageSection, scoringSection, dangerSection } from './settings-sections.js';
+import {
+  handleMemoryChange,
+  handleWorkerChange,
+  handleAutoScoreChange,
+  handleDelete,
+  handleUpgrade,
+  doClearAll,
+} from './settings-handlers.js';
 
 export default define({
   tag: 'settings-view',
@@ -63,7 +68,13 @@ export default define({
         <section class="settings__section">
           <h2>About</h2>
           <p class="settings__meta">
-            Asili v${document.querySelector('meta[name="app-version"]')?.content || '?'} · Privacy-first · Your data never leaves this device
+            Asili
+            v${
+              /** @type {HTMLMetaElement|null} */ (
+                document.querySelector('meta[name="app-version"]')
+              )?.content || '?'
+            }
+            · Privacy-first · Your data never leaves this device
           </p>
         </section>
       </div>
@@ -91,59 +102,4 @@ async function loadData(host) {
     console.error(e);
     /* first visit */
   }
-}
-
-/** @param {object} host @param {Event} e */
-async function handleMemoryChange(host, e) {
-  host.memoryLimit = /** @type {HTMLSelectElement} */ (e.target).value;
-  await saveScoringSettings({ memoryLimit: host.memoryLimit });
-}
-
-/** @param {object} host @param {Event} e */
-async function handleWorkerChange(host, e) {
-  host.workerCount = Number(/** @type {HTMLSelectElement} */ (e.target).value);
-  await saveScoringSettings({ workerCount: host.workerCount });
-}
-
-/** @param {object} host @param {Event} e */
-async function handleAutoScoreChange(host, e) {
-  host.autoScore = /** @type {HTMLInputElement} */ (e.target).checked;
-  await saveScoringSettings({ autoScore: host.autoScore });
-}
-
-/** @param {object & HTMLElement} host */
-async function handleDelete(host) {
-  await idb.openDB();
-  host.individuals = await idb.getAll('individuals');
-}
-
-/** @param {object & HTMLElement} host @param {CustomEvent} e */
-async function handleUpgrade(host, e) {
-  const { id } = e.detail;
-  try {
-    await idb.openDB();
-    const ind = await idb.get('individuals', id);
-    if (ind) await idb.put('individuals', id, { ...ind, hasImputed: true });
-    const keys = await idb.getAllKeys('results');
-    for (const k of keys) {
-      if (String(k).startsWith(`${id}:`)) await idb.del('results', k);
-    }
-    await idb.del('variants', id);
-    host.individuals = await idb.getAll('individuals');
-  } catch (e) {
-    console.error(e);
-    /* upgrade failed */
-  }
-}
-
-/** @param {object & HTMLElement} _host */
-async function doClearAll(_host) {
-  await resetQueue();
-  clearFamilyCache();
-  clearLocalStorage();
-  await idb.openDB();
-  for (const store of IDB_STORES) {
-    await idb.clear(store);
-  }
-  window.location.href = '/';
 }
