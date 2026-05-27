@@ -5,6 +5,8 @@
   right: var(--space-lg);
   z-index: 95;
   width: min(28rem, calc(100vw - 2 * var(--space-lg)));
+  max-height: calc(100vh - var(--header-height, 3.5rem) - var(--space-lg));
+  overflow-y: auto;
   padding: var(--space-lg);
   background: color-mix(in srgb, var(--color-surface) 85%, transparent);
   backdrop-filter: blur(12px);
