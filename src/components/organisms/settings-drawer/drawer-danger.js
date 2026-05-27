@@ -85,7 +85,7 @@ export function footerSection() {
       </p>
       <p class="settings-drawer__meta">
         <a href="https://github.com/techninja/asili/issues" target="_blank" rel="noopener">
-          🐛 Report a problem
+          🪲 Report a problem
         </a>
         ·
         <a href="https://github.com/techninja/asili" target="_blank" rel="noopener">

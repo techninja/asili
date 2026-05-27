@@ -22,6 +22,8 @@
 .coming-soon__grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(15rem, 1fr));
+  max-width: calc(3 * 15rem + 2 * var(--space-lg));
+  margin: 0 auto;
   gap: var(--space-lg);
 }
 

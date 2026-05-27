@@ -49,7 +49,7 @@ export default define({
               class="btn btn-secondary"
               target="_blank"
               rel="noopener"
-              >🐛 Report a Bug</a
+              >🪲 Report a Bug</a
             >
           </div>
         </main>
