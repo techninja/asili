@@ -83,6 +83,15 @@ export function footerSection() {
         }
         · Privacy-first · Your data never leaves this device
       </p>
+      <p class="settings-drawer__meta">
+        <a href="https://github.com/techninja/asili/issues" target="_blank" rel="noopener">
+          🐛 Report a problem
+        </a>
+        ·
+        <a href="https://github.com/techninja/asili" target="_blank" rel="noopener">
+          Source code
+        </a>
+      </p>
     </section>
   `;
 }

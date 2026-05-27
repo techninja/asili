@@ -1,5 +1,5 @@
 /**
- * Coming Soon page — placeholder for app.asili.dev while the app is built.
+ * Home page — public beta landing for app.asili.dev.
  * @module pages/home
  */
 
@@ -25,25 +25,32 @@ export default define({
         <main class="coming-soon__hero">
           <hero-canvas></hero-canvas>
           <div class="coming-soon__emoji">🧬</div>
-          <h1 class="coming-soon__title">App Coming Soon</h1>
+          <h1 class="coming-soon__title">Public Beta</h1>
           <p class="coming-soon__sub">
-            Privacy-first polygenic risk score analysis. Upload your DNA file and explore dozens of
+            Privacy-first polygenic risk score analysis. Upload your DNA file and explore 64
             traits — everything runs in your browser. We never see your data.
           </p>
           <div class="coming-soon__badges">
             <span class="coming-soon__badge">🔒 Zero Data Collection</span>
-            <span class="coming-soon__badge">🧪 44 Traits at Launch</span>
+            <span class="coming-soon__badge">🧬 64 Traits</span>
             <span class="coming-soon__badge">📖 Open Source</span>
           </div>
           <div class="coming-soon__cta">
+            <a href="/beta" class="btn btn-primary">Launch App →</a>
             <a
               href="https://github.com/techninja/asili"
-              class="btn btn-primary"
+              class="btn btn-secondary"
               target="_blank"
               rel="noopener"
               >View on GitHub</a
             >
-            <a href="https://asili.dev/blog" class="btn btn-secondary">Read the Blog</a>
+            <a
+              href="https://github.com/techninja/asili/issues"
+              class="btn btn-secondary"
+              target="_blank"
+              rel="noopener"
+              >🐛 Report a Bug</a
+            >
           </div>
         </main>
 
@@ -51,38 +58,14 @@ export default define({
 
         <section class="coming-soon__features">
           <div class="coming-soon__features-inner">
-            <h2 class="coming-soon__features-title">What's coming</h2>
+            <h2 class="coming-soon__features-title">How it works</h2>
             <div class="coming-soon__grid">
-              ${card(
-                '📁',
-                'Upload your DNA',
-                'Drop in your raw file from 23andMe, AncestryDNA, MyHeritage, or others.',
-              )}
-              ${card(
-                '⚡',
-                'Browser-only scoring',
-                'DuckDB WASM scores your variants against published GWAS data — no server.',
-              )}
-              ${card(
-                '📊',
-                'Explore 44 traits',
-                'BMI, height, chronotype, caffeine metabolism, and more with clear explanations.',
-              )}
-              ${card(
-                '👨‍👩‍👧‍👦',
-                'Family comparison',
-                'Upload multiple family members and compare scores side by side.',
-              )}
-              ${card(
-                '🔬',
-                'Variant deep-dives',
-                'See which specific variants contribute most to each trait score.',
-              )}
-              ${card(
-                '📄',
-                'Printable reports',
-                'Category radar charts and full reports you can take to a consultation.',
-              )}
+              ${card('📁', 'Upload your DNA', 'Drop your raw file from 23andMe, AncestryDNA, MyHeritage, or others.')}
+              ${card('⚡', 'Browser-only scoring', 'DuckDB WASM scores variants against published PGS Catalog data — no server.')}
+              ${card('📊', 'Explore 64 traits', 'BMI, height, cholesterol, chronotype, and more with predicted values.')}
+              ${card('👨‍👩‍👧‍👦', 'Family comparison', 'Upload multiple family members and compare scores side by side.')}
+              ${card('🔬', 'Variant deep-dives', 'See which specific variants contribute most to each trait score.')}
+              ${card('📄', 'Printable reports', 'Category radar charts and reports you can take to a consultation.')}
             </div>
           </div>
         </section>
