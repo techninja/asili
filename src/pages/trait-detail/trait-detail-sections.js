@@ -34,10 +34,11 @@ export function scoredContent(r, t, fd, pm, ie, isImputed = true) {
   const pgsLink = r.bestPGS ? `https://www.pgscatalog.org/score/${r.bestPGS}` : '';
   return html`
     <div class="trait-detail__grid">
-      ${bestPgsSection(r, det, pm, pgsLink, totalVars)} ${aqsSection(det, totalVars)}
-      ${distributionSection(r, ie)} ${pgsEntries.length > 0 ? pgsTableSection(pgsEntries) : html``}
-      ${riskBalance(r)} ${chrContributionSection(r)} ${topVariantsSection(r, ie)}
-      ${chrCoverageSection(r, isImputed)} ${fd?.length > 0 ? familySection(fd) : html``}
+      ${chrCoverageSection(r, isImputed)} ${aqsSection(det, totalVars)}
+      ${distributionSection(r, ie)} ${riskBalance(r)} ${topVariantsSection(r, ie)}
+      ${bestPgsSection(r, det, pm, pgsLink, totalVars)}
+      ${pgsEntries.length > 0 ? pgsTableSection(pgsEntries) : html``}
+      ${chrContributionSection(r)} ${fd?.length > 0 ? familySection(fd) : html``}
     </div>
   `;
 }
