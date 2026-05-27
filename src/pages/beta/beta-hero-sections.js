@@ -35,7 +35,7 @@ export function traitShowcase() {
  */
 function tp(emoji, name, detail, traitId) {
   return html`
-    <a href="/beta/trait/${traitId}" class="beta-hero__trait-preview">
+    <a href="/trait/${traitId}" class="beta-hero__trait-preview">
       <span class="beta-hero__trait-emoji">${emoji}</span>
       <div>
         <strong>${name}</strong>
