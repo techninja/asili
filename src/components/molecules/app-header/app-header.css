@@ -10,6 +10,7 @@
   background: color-mix(in srgb, var(--color-surface) 85%, transparent);
   backdrop-filter: blur(12px);
   flex-wrap: wrap;
+  overflow: hidden;
 }
 
 .app-header__logo {
@@ -21,13 +22,14 @@
   font-weight: 700;
   font-size: var(--text-lg);
   flex-shrink: 0;
-  overflow: hidden;
+  overflow: visible;
   height: 2.5rem;
 
   & img {
-    height: 4rem;
+    height: 8rem;
     width: auto;
-    margin: -0.75rem 0;
+    margin-top: -3.2em;
+    margin-bottom: -1.4em;
   }
 }
 
