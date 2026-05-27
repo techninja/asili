@@ -92,11 +92,29 @@ jobs:
           git tag "v${{ steps.version.outputs.new }}"
           git push origin "v${{ steps.version.outputs.new }}"
 
+      - name: Generate changelog
+        id: changelog
+        run: |
+          PREV_TAG=$(git tag --sort=-creatordate | grep -v "v${{ steps.version.outputs.new }}" | head -1)
+          echo "prev=$PREV_TAG" >> $GITHUB_OUTPUT
+          if [ -n "$PREV_TAG" ]; then
+            NOTES=$(git log --oneline --no-decorate ${PREV_TAG}..v${{ steps.version.outputs.new }} | grep -v "^.*release: v")
+          else
+            NOTES=$(git log --oneline --no-decorate -20)
+          fi
+          echo "notes<<EOF" >> $GITHUB_OUTPUT
+          echo "$NOTES" >> $GITHUB_OUTPUT
+          echo "EOF" >> $GITHUB_OUTPUT
+
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
         with:
           tag_name: v${{ steps.version.outputs.new }}
           name: v${{ steps.version.outputs.new }}
+          body: |
+            ## Changes since ${{ steps.changelog.outputs.prev || 'initial' }}
+
+            ${{ steps.changelog.outputs.notes }}
           generate_release_notes: true
 
       - name: Build
