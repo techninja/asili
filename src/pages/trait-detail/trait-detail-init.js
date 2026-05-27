@@ -18,8 +18,10 @@ export async function initView(host) {
     await idb.openDB();
     const ind = await idb.get('individuals', id);
     host.indEmoji = ind?.emoji || '🧬';
+    host.isImputed = !!ind?.hasImputed;
   } catch {
     host.indEmoji = '🧬';
+    host.isImputed = false;
   }
 
   const list = await getTraitList();

@@ -23,7 +23,7 @@ import {
 const NULL_CONF = ['none', 'insufficient', ''];
 
 /** @param {object} r @param {object|null} t @param {Array} fd @param {object} pm @param {string} [ie] */
-export function scoredContent(r, t, fd, pm, ie) {
+export function scoredContent(r, t, fd, pm, ie, isImputed = true) {
   if (NULL_CONF.includes(r.confidence || '')) return insufficientContent(r);
   const det = r.bestPGS && r.pgsDetails?.[r.bestPGS];
   const totalVars =
@@ -37,7 +37,7 @@ export function scoredContent(r, t, fd, pm, ie) {
       ${bestPgsSection(r, det, pm, pgsLink, totalVars)} ${aqsSection(det, totalVars)}
       ${distributionSection(r, ie)} ${pgsEntries.length > 0 ? pgsTableSection(pgsEntries) : html``}
       ${riskBalance(r)} ${chrContributionSection(r)} ${topVariantsSection(r, ie)}
-      ${chrCoverageSection(r)} ${fd?.length > 0 ? familySection(fd) : html``}
+      ${chrCoverageSection(r, isImputed)} ${fd?.length > 0 ? familySection(fd) : html``}
     </div>
   `;
 }

@@ -75,14 +75,13 @@ export function riskBalance(r) {
 
 /** @param {object} r */
 /** Chromosome coverage chart for the best PGS. */
-export function chrCoverageSection(r) {
+export function chrCoverageSection(r, isImputed = true) {
   const bestPgs = r.bestPGS;
   const bd = bestPgs && r.pgsBreakdown?.[bestPgs];
   const det = bestPgs && r.pgsDetails?.[bestPgs];
   if (!bd?.chromosomeCoverage) return html``;
   const cov = det?.coverage || 0;
   const totals = bd.chromosomeTotals || {};
-  // Fall back to estimate if totals weren't collected (old results)
   const hasTotals = Object.keys(totals).length > 0;
   const finalTotals = hasTotals ? totals : {};
   if (!hasTotals && cov > 0 && cov < 1) {
@@ -91,10 +90,19 @@ export function chrCoverageSection(r) {
     }
   }
   const data = JSON.stringify({ matched: bd.chromosomeCoverage, totals: finalTotals });
+  const showUpsell = !isImputed && cov < 0.5;
   return html`
     <section class="trait-detail__section">
       <h2><app-icon name="dna"></app-icon> Chromosome Coverage</h2>
       <chr-coverage data="${data}"></chr-coverage>
+      ${showUpsell
+        ? html`<p class="trait-detail__upsell">
+            <app-icon name="zap" size="sm"></app-icon>
+            Raw DNA covers ${Math.round(cov * 100)}% of variants for this trait.
+            <a href="https://impute.asili.dev" target="_blank" rel="noopener">Impute your data</a>
+            to unlock 60–80% coverage for more accurate scores.
+          </p>`
+        : html``}
     </section>
   `;
 }

@@ -41,6 +41,7 @@ const TraitDetail = define({
   pgsMeta: { value: /** @type {object} */ ({}) },
   familyData: { value: /** @type {Array<object>} */ ([]), connect: () => {} },
   indEmoji: '🧬',
+  isImputed: false,
   _init: {
     value: false,
     connect: (host) => {
@@ -111,7 +112,7 @@ const TraitDetail = define({
                   </div>`}
             </div>
             ${r
-              ? scoredContent(r, trait, familyData, pgsMeta, host.indEmoji)
+              ? scoredContent(r, trait, familyData, pgsMeta, host.indEmoji, host.isImputed)
               : unscoredContent(trait)}
           </main>
           ${appFooter()}
