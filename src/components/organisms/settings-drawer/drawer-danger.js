@@ -80,7 +80,7 @@ export function footerSection() {
         v${
           /** @type {HTMLMetaElement|null} */ (document.querySelector('meta[name="app-version"]'))
             ?.content || '?'
-        }
+        } beta
         · Privacy-first · Your data never leaves this device
       </p>
       <p class="settings-drawer__meta">
