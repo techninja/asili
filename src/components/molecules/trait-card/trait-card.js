@@ -100,9 +100,6 @@ function scoredBody(pct, conf, val, u, m, ie) {
       <span class="trait-card__pct-label">percentile</span>
       ${val ? html`<span class="trait-card__value">${val}</span>` : html``}
     </div>
-    ${conf && conf !== 'high'
-      ? html`<confidence-badge level="${conf}"></confidence-badge>`
-      : html``}
   `;
 }
 
