@@ -103,7 +103,14 @@
   }
 
   .app-header__logo span {
-    display: none;
+    font-size: var(--text-sm);
+  }
+
+  .app-header__logo img {
+    height: 9rem;
+    margin-top: -3.2em;
+    margin-bottom: -1.4em;
+    margin-left: -0.8em;
   }
 
   .app-header__actions {

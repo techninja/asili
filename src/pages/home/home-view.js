@@ -17,7 +17,8 @@ export default define({
     value: () => html`
       <div class="coming-soon">
         ${appHeader({
-          center: html`<a href="https://asili.dev" class="btn btn-ghost"
+          badge: 'beta',
+          trailing: html`<a href="https://asili.dev" class="btn btn-ghost"
             ><span class="coming-soon__back-text">← Back to </span>asili.dev</a
           >`,
         })}
