@@ -25,8 +25,8 @@ export default define({
 
         <main class="coming-soon__hero">
           <hero-canvas></hero-canvas>
-          <div class="coming-soon__emoji">🧬</div>
-          <h1 class="coming-soon__title">Public Beta</h1>
+          <img src="/logo.svg" alt="Asili" class="coming-soon__logo-hero" />
+          <h1 class="coming-soon__title">Asili Public Beta</h1>
           <p class="coming-soon__sub">
             Privacy-first polygenic risk score analysis. Upload your DNA file and explore 64
             traits — everything runs in your browser. We never see your data.
