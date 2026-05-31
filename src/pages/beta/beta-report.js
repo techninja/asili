@@ -70,17 +70,26 @@ export default define({
         <div class="report-tab">
           <div class="report-tab__header">
             <h2><app-icon name="document"></app-icon> Genomic Report${name ? ` — ${name}` : ''}</h2>
-            <button class="btn btn-ghost btn-sm" onclick="${() => window.print()}">
+            <button class="btn btn-ghost btn-sm" onclick="${(host) => {
+              const prev = document.title;
+              document.title = `Asili | Genomic Report${name ? ' — ' + name : ''}`;
+              window.print();
+              document.title = prev;
+            }}">
               <app-icon name="printer"></app-icon> Print
             </button>
           </div>
           ${summarySection(scored)}
-          <section class="report-tab__section">
-            <h3><app-icon name="radar" size="sm"></app-icon> Category Overview</h3>
-            <radar-chart categories="${JSON.stringify(cats)}"></radar-chart>
-            <p class="report-tab__meta">${scored.length} traits across ${cats.length} categories</p>
+          <section class="report-tab__overview">
+            <div class="report-tab__overview-chart">
+              <h3><app-icon name="radar" size="sm"></app-icon> Category Overview</h3>
+              <radar-chart categories="${JSON.stringify(cats)}"></radar-chart>
+              <p class="report-tab__meta">${scored.length} traits across ${cats.length} categories</p>
+            </div>
+            <div class="report-tab__overview-breakdown">
+              ${categoryCards(cats)}
+            </div>
           </section>
-          ${categoryCards(cats)}
           ${sorted.length > 0
             ? traitSection('trending-up', 'Top Elevated', sorted.slice(0, 5))
             : html``}

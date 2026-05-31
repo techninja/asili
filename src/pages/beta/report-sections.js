@@ -50,8 +50,13 @@ export function categoryCards(cats) {
           (c) => html`
             <div class="report-tab__cat-card">
               <mini-curve value="${c.avgPercentile}" indEmoji="" markers=""></mini-curve>
-              <span class="report-tab__cat-name">${c.category}</span>
-              <span class="report-tab__cat-pct">${c.avgPercentile}th</span>
+              <div class="report-tab__cat-card-head">
+                <span class="report-tab__cat-name">${c.category}</span>
+                <span class="report-tab__cat-badge" style="${{ background: pctColor(c.avgPercentile) }}">${c.avgPercentile}th</span>
+              </div>
+              <div class="report-tab__cat-bar">
+                <div class="report-tab__cat-bar-fill" style="${{ width: `${c.avgPercentile}%`, background: pctColor(c.avgPercentile) }}"></div>
+              </div>
               <span class="report-tab__cat-detail">
                 ${c.count} traits · ${c.elevated} elevated · ${c.low} low
               </span>
@@ -61,6 +66,13 @@ export function categoryCards(cats) {
       </div>
     </section>
   `;
+}
+
+/** Map percentile to a color: blue (low) → green (mid) → orange (high). */
+function pctColor(pct) {
+  if (pct < 30) return '#3b82f6';
+  if (pct < 60) return '#22c55e';
+  return '#f59e0b';
 }
 
 /**

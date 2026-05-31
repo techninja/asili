@@ -8,6 +8,7 @@
   width: 100%;
   max-width: 400px;
   height: auto;
+  overflow: visible;
 }
 
 .radar-chart__ring {
@@ -35,12 +36,12 @@
 }
 
 .radar-chart__label {
-  font-size: 9px;
+  font-size: 13px;
   fill: var(--color-text-muted);
 }
 
 .radar-chart__ring-label {
-  font-size: 7px;
+  font-size: 9px;
   fill: var(--color-text-muted);
   opacity: 0.6;
 }
@@ -54,5 +55,17 @@
   .radar-chart__shape {
     print-color-adjust: exact;
     -webkit-print-color-adjust: exact;
+  }
+
+  .radar-chart__svg {
+    max-width: 200px;
+  }
+
+  .radar-chart__label {
+    font-size: 8px;
+  }
+
+  .radar-chart__ring-label {
+    font-size: 7px;
   }
 }
