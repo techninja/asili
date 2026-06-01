@@ -8,6 +8,13 @@ import { results } from './results-store.js';
 import { formatTraitValue } from '/packages/core/src/formatter.js';
 import TraitDetailView from '#pages/trait-detail/trait-detail-view.js';
 
+/** Format number with ordinal suffix (1st, 2nd, 3rd, 4th…) */
+function ordinal(n) {
+  const s = ['th', 'st', 'nd', 'rd'];
+  const v = n % 100;
+  return n + (s[(v - 20) % 10] || s[v] || s[0]);
+}
+
 /** @param {Array<object>} traits */
 export function traitTable(traits) {
   return html`
@@ -37,7 +44,7 @@ export function traitTable(traits) {
                 >${t.emoji || '🧬'} ${t.name}</a
               >
             </td>
-            <td>${Math.round(r?.percentile || 0)}th</td>
+            <td>${ordinal(Math.round(r?.percentile || 0))}</td>
             <td>${fmt?.display || '—'}</td>
             <td>${cov}%</td>
           </tr>`;
