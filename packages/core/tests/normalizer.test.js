@@ -19,7 +19,39 @@ function makePGS(overrides = {}) {
 }
 
 describe('normalizePGS', () => {
-  it('scales empirical stats by coverage', () => {
+  it('uses tiered norms for raw data when tiers available', () => {
+    const { details, breakdown } = makePGS({
+      score: 0.001, matchedVariants: 150, genotypedVariants: 150,
+      imputedVariants: 0,
+    });
+    breakdown.total = 150;
+    const np = {
+      norm_mean: 0.5, norm_sd: 0.2, variants_number: 1000,
+      tiers: { raw: { m: 0.06, s: 0.07 }, imputed: { m: 0.3, s: 0.14 } },
+    };
+    normalizePGS(details, breakdown, np);
+
+    assert.equal(details.normMean, 0.06);
+    assert.equal(details.normSd, 0.07);
+  });
+
+  it('uses tiered norms for imputed data when tiers available', () => {
+    const { details, breakdown } = makePGS({
+      score: 0.2, matchedVariants: 600, genotypedVariants: 100,
+      imputedVariants: 500,
+    });
+    breakdown.total = 600;
+    const np = {
+      norm_mean: 0.5, norm_sd: 0.2, variants_number: 1000,
+      tiers: { raw: { m: 0.06, s: 0.07 }, imputed: { m: 0.3, s: 0.14 } },
+    };
+    normalizePGS(details, breakdown, np);
+
+    assert.equal(details.normMean, 0.3);
+    assert.equal(details.normSd, 0.14);
+  });
+
+  it('falls back to coverage scaling when no tiers', () => {
     const { details, breakdown } = makePGS({
       score: 0.08, matchedVariants: 150, genotypedVariants: 100,
     });
@@ -127,7 +159,7 @@ describe('selectBestPGS', () => {
   });
 });
 
-describe('imputation shrinkage', () => {
+describe('imputation shrinkage (legacy fallback without tiers)', () => {
   it('scales empirical mean and SD using effective coverage', () => {
     // avgShrinkage=0.95, coverage=100% (100/100)
     // coverage < 1.0 is false, so no scaling applied

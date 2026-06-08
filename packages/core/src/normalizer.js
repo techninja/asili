@@ -34,24 +34,30 @@ export function normalizePGS(
   const sufficientCoverage = coverage >= MIN_COVERAGE;
   let useEmpirical = hasEmpirical && sufficientCoverage;
 
-  // Scale empirical norm params by coverage and shrinkage.
-  // Coverage: at partial coverage, mean ∝ coverage, SD ∝ √coverage.
-  // Shrinkage: the SQL applies √(DR2) per variant, shrinking contributions.
-  // Mean shifts by coverage × shrinkage. However, imputed dosage noise means
-  // the score's SD doesn't shrink as much as the mean — we divide SD by
-  // shrinkage to widen the denominator, reducing extreme z-scores.
-  // For raw data (shrinkage=1.0), this has no effect.
-  const shrinkage = details.avgShrinkage || 1.0;
-  if (useEmpirical && coverage < 1.0 && mean !== undefined) {
+  // Use coverage-tiered norms if available. These were computed by subsampling
+  // reference individuals at realistic coverage levels (13% raw, 60% imputed),
+  // eliminating the need for coverage-scaling formulas.
+  const tiers = normParams.tiers;
+  if (useEmpirical && tiers) {
+    const tier = (details.imputedVariants > 0) ? 'imputed' : 'raw';
+    const tierNorms = tiers[tier];
+    if (tierNorms && tierNorms.s > 0) {
+      mean = tierNorms.m;
+      sd = tierNorms.s;
+    }
+  } else if (useEmpirical && coverage < 1.0 && mean !== undefined) {
+    // Legacy fallback: scale empirical norms by coverage.
+    const shrinkage = details.avgShrinkage || 1.0;
     mean = mean * coverage * shrinkage;
     sd = sd * Math.sqrt(coverage) / shrinkage;
   }
 
-  // Sanity check: if scaled z would be extreme, the empirical norms may not
-  // match our scoring method — fall back to theoretical SD.
+  // Sanity check: if the empirical/tiered norms produce an extreme z-score,
+  // they don't match this user's actual variant subset. Fall back to theoretical
+  // SD which naturally scales with the matched weights.
   if (useEmpirical && mean !== undefined && sd > 0) {
     const naiveZ = Math.abs((details.score - mean) / sd);
-    if (naiveZ > 20) useEmpirical = false;
+    if (naiveZ > MAX_Z) useEmpirical = false;
   }
 
   if (!useEmpirical && breakdown.total > 0) {

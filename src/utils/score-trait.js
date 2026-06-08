@@ -30,6 +30,7 @@ export async function getNormParams() {
       normCache[id] = { norm_mean: v.m, norm_sd: v.s, variants_number: v.n };
       if (v.d) normCache[id].distribution = v.d;
       if (v.ancestry) normCache[id].ancestry = v.ancestry;
+      if (v.tiers) normCache[id].tiers = v.tiers;
     }
   } catch (e) {
     console.warn('No pgs_norm_params.json — using theoretical SD', e.message);
