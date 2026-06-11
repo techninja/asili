@@ -66,9 +66,10 @@ test.describe('Settings @fast', () => {
     const accordion = page.locator('accordion-panel').first();
     await accordion.locator('.accordion-panel__trigger').click();
 
-    // Should show diagnostic output
+    // Wait for async diagnostic to complete (not just "Running...")
     const output = accordion.locator('.accordion-panel__content');
-    await expect(output).toBeVisible({ timeout: 5_000 });
+    await expect(output).toBeVisible({ timeout: 10_000 });
+    await expect(output).not.toHaveText('Running');
     const text = await output.textContent();
     expect(text).toContain('Per-Individual:');
   });

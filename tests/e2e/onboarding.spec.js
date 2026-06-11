@@ -54,10 +54,10 @@ test.describe('Onboarding — first individual', () => {
   test('trait grid shows cards after upload', async ({ page }) => {
     await uploadAndSetup(page);
 
-    // Wait for grid and cards
+    // Wait for grid and cards (CI is slower — allow time for manifest fetch + render)
     await expect(page.locator('trait-grid')).toBeVisible({ timeout: 15_000 });
     const cards = page.locator('trait-card');
-    await expect(cards.first()).toBeVisible({ timeout: 10_000 });
+    await expect(cards.first()).toBeVisible({ timeout: 30_000 });
     const count = await cards.count();
     expect(count).toBeGreaterThan(0);
   });
