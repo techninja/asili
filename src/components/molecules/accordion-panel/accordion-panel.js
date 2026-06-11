@@ -18,6 +18,9 @@
 
 import { html, define, dispatch } from 'hybrids';
 
+/**
+ *
+ */
 function toggle(host) {
   if (host.content) {
     host.content = '';
@@ -26,6 +29,9 @@ function toggle(host) {
   }
 }
 
+/**
+ *
+ */
 function copy(host) {
   if (host.content) {
     navigator.clipboard.writeText(host.content).catch(() => {});

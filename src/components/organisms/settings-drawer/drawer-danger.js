@@ -80,8 +80,8 @@ export function footerSection() {
         v${
           /** @type {HTMLMetaElement|null} */ (document.querySelector('meta[name="app-version"]'))
             ?.content || '?'
-        } beta
-        · Privacy-first · Your data never leaves this device
+        }
+        beta · Privacy-first · Your data never leaves this device
       </p>
       <p class="settings-drawer__meta">
         <a href="https://github.com/techninja/asili/issues" target="_blank" rel="noopener">

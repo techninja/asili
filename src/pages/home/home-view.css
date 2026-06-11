@@ -30,7 +30,6 @@ home-view {
   font-weight: 800;
   font-size: var(--text-xl);
   letter-spacing: 0.04em;
-
 }
 
 .coming-soon__logo-img {
@@ -74,7 +73,7 @@ home-view {
   width: 16rem;
   margin-top: -3em;
   margin-bottom: var(--space-lg);
-  filter: drop-shadow(0 0 11px rgba(26, 146, 0, 0.4)) drop-shadow(0 0 2px rgba(146, 29, 29, 0.3));
+  filter: drop-shadow(0 0 11px rgb(26 146 0 / 40%)) drop-shadow(0 0 2px rgb(146 29 29 / 30%));
 }
 
 .coming-soon__title {

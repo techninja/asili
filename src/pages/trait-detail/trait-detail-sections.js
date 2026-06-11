@@ -37,8 +37,8 @@ export function scoredContent(r, t, fd, pm, ie, isImputed = true) {
       ${chrCoverageSection(r, isImputed)} ${aqsSection(det, totalVars)}
       ${distributionSection(r, ie)} ${riskBalance(r)} ${topVariantsSection(r, ie)}
       ${bestPgsSection(r, det, pm, pgsLink, totalVars)}
-      ${pgsEntries.length > 0 ? pgsTableSection(pgsEntries) : html``}
-      ${chrContributionSection(r)} ${fd?.length > 0 ? familySection(fd) : html``}
+      ${pgsEntries.length > 0 ? pgsTableSection(pgsEntries) : html``} ${chrContributionSection(r)}
+      ${fd?.length > 0 ? familySection(fd) : html``}
     </div>
   `;
 }

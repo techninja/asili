@@ -1,0 +1,79 @@
+/* Report tab — print styles */
+@media print {
+  /* Force light colors for ink saving */
+  :root {
+    --color-text: #1e293b;
+    --color-text-muted: #4b5c73;
+    --color-bg: #fff;
+    --color-surface: #fff;
+    --color-surface-alt: #f1f5f9;
+    --color-border: #d4d6e4;
+    --color-primary: #4f46e5;
+  }
+
+  /* Hide non-report UI */
+  .app-header,
+  .app-footer,
+  floating-bar,
+  .beta-view__tabs,
+  .individual-switcher,
+  .report-tab__header button,
+  .no-print {
+    display: none !important;
+  }
+
+  body {
+    background: #fff;
+    color: #1e293b;
+  }
+
+  /* Tighten spacing */
+  .report-tab {
+    gap: var(--space-sm);
+  }
+
+  .report-tab__section {
+    gap: var(--space-xs);
+    break-inside: avoid;
+  }
+
+  .report-tab__overview {
+    gap: var(--space-sm);
+  }
+
+  .report-tab__overview-breakdown mini-curve {
+    display: none;
+  }
+
+  .report-tab__cat-grid {
+    grid-template-columns: repeat(auto-fill, minmax(7rem, 1fr));
+    gap: var(--space-xs);
+  }
+
+  .report-tab__cat-card {
+    padding: var(--space-xs) var(--space-sm);
+  }
+
+  .report-tab__stat,
+  .report-tab__cat-card {
+    border: 1px solid #ccc;
+    background: #fff;
+    print-color-adjust: exact;
+    -webkit-print-color-adjust: exact;
+  }
+
+  .report-tab__qbar-fill,
+  .report-tab__cat-bar-fill,
+  .report-tab__cat-badge {
+    print-color-adjust: exact;
+    -webkit-print-color-adjust: exact;
+  }
+
+  .report-tab__disclaimer {
+    display: none;
+  }
+
+  .report-tab__section:has(.report-tab__quality-bars) {
+    display: none;
+  }
+}

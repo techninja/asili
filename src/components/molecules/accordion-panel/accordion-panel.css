@@ -11,7 +11,10 @@
   font: inherit;
   font-size: var(--text-sm);
   cursor: pointer;
-  transition: background 0.15s, border-color 0.15s, color 0.15s;
+  transition:
+    background 0.15s,
+    border-color 0.15s,
+    color 0.15s;
 }
 
 .accordion-panel__trigger:hover {
@@ -64,7 +67,10 @@
   background: var(--color-surface);
   color: var(--color-text-muted);
   cursor: pointer;
-  transition: background 0.15s, color 0.15s, border-color 0.15s;
+  transition:
+    background 0.15s,
+    color 0.15s,
+    border-color 0.15s;
 }
 
 .accordion-panel__copy:hover {

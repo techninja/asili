@@ -46,7 +46,7 @@ export async function getNormParams() {
   }
   const ancestry = storageGet('ancestry');
   if (ancestry) {
-    for (const [_id, entry] of Object.entries(normCache)) {
+    for (const [, entry] of Object.entries(normCache)) {
       const pop = entry.ancestry?.[ancestry];
       if (pop) {
         entry.norm_mean = pop.m;

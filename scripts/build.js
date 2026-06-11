@@ -46,7 +46,7 @@ let html = readFileSync(indexPath, 'utf-8');
 html = html.replace(/(\.css|\.js)"/g, `$1?v=${HASH}"`);
 html = html.replace(
   /<meta name="app-version" content="[^"]*" \/>/,
-  `<meta name="app-version" content="${VERSION}" />`
+  `<meta name="app-version" content="${VERSION}" />`,
 );
 writeFileSync(indexPath, html);
 

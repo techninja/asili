@@ -20,7 +20,7 @@ app.get(['/', '/index.html'], (_req, res) => {
   let html = readFileSync(resolve(__dirname, 'index.html'), 'utf-8');
   html = html.replace(
     /<meta name="app-version" content="[^"]*" \/>/,
-    `<meta name="app-version" content="${VERSION}" />`
+    `<meta name="app-version" content="${VERSION}" />`,
   );
   res.type('html').send(html);
 });
@@ -33,7 +33,7 @@ app.use((req, res, next) => {
     let html = readFileSync(resolve(__dirname, 'index.html'), 'utf-8');
     html = html.replace(
       /<meta name="app-version" content="[^"]*" \/>/,
-      `<meta name="app-version" content="${VERSION}" />`
+      `<meta name="app-version" content="${VERSION}" />`,
     );
     return res.type('html').send(html);
   }

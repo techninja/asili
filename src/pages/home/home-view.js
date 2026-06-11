@@ -28,8 +28,8 @@ export default define({
           <img src="/logo.svg" alt="Asili" class="coming-soon__logo-hero" />
           <h1 class="coming-soon__title">Asili Public Beta</h1>
           <p class="coming-soon__sub">
-            Privacy-first polygenic risk score analysis. Upload your DNA file and explore 64
-            traits — everything runs in your browser. We never see your data.
+            Privacy-first polygenic risk score analysis. Upload your DNA file and explore 64 traits
+            — everything runs in your browser. We never see your data.
           </p>
           <div class="coming-soon__badges">
             <span class="coming-soon__badge">🔒 Zero Data Collection</span>
@@ -61,12 +61,36 @@ export default define({
           <div class="coming-soon__features-inner">
             <h2 class="coming-soon__features-title">How it works</h2>
             <div class="coming-soon__grid">
-              ${card('📁', 'Upload your DNA', 'Drop your raw file from 23andMe, AncestryDNA, MyHeritage, or others.')}
-              ${card('⚡', 'Browser-only scoring', 'DuckDB WASM scores variants against published PGS Catalog data — no server.')}
-              ${card('📊', 'Explore 64 traits', 'BMI, height, cholesterol, chronotype, and more with predicted values.')}
-              ${card('👨‍👩‍👧‍👦', 'Family comparison', 'Upload multiple family members and compare scores side by side.')}
-              ${card('🔬', 'Variant deep-dives', 'See which specific variants contribute most to each trait score.')}
-              ${card('📄', 'Printable reports', 'Category radar charts and reports you can take to a consultation.')}
+              ${card(
+                '📁',
+                'Upload your DNA',
+                'Drop your raw file from 23andMe, AncestryDNA, MyHeritage, or others.',
+              )}
+              ${card(
+                '⚡',
+                'Browser-only scoring',
+                'DuckDB WASM scores variants against published PGS Catalog data — no server.',
+              )}
+              ${card(
+                '📊',
+                'Explore 64 traits',
+                'BMI, height, cholesterol, chronotype, and more with predicted values.',
+              )}
+              ${card(
+                '👨‍👩‍👧‍👦',
+                'Family comparison',
+                'Upload multiple family members and compare scores side by side.',
+              )}
+              ${card(
+                '🔬',
+                'Variant deep-dives',
+                'See which specific variants contribute most to each trait score.',
+              )}
+              ${card(
+                '📄',
+                'Printable reports',
+                'Category radar charts and reports you can take to a consultation.',
+              )}
             </div>
           </div>
         </section>
