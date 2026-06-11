@@ -24,6 +24,7 @@
 @import '../components/molecules/family-compare/family-compare.css';
 @import '../components/molecules/pgs-table/pgs-table.css';
 @import '../components/molecules/individual-list/individual-list.css';
+@import '../components/molecules/accordion-panel/accordion-panel.css';
 @import '../components/molecules/emoji-builder/emoji-builder.css';
 @import '../components/molecules/individual-switcher/individual-switcher.css';
 

@@ -13,7 +13,10 @@ import {
   handleBandwidth,
   handleAncestry,
   handleUnits,
+  handleToggleDiagnostic,
+  handleSystemDiagnostic,
 } from './drawer-handlers.js';
+import '#molecules/accordion-panel/accordion-panel.js';
 
 export { dangerSection, footerSection } from './drawer-danger.js';
 
@@ -56,6 +59,28 @@ export function storageSection(host) {
         Imputed .asili packs are stored on your device's disk via file handles, not in browser
         storage. Their size depends on your files.
       </p>
+    </section>
+  `;
+}
+
+/**
+ *
+ */
+export function developerSection(host) {
+  return html`
+    <section class="settings-drawer__section">
+      <accordion-panel
+        label="🔬 Imputed vs Raw score diagnostics"
+        content="${host.diagnosticOutput}"
+        copyable
+        onrun="${handleToggleDiagnostic}"
+      ></accordion-panel>
+      <accordion-panel
+        label="📋 System diagnostic"
+        content="${host.systemDiagnosticOutput}"
+        copyable
+        onrun="${handleSystemDiagnostic}"
+      ></accordion-panel>
     </section>
   `;
 }

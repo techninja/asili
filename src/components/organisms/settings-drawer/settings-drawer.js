@@ -11,6 +11,7 @@ import {
   individualsSection,
   storageSection,
   scoringSection,
+  developerSection,
   dangerSection,
   footerSection,
 } from './drawer-sections.js';
@@ -33,6 +34,8 @@ export default define({
   confirmClear: false,
   clearing: false,
   closing: false,
+  diagnosticOutput: '',
+  systemDiagnosticOutput: '',
   _loaded: {
     value: false,
     observe(host, _, last) {
@@ -55,7 +58,7 @@ export default define({
             </div>
             <div class="settings-drawer__body">
               ${individualsSection(host)} ${storageSection(host)} ${scoringSection(host)}
-              ${dangerSection(host)} ${footerSection()}
+              ${developerSection(host)} ${dangerSection(host)} ${footerSection()}
             </div>
           </div>
         </div>
