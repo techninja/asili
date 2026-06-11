@@ -24,7 +24,7 @@ jobs:
       - run: pnpm install --frozen-lockfile
 
       - name: Node tests
-        run: node --test 'src/{store,utils}/**/*.test.js' 'packages/core/**/*.test.js'
+        run: pnpm test node
 
       - name: Lint (ESLint)
         run: pnpm exec eslint src/ --max-warnings 0
@@ -33,3 +33,32 @@ jobs:
       - name: Lint (Stylelint)
         run: pnpm exec stylelint "src/**/*.css" --max-warnings 0
         continue-on-error: true
+
+  e2e:
+    name: E2E Tests
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: pnpm
+
+      - run: pnpm install --frozen-lockfile
+
+      - name: Install Playwright browsers
+        run: npx playwright install chromium
+
+      - name: Run E2E tests
+        run: pnpm test e2e
+
+      - uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: playwright-report
+          path: test-results/
+          retention-days: 7

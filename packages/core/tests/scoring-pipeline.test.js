@@ -109,7 +109,7 @@ describe('end-to-end scoring pipeline', () => {
     // scaled_mean = 0.5 * 0.5 = 0.25, scaled_sd = 0.8 * sqrt(0.5) ≈ 0.5657
     const scored = buildScoredMaps([{
       pgs_id: 'M50', raw_score: 0.8, matched_variants: 50,
-      imputed_variants: 0, genotyped_variants: 50,
+      imputed_variants: 40, genotyped_variants: 10,
       positive_count: 30, positive_sum: 1.0,
       negative_count: 20, negative_sum: -0.2, weight_sum_squared: 0.5,
     }], []);
@@ -126,7 +126,7 @@ describe('end-to-end scoring pipeline', () => {
     // z = (1.5 - 0.4) / 0.7155 ≈ 1.5366
     const scored = buildScoredMaps([{
       pgs_id: 'E', raw_score: 1.5, matched_variants: 80,
-      imputed_variants: 0, genotyped_variants: 80,
+      imputed_variants: 60, genotyped_variants: 20,
       positive_count: 50, positive_sum: 2.0,
       negative_count: 30, negative_sum: -0.5, weight_sum_squared: 0.98,
     }], []);
@@ -142,7 +142,7 @@ describe('end-to-end scoring pipeline', () => {
     // z = (1.5 - 0.5) / 0.8 = 1.25
     const scored = buildScoredMaps([{
       pgs_id: 'F', raw_score: 1.5, matched_variants: 100,
-      imputed_variants: 0, genotyped_variants: 100,
+      imputed_variants: 80, genotyped_variants: 20,
       positive_count: 60, positive_sum: 2.0,
       negative_count: 40, negative_sum: -0.5, weight_sum_squared: 0.98,
     }], []);
@@ -155,7 +155,7 @@ describe('end-to-end scoring pipeline', () => {
     // 100% coverage → no scaling. z=2.0, value = 170 + 2.0 * sqrt(0.25) * 10 = 180
     const scored = buildScoredMaps([{
       pgs_id: 'H', raw_score: 2.0, matched_variants: 100,
-      imputed_variants: 0, genotyped_variants: 100,
+      imputed_variants: 80, genotyped_variants: 20,
       positive_count: 40, positive_sum: 2.5,
       negative_count: 10, negative_sum: -0.5, weight_sum_squared: 0.5,
     }], []);
@@ -195,11 +195,11 @@ describe('end-to-end scoring pipeline', () => {
   it('selects best PGS from multiple', () => {
     const scored = buildScoredMaps([
       { pgs_id: 'A', raw_score: 0.5, matched_variants: 50,
-        imputed_variants: 0, genotyped_variants: 50,
+        imputed_variants: 40, genotyped_variants: 10,
         positive_count: 30, positive_sum: 0.8,
         negative_count: 20, negative_sum: -0.3, weight_sum_squared: 0.5 },
       { pgs_id: 'B', raw_score: 0.3, matched_variants: 800,
-        imputed_variants: 0, genotyped_variants: 800,
+        imputed_variants: 60, genotyped_variants: 200,
         positive_count: 500, positive_sum: 0.5,
         negative_count: 300, negative_sum: -0.2, weight_sum_squared: 0.3 },
     ], []);

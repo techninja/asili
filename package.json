@@ -6,9 +6,6 @@
   "description": "Privacy-first polygenic risk score analysis. All processing happens on your device.",
   "scripts": {
     "test": "node scripts/test.js",
-    "test:node": "node --test 'src/{store,utils}/**/*.test.js' 'packages/core/**/*.test.js'",
-    "test:pipeline": "node --test 'packages/pipeline/**/*.test.js'",
-    "test:browser": "npx web-test-runner --config .configs/web-test-runner.config.js",
     "start": "node src/server.js",
     "dev": "node --watch --env-file=.env --env-file=.env.local src/server.js",
     "build": "node scripts/build.js",
@@ -35,6 +32,7 @@
   "packageManager": "pnpm@10.33.0+sha512.10568bb4a6afb58c9eb3630da90cc9516417abebd3fabbe6739f0ae795728da1491e9db5a544c76ad8eb7570f5c4bb3d6c637b2cb41bfdcdb47fa823c8649319",
   "devDependencies": {
     "@open-wc/testing": "^4.0.0",
+    "@playwright/test": "^1.60.0",
     "@techninja/clearstack": "^0.3.37",
     "@types/node": "^22.0.0",
     "@web/test-runner": "^0.20.0",
@@ -44,7 +42,7 @@
     "eslint-plugin-jsdoc": "^62.8.1",
     "eslint-plugin-unused-imports": "^4.0.0",
     "markdownlint-cli2": "^0.22.0",
-    "playwright": "^1.50.0",
+    "playwright": "1.60.0",
     "prettier": "^3.8.1",
     "stylelint": "^17.6.0",
     "stylelint-config-standard": "^40.0.0",

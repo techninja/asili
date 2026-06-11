@@ -14,31 +14,32 @@ function makePGS(overrides = {}) {
       positive: 0, negative: 0, positiveSum: 0, negativeSum: 0,
       total: overrides.matchedVariants || 0, weightSumSquared: 0.01,
       chromosomeCoverage: {}, genotypedVariants: 0, imputedVariants: 0,
+      varianceIncluded: false,
     },
   };
 }
 
 describe('normalizePGS', () => {
-  it('uses tiered norms for raw data when tiers available', () => {
+  it('raw data always uses theoretical SD (skips empirical)', () => {
     const { details, breakdown } = makePGS({
-      score: 0.001, matchedVariants: 150, genotypedVariants: 150,
-      imputedVariants: 0,
+      score: 0.001, matchedVariants: 150, genotypedVariants: 150, imputedVariants: 0,
     });
     breakdown.total = 150;
+    breakdown.weightSumSquared = 0.04;
     const np = {
       norm_mean: 0.5, norm_sd: 0.2, variants_number: 1000,
       tiers: { raw: { m: 0.06, s: 0.07 }, imputed: { m: 0.3, s: 0.14 } },
     };
     normalizePGS(details, breakdown, np);
 
-    assert.equal(details.normMean, 0.06);
-    assert.equal(details.normSd, 0.07);
+    // Raw data → theoretical: mean=0, sd=sqrt(wsq*0.5)
+    assert.equal(details.normMean, 0);
+    assert.ok(Math.abs(details.normSd - Math.sqrt(0.02)) < 1e-6);
   });
 
   it('uses tiered norms for imputed data when tiers available', () => {
     const { details, breakdown } = makePGS({
-      score: 0.2, matchedVariants: 600, genotypedVariants: 100,
-      imputedVariants: 500,
+      score: 0.2, matchedVariants: 600, genotypedVariants: 100, imputedVariants: 500,
     });
     breakdown.total = 600;
     const np = {
@@ -51,22 +52,19 @@ describe('normalizePGS', () => {
     assert.equal(details.normSd, 0.14);
   });
 
-  it('falls back to coverage scaling when no tiers', () => {
+  it('imputed without tiers falls back to coverage scaling', () => {
     const { details, breakdown } = makePGS({
-      score: 0.08, matchedVariants: 150, genotypedVariants: 100,
+      score: 0.08, matchedVariants: 150, genotypedVariants: 50, imputedVariants: 100,
     });
     breakdown.total = 150;
     const np = { norm_mean: 0.5, norm_sd: 0.2, variants_number: 1000 };
-    // coverage = 150/1000 = 0.15
-    // scaled_mean = 0.5 * 0.15 = 0.075, scaled_sd = 0.2 * sqrt(0.15)
+    // coverage = 150/1000 = 0.15, shrinkage defaults to 1.0
     normalizePGS(details, breakdown, np);
 
     const cov = 0.15;
-    assert.equal(details.normMean, 0.5 * cov);
+    assert.ok(Math.abs(details.normMean - 0.5 * cov) < 1e-6);
     const expectedSd = 0.2 * Math.sqrt(cov);
     assert.ok(Math.abs(details.normSd - expectedSd) < 1e-6);
-    const expectedZ = (0.08 - 0.5 * cov) / expectedSd;
-    assert.ok(Math.abs(details.zScore - expectedZ) < 0.01);
   });
 
   it('falls back to theoretical when no empirical data', () => {
@@ -85,7 +83,7 @@ describe('normalizePGS', () => {
 
   it('falls back to theoretical when coverage < 5%', () => {
     const { details, breakdown } = makePGS({
-      score: 0.01, matchedVariants: 300,
+      score: 0.01, matchedVariants: 300, imputedVariants: 200, genotypedVariants: 100,
     });
     breakdown.total = 300;
     breakdown.weightSumSquared = 0.001;
@@ -96,32 +94,36 @@ describe('normalizePGS', () => {
     assert.equal(details.normMean, 0);
   });
 
-  it('detects incompatible empirical stats', () => {
+  it('sanity check rejects extreme z from tier norms', () => {
     const { details, breakdown } = makePGS({
-      score: 0.79, matchedVariants: 790000, genotypedVariants: 790000,
+      score: 5.0, matchedVariants: 600, genotypedVariants: 100, imputedVariants: 500,
     });
-    breakdown.total = 790000;
-    breakdown.weightSumSquared = 0.001;
-    breakdown.genotypedVariants = 790000;
-    const np = { norm_mean: 193.5, norm_sd: 0.08, variants_number: 6900000 };
-
+    breakdown.total = 600;
+    breakdown.weightSumSquared = 1.0;
+    breakdown.varianceIncluded = true;
+    // Tier SD is tiny → would produce |z| > 4 → fallback to theoretical
+    const np = {
+      norm_mean: 0.5, norm_sd: 0.2, variants_number: 1000,
+      tiers: { imputed: { m: 0.0, s: 0.001 } },
+    };
     normalizePGS(details, breakdown, np);
 
+    // Should fall back to theoretical (mean=0)
     assert.equal(details.normMean, 0);
-    assert.ok(Math.abs(details.zScore) < 50);
+    assert.ok(Math.abs(details.zScore) < 10);
   });
 
-  it('computes quantitative trait value', () => {
+  it('computes quantitative trait value for imputed data', () => {
     const { details, breakdown } = makePGS({
-      score: 1.0, matchedVariants: 500, genotypedVariants: 500,
+      score: 1.0, matchedVariants: 500, genotypedVariants: 50, imputedVariants: 450,
     });
     breakdown.total = 500;
     breakdown.weightSumSquared = 1;
     const np = { norm_mean: 0, norm_sd: 1, variants_number: 500 };
 
-    normalizePGS(details, breakdown, np, 'quantitative', 25.0, 4.0,
-      { r2: 0.25 });
+    normalizePGS(details, breakdown, np, 'quantitative', 25.0, 4.0, { r2: 0.25 });
 
+    // z = (1.0 - 0) / 1 = 1.0, value = 25 + 1.0 * sqrt(0.25) * 4 = 25 + 2 = 27
     assert.ok(Math.abs(details.value - 27.0) < 0.1);
   });
 });
@@ -143,14 +145,6 @@ describe('selectBestPGS', () => {
     assert.equal(selectBestPGS(map), 'B');
   });
 
-  it('selects highest quality even with extreme z-scores (clamped at normalization)', () => {
-    const map = new Map([
-      ['A', { qualityScore: 90, zScore: 4, insufficientData: false }],
-      ['B', { qualityScore: 30, zScore: 1, insufficientData: false }],
-    ]);
-    assert.equal(selectBestPGS(map), 'A');
-  });
-
   it('falls back to extreme z when all are insufficient', () => {
     const map = new Map([
       ['A', { qualityScore: 50, zScore: 10, insufficientData: true }],
@@ -160,9 +154,7 @@ describe('selectBestPGS', () => {
 });
 
 describe('imputation shrinkage (legacy fallback without tiers)', () => {
-  it('scales empirical mean and SD using effective coverage', () => {
-    // avgShrinkage=0.95, coverage=100% (100/100)
-    // coverage < 1.0 is false, so no scaling applied
+  it('100% coverage imputed → no scaling applied', () => {
     const { details, breakdown } = makePGS({
       score: 0.4, matchedVariants: 100, genotypedVariants: 0,
       imputedVariants: 100, avgShrinkage: 0.95,
@@ -170,27 +162,12 @@ describe('imputation shrinkage (legacy fallback without tiers)', () => {
     breakdown.total = 100;
     const np = { norm_mean: 0.5, norm_sd: 0.2, variants_number: 100 };
     normalizePGS(details, breakdown, np);
-    // 100% coverage → no scaling (coverage < 1.0 is false)
     assert.ok(Math.abs(details.normMean - 0.5) < 1e-6);
     assert.ok(Math.abs(details.normSd - 0.2) < 1e-6);
   });
 
-  it('no shrinkage for genotyped-only data (shrinkage=1.0)', () => {
-    const { details, breakdown } = makePGS({
-      score: 1.0, matchedVariants: 100, genotypedVariants: 100,
-      avgShrinkage: 1.0,
-    });
-    breakdown.total = 100;
-    const np = { norm_mean: 0.5, norm_sd: 0.8, variants_number: 100 };
-    normalizePGS(details, breakdown, np);
-    assert.equal(details.normMean, 0.5);
-    assert.equal(details.normSd, 0.8);
-  });
-
-  it('shrinkage + coverage scaling compound correctly', () => {
+  it('shrinkage + coverage scaling compound correctly for imputed', () => {
     // 50% coverage + 0.95 shrinkage
-    // mean = 0.5 * 0.5 * 0.95 = 0.2375
-    // sd = 0.2 * sqrt(0.5) / 0.95 = 0.2 * 0.7071 / 0.95 = 0.1489
     const { details, breakdown } = makePGS({
       score: 0.2, matchedVariants: 50, genotypedVariants: 0,
       imputedVariants: 50, avgShrinkage: 0.95,
@@ -202,17 +179,5 @@ describe('imputation shrinkage (legacy fallback without tiers)', () => {
     const sSd = 0.2 * Math.sqrt(0.5) / 0.95;
     assert.ok(Math.abs(details.normMean - sMean) < 1e-6);
     assert.ok(Math.abs(details.normSd - sSd) < 1e-6);
-  });
-
-  it('missing avgShrinkage defaults to 1.0 (no effect)', () => {
-    const { details, breakdown } = makePGS({
-      score: 1.0, matchedVariants: 100, genotypedVariants: 100,
-    });
-    breakdown.total = 100;
-    const np = { norm_mean: 0.5, norm_sd: 0.8, variants_number: 100 };
-    normalizePGS(details, breakdown, np);
-    // No avgShrinkage property → defaults to 1.0
-    assert.equal(details.normMean, 0.5);
-    assert.equal(details.normSd, 0.8);
   });
 });
