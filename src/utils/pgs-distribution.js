@@ -24,7 +24,7 @@ const POP_LABELS = {
 export async function getPgsDistribution(pgsId) {
   const params = await getNormParams();
   const entry = params[pgsId];
-  if (!entry?.distribution || !entry.norm_mean || !entry.norm_sd) return null;
+  if (!entry?.distribution || entry.norm_mean == null || entry.norm_sd == null) return null;
   const m = entry.norm_mean,
     s = entry.norm_sd,
     d = entry.distribution;
