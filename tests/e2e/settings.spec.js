@@ -66,28 +66,24 @@ test.describe('Settings @fast', () => {
     const accordion = page.locator('accordion-panel').first();
     await accordion.locator('.accordion-panel__trigger').click();
 
-    // Wait for async diagnostic to complete (not just "Running...")
+    // Wait for async diagnostic to complete
     const output = accordion.locator('.accordion-panel__content');
     await expect(output).toBeVisible({ timeout: 10_000 });
-    await expect(output).not.toHaveText('Running');
-    const text = await output.textContent();
-    expect(text).toContain('Per-Individual:');
+    await expect(output).toContainText('Per-Individual:', { timeout: 15_000 });
   });
 
   test('system diagnostic accordion shows version and storage', async ({ page }) => {
     await openSettings(page);
 
-    // Click the system diagnostic accordion (has "System" in label)
+    // Click the system diagnostic accordion
     const accordion = page.locator('accordion-panel', { has: page.locator('text=System diagnostic') });
     await accordion.locator('.accordion-panel__trigger').click();
 
-    // Wait for the async diagnostic to populate (it fetches from IDB + network)
+    // Wait for async diagnostic to complete
     const output = accordion.locator('.accordion-panel__content');
     await expect(output).toBeVisible({ timeout: 10_000 });
-    await expect(output).not.toHaveText('Collecting');
-    const text = await output.textContent();
-    expect(text).toContain('Asili v');
-    expect(text).toContain('Storage:');
+    await expect(output).toContainText('Asili v', { timeout: 15_000 });
+    await expect(output).toContainText('Storage:');
   });
 
   test('copy button copies diagnostic to clipboard', async ({ page, context }) => {

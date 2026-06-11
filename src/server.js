@@ -4,13 +4,14 @@
  */
 
 import express from 'express';
-import { readFileSync } from 'node:fs';
+import { readFileSync, existsSync } from 'node:fs';
 import { resolve, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const ROOT = resolve(__dirname, '..');
 const VERSION = JSON.parse(readFileSync(resolve(ROOT, 'package.json'), 'utf-8')).version;
+const DATA_DIR = resolve(__dirname, 'data');
 
 /** @type {any} */
 const app = express();
@@ -27,6 +28,24 @@ app.get(['/', '/index.html'], (_req, res) => {
 
 app.use(express.static('src'));
 app.use('/packages', express.static('packages'));
+
+// Proxy /data requests to production CDN when local data symlink is missing
+app.use('/data', (req, res, next) => {
+  const localPath = resolve(DATA_DIR, req.path.slice(1));
+  if (existsSync(localPath)) return next();
+  const cdnUrl = `https://data.asili.dev${req.path}`;
+  fetch(cdnUrl, { headers: req.headers.range ? { Range: req.headers.range } : {} })
+    .then(async (upstream) => {
+      if (!upstream.ok) return res.status(upstream.status).end();
+      res.status(upstream.status);
+      upstream.headers.forEach((v, k) => {
+        if (!['content-encoding', 'transfer-encoding'].includes(k)) res.setHeader(k, v);
+      });
+      const buf = Buffer.from(await upstream.arrayBuffer());
+      res.end(buf);
+    })
+    .catch(() => res.status(502).end());
+});
 
 app.use((req, res, next) => {
   if (req.method === 'GET' && !req.path.includes('.')) {

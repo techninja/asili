@@ -54,7 +54,7 @@ test.describe('Onboarding — first individual', () => {
   test('trait grid shows cards after upload', async ({ page }) => {
     await uploadAndSetup(page);
 
-    // Wait for grid and cards (CI is slower — allow time for manifest fetch + render)
+    // Wait for grid and cards (data proxied from CDN if local symlink missing)
     await expect(page.locator('trait-grid')).toBeVisible({ timeout: 15_000 });
     const cards = page.locator('trait-card');
     await expect(cards.first()).toBeVisible({ timeout: 30_000 });
