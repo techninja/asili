@@ -44,7 +44,10 @@ console.log(`→ Injecting deploy hash: ${HASH}, version: ${VERSION}`);
 const indexPath = resolve(DIST, 'index.html');
 let html = readFileSync(indexPath, 'utf-8');
 html = html.replace(/(\.css|\.js)"/g, `$1?v=${HASH}"`);
-html = html.replace('</head>', `  <meta name="app-version" content="${VERSION}" />\n  </head>`);
+html = html.replace(
+  /<meta name="app-version" content="[^"]*" \/>/,
+  `<meta name="app-version" content="${VERSION}" />`
+);
 writeFileSync(indexPath, html);
 
 // SPA fallback — copy index.html to 404.html for client-side routing
