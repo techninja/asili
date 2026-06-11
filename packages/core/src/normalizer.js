@@ -34,22 +34,28 @@ export function normalizePGS(
   const sufficientCoverage = coverage >= MIN_COVERAGE;
   let useEmpirical = hasEmpirical && sufficientCoverage;
 
-  // Use coverage-tiered norms if available. These were computed by subsampling
-  // reference individuals at realistic coverage levels (13% raw, 60% imputed),
-  // eliminating the need for coverage-scaling formulas.
-  const tiers = normParams.tiers;
-  if (useEmpirical && tiers) {
-    const tier = (details.imputedVariants > 0) ? 'imputed' : 'raw';
-    const tierNorms = tiers[tier];
-    if (tierNorms && tierNorms.s > 0) {
-      mean = tierNorms.m;
-      sd = tierNorms.s;
+  // Use coverage-tiered norms for imputed data. These were computed by subsampling
+  // reference individuals at realistic coverage levels, with dosage centering applied
+  // to match the browser's scoring method.
+  // Raw (genotyped-only) data uses theoretical SD directly — empirical norms don't
+  // match the sparse, non-random subset of variants that consumer arrays cover.
+  const isRawOnly = details.imputedVariants === 0 || !details.imputedVariants;
+  if (isRawOnly) {
+    useEmpirical = false;
+  } else {
+    const tiers = normParams.tiers;
+    if (useEmpirical && tiers) {
+      const tierNorms = tiers.imputed;
+      if (tierNorms && tierNorms.s > 0) {
+        mean = tierNorms.m;
+        sd = tierNorms.s;
+      }
+    } else if (useEmpirical && coverage < 1.0 && mean !== undefined) {
+      // Legacy fallback for imputed without tiers: scale empirical norms by coverage.
+      const shrinkage = details.avgShrinkage || 1.0;
+      mean = mean * coverage * shrinkage;
+      sd = sd * Math.sqrt(coverage) / shrinkage;
     }
-  } else if (useEmpirical && coverage < 1.0 && mean !== undefined) {
-    // Legacy fallback: scale empirical norms by coverage.
-    const shrinkage = details.avgShrinkage || 1.0;
-    mean = mean * coverage * shrinkage;
-    sd = sd * Math.sqrt(coverage) / shrinkage;
   }
 
   // Sanity check: if the empirical/tiered norms produce an extreme z-score,
