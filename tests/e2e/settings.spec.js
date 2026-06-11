@@ -90,10 +90,11 @@ test.describe('Settings @fast', () => {
     await context.grantPermissions(['clipboard-read', 'clipboard-write']);
     await openSettings(page);
 
-    // Open system diagnostic (no scoring dependency)
+    // Open system diagnostic and wait for it to finish
     const accordion = page.locator('accordion-panel', { has: page.locator('text=System diagnostic') });
     await accordion.locator('.accordion-panel__trigger').click();
-    await expect(accordion.locator('.accordion-panel__content')).toBeVisible({ timeout: 5_000 });
+    const output = accordion.locator('.accordion-panel__content');
+    await expect(output).toContainText('Asili v', { timeout: 15_000 });
 
     // Click copy
     await accordion.locator('.accordion-panel__copy').click();
