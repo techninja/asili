@@ -37,6 +37,7 @@ Export a scored IndexedDB state (from the existing test session) as JSON. Tests
 that need "fully scored" state inject this at test start — no waiting for scoring.
 
 The fixture contains:
+
 - 2 individuals (1 raw, 1 imputed)
 - 64 trait results each with full pgsDetails/pgsBreakdown
 - Variant store entries
@@ -56,7 +57,7 @@ data.asili.dev during CI setup.
 
 ## Test Tiers & CI Integration
 
-### On every PR / push to dev:
+### On every PR / push to dev
 
 ```yaml
 - name: Unit + Component tests
@@ -68,7 +69,7 @@ data.asili.dev during CI setup.
 
 **~45 seconds total.** Uses pre-scored IndexedDB fixtures. No real scoring.
 
-### Nightly (or manual dispatch):
+### Nightly (or manual dispatch)
 
 ```yaml
 - name: E2E (full — real scoring)
