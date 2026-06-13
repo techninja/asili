@@ -29,7 +29,13 @@ export function filterAndSort(traits, opts) {
   let out = traits;
   if (search) {
     const q = search.toLowerCase();
-    out = out.filter((t) => t.name.toLowerCase().includes(q));
+    out = out.filter((t) => {
+      if (t.name.toLowerCase().includes(q)) return true;
+      if (t.description?.toLowerCase().includes(q)) return true;
+      if (t.categories?.some((c) => c.toLowerCase().includes(q))) return true;
+      if (t.keywords?.some((k) => k.toLowerCase().includes(q))) return true;
+      return false;
+    });
   }
   if (categories.size > 0) {
     out = out.filter((t) => categories.has(traitCategory(t)));
