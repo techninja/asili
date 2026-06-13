@@ -1,0 +1,107 @@
+/* share-source — QR offer + answer input in settings drawer */
+
+.share-source__qr {
+  width: 100%;
+  margin: 0.75rem 0;
+}
+
+.share-source__qr svg {
+  width: 100%;
+  height: auto;
+  border-radius: var(--radius);
+}
+
+.share-source__qr-placeholder {
+  width: 100%;
+  aspect-ratio: 1;
+  border-radius: var(--radius);
+  background: var(--surface-alt, #1a1a2e);
+  display: grid;
+  place-items: center;
+  margin: 0.75rem 0;
+}
+
+.share-source__pulse {
+  width: 3rem;
+  height: 3rem;
+  border-radius: 50%;
+  background: var(--border);
+  animation: share-src-pulse 1.5s ease-in-out infinite;
+}
+
+@keyframes share-src-pulse {
+  0%,
+  100% {
+    opacity: 0.3;
+    transform: scale(0.85);
+  }
+
+  50% {
+    opacity: 0.7;
+    transform: scale(1);
+  }
+}
+
+.share-source__link {
+  text-align: center;
+  margin-bottom: 1rem;
+}
+
+.share-source__status {
+  font-size: var(--text-sm);
+  color: var(--text-muted);
+  margin: 0.5rem 0;
+}
+
+.share-source__input {
+  display: flex;
+  gap: 0.5rem;
+  margin: 0.5rem 0;
+}
+
+.share-source__input input {
+  flex: 1;
+  font-family: monospace;
+  font-size: var(--text-sm);
+}
+
+.share-source__actions {
+  display: flex;
+  gap: 0.5rem;
+  margin: 0.5rem 0;
+}
+
+.share-source__loading {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 2rem 0;
+  color: var(--text-muted);
+  font-size: var(--text-sm);
+}
+
+.share-source__spinner {
+  width: 1.5rem;
+  height: 1.5rem;
+  border: 3px solid var(--border);
+  border-top-color: var(--accent, #4dabf7);
+  border-radius: 50%;
+  animation: share-src-spin 0.8s linear infinite;
+}
+
+@keyframes share-src-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.share-source__error {
+  color: var(--red);
+  font-size: var(--text-sm);
+}
+
+.share-source__connected {
+  font-weight: 600;
+  color: var(--green);
+}

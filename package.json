@@ -53,6 +53,8 @@
     "@duckdb/duckdb-wasm": "1.33.1-dev44.0",
     "express": "^5.2.1",
     "hybrids": "^9.1.22",
-    "lucide-static": "^1.7.0"
+    "jsqr": "1.4.0",
+    "lucide-static": "^1.7.0",
+    "uqr": "0.1.3"
   }
 }

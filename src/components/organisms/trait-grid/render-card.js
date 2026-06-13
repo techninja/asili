@@ -6,6 +6,7 @@
 import { html, router } from 'hybrids';
 import { results, getActiveId } from '#pages/beta/results-store.js';
 import * as idb from '/packages/core/src/data-layer/idb.js';
+import { isViewing, getIndividuals as getRemoteIndividuals } from '#utils/peer-state.js';
 import { formatTraitValue } from '/packages/core/src/formatter.js';
 import { traitCategory } from './helpers.js';
 import TraitDetailView from '#pages/trait-detail/trait-detail-view.js';
@@ -81,9 +82,14 @@ export function renderCard(t, rc, scoring) {
 /** Load active individual's emoji. */
 export async function loadActiveEmoji() {
   try {
-    await idb.openDB();
     const id = getActiveId();
-    const individuals = await idb.getAll('individuals');
+    let individuals;
+    if (isViewing()) {
+      individuals = await getRemoteIndividuals();
+    } else {
+      await idb.openDB();
+      individuals = await idb.getAll('individuals');
+    }
     const active = individuals.find((i) => i.id === id);
     if (active) activeEmoji = active.emoji || '\u{1F464}';
   } catch {
