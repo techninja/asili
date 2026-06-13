@@ -41,6 +41,9 @@ function findTests(dir) {
   return results;
 }
 
+/**
+ *
+ */
 function runNode() {
   const browserDir = resolve(ROOT, 'src/components/atoms');
   const allTests = findTests(resolve(ROOT, 'src')).concat(findTests(resolve(ROOT, 'packages')));
@@ -58,6 +61,9 @@ function runNode() {
   }
 }
 
+/**
+ *
+ */
 function runBrowser() {
   const componentDir = resolve(ROOT, 'src/components');
   const browserTests = findTests(componentDir);
@@ -77,6 +83,9 @@ function runBrowser() {
   }
 }
 
+/**
+ *
+ */
 function runE2E() {
   console.log(`\n  ▶ E2E tests (Playwright)\n`);
   try {
@@ -109,6 +118,9 @@ async function prompt() {
   return map[choice] || 'all';
 }
 
+/**
+ *
+ */
 async function main() {
   let cmd = command;
 

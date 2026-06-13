@@ -7,12 +7,19 @@
 import { createDataLayer, getDataLayer } from '/packages/core/src/data-layer/create.js';
 import { get, set } from '#utils/storage.js';
 import { DATA_BASE } from '#utils/data-url.js';
+import {
+  isViewing,
+  getResult as getRemoteResult,
+  getResults as fetchRemoteResults,
+  resultCount as remoteResultCount,
+} from '#utils/peer-state.js';
 
 /** @type {Record<string, object>} In-memory cache for render perf. */
-export const results = {};
+export let results = {};
 
 /** @param {string} traitId @returns {object|undefined} */
 export function getResult(traitId) {
+  if (isViewing()) return getRemoteResult(traitId);
   return results[traitId];
 }
 
@@ -36,6 +43,12 @@ export async function loadResults(individualId) {
   activeId = individualId;
   set('activeId', individualId);
   clearMemory();
+  if (isViewing()) {
+    const remote = await fetchRemoteResults(individualId);
+    results = remote;
+    version++;
+    return remoteResultCount();
+  }
   const dl = await ensureDataLayer();
   const all = await dl.getAllResults(individualId);
   let loaded = 0;
@@ -66,7 +79,7 @@ export async function setResult(traitId, result) {
 
 /** Clear in-memory cache only. */
 function clearMemory() {
-  for (const key of Object.keys(results)) delete results[key];
+  results = {};
 }
 
 /** Clear both memory and persistent storage for active individual. */

@@ -1,0 +1,57 @@
+/* share-source scanner — webcam overlay and reticle */
+
+.share-source__scan-container {
+  position: relative;
+  width: 100%;
+  margin: 0.75rem 0;
+  border-radius: var(--radius);
+  overflow: hidden;
+}
+
+.share-source__video {
+  display: block;
+  width: 100%;
+  background: #000;
+  aspect-ratio: 4/3;
+  object-fit: cover;
+}
+
+.share-source__scan-overlay {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  pointer-events: none;
+}
+
+.share-source__scan-reticle {
+  width: 60%;
+  aspect-ratio: 1;
+  border: 2px solid rgb(255 255 255 / 70%);
+  border-radius: 12px;
+  box-shadow: 0 0 0 9999px rgb(0 0 0 / 30%);
+  animation: share-reticle-pulse 2s ease-in-out infinite;
+}
+
+@keyframes share-reticle-pulse {
+  0%,
+  100% {
+    border-color: rgb(255 255 255 / 50%);
+  }
+
+  50% {
+    border-color: rgb(255 255 255 / 90%);
+  }
+}
+
+.share-source__scan-hint {
+  position: absolute;
+  bottom: 0.75rem;
+  left: 0;
+  right: 0;
+  text-align: center;
+  font-size: var(--text-xs);
+  color: rgb(255 255 255 / 80%);
+  text-shadow: 0 1px 3px rgb(0 0 0 / 80%);
+  pointer-events: none;
+}

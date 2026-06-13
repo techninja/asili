@@ -13,15 +13,34 @@ import { fileURLToPath } from 'node:url';
 const ROOT = dirname(dirname(fileURLToPath(import.meta.url)));
 const VENDOR_DIR = resolve(ROOT, 'src/vendor');
 
-/** @type {{ name: string, src: string }[]} */
-const DEPS = [{ name: 'hybrids', src: 'node_modules/hybrids/src' }];
+/** @type {{ name: string, src: string, file?: string, esm?: boolean }[]} */
+const DEPS = [
+  { name: 'hybrids', src: 'node_modules/hybrids/src' },
+  { name: 'uqr', src: 'node_modules/uqr/dist', file: 'index.mjs' },
+  { name: 'jsqr', src: 'node_modules/jsqr/dist', file: 'jsQR.js', esm: true },
+];
 
 mkdirSync(VENDOR_DIR, { recursive: true });
 
 for (const dep of DEPS) {
-  const src = resolve(ROOT, dep.src);
-  const dest = resolve(VENDOR_DIR, dep.name);
-  cpSync(src, dest, { recursive: true });
+  if (dep.file) {
+    const src = resolve(ROOT, dep.src, dep.file);
+    const destDir = resolve(VENDOR_DIR, dep.name);
+    mkdirSync(destDir, { recursive: true });
+    if (dep.esm) {
+      // Wrap UMD/CJS module as ESM
+      let content = readFileSync(src, 'utf8');
+      const destFile = dep.file.replace(/\.js$/, '.mjs');
+      content = `var module = { exports: {} }; var exports = module.exports;\n${content}\nexport default module.exports;\n`;
+      writeFileSync(resolve(destDir, destFile), content);
+    } else {
+      cpSync(src, resolve(destDir, dep.file));
+    }
+  } else {
+    const src = resolve(ROOT, dep.src);
+    const dest = resolve(VENDOR_DIR, dep.name);
+    cpSync(src, dest, { recursive: true });
+  }
   console.log(`✓ Vendored: ${dep.name} → src/vendor/${dep.name}/`);
 }
 
