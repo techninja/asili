@@ -73,7 +73,7 @@
     display: none;
   }
 
-  .report-tab__section:has(.report-tab__quality-bars) {
+  .report-tab__section:has(.report-tab__histogram) {
     display: none;
   }
 }

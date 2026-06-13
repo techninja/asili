@@ -4,6 +4,7 @@
  */
 
 import { html } from 'hybrids';
+import { results } from './results-store.js';
 import { computeStats, traitTable } from './report-helpers.js';
 // @ts-ignore
 import '#atoms/mini-curve/mini-curve.js';
@@ -87,30 +88,45 @@ function pctColor(pct) {
  */
 export function qualitySection(scored) {
   const s = computeStats(scored);
+
+  // Build coverage histogram (10% bins: 0-9%, 10-19%, ... 90-100%)
+  const bins = Array(10).fill(0);
+  for (const t of scored) {
+    const r = results[t.trait_id];
+    const det = r?.bestPGS && r.pgsDetails?.[r.bestPGS];
+    const cov = (det?.coverage || 0) * 100;
+    const idx = Math.min(Math.floor(cov / 10), 9);
+    bins[idx]++;
+  }
+  const maxBin = Math.max(...bins, 1);
+
   return html`
     <section class="report-tab__section">
       <h3><app-icon name="shield-check" size="sm"></app-icon> Data Quality</h3>
-      <div class="report-tab__quality-bars">
-        ${qBar('High coverage (≥80%)', s.highCov, scored.length, 'var(--color-success)')}
-        ${qBar('Medium (50–80%)', s.midCov, scored.length, 'var(--color-info)')}
-        ${qBar('Low (<50%)', s.lowCov, scored.length, 'var(--color-warning)')}
+      <p class="report-tab__quality-summary">
+        ${s.source} · ${s.avgCov}% avg variant coverage
+      </p>
+      ${s.source === 'Raw DNA'
+        ? html`<p class="report-tab__quality-hint">
+            Improve coverage and signal strength by upgrading to an
+            <a href="https://impute.asili.dev" target="_blank" rel="noopener">imputed genome</a>.
+          </p>`
+        : html``}
+      <div class="report-tab__histogram">
+        ${bins.map(
+          (count, i) => html`
+            <div class="report-tab__histogram-col">
+              <div
+                class="report-tab__histogram-bar"
+                style="${{ height: `${(count / maxBin) * 100}%` }}"
+                title="${count} trait${count !== 1 ? 's' : ''} at ${i * 10}-${i * 10 + 9}% coverage"
+              ></div>
+              <span class="report-tab__histogram-label">${i * 10}</span>
+            </div>
+          `,
+        )}
       </div>
+      <p class="report-tab__histogram-axis">PGS Variant Coverage (%)</p>
     </section>
-  `;
-}
-
-/**
- *
- */
-function qBar(label, count, total, color) {
-  const pct = total > 0 ? Math.round((count / total) * 100) : 0;
-  return html`
-    <div class="report-tab__qbar-row">
-      <span class="report-tab__qbar-label">${label}</span>
-      <div class="report-tab__qbar-track">
-        <div class="report-tab__qbar-fill" style="${{ width: `${pct}%`, background: color }}"></div>
-      </div>
-      <span class="report-tab__qbar-val">${count}</span>
-    </div>
   `;
 }
