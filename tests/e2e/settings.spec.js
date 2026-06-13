@@ -24,6 +24,9 @@ test.describe('Settings @fast', () => {
     await expect(page.locator('trait-grid')).toBeVisible({ timeout: 15_000 });
   });
 
+  /**
+   *
+   */
   async function openSettings(page) {
     // Ensure we start from the grid view with drawer closed
     await page.locator('trait-grid').waitFor({ state: 'visible', timeout: 5_000 }).catch(() => {});
