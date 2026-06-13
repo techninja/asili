@@ -75,7 +75,11 @@ export default define({
                   class="btn btn-ghost btn-sm"
                   onclick="${(host) => {
                     host.editId = host.editId === ind.id ? '' : ind.id;
-                    host.editState = { name: ind.name, emoji: ind.emoji, ancestry: ind.ancestry || '' };
+                    host.editState = {
+                      name: ind.name,
+                      emoji: ind.emoji,
+                      ancestry: ind.ancestry || '',
+                    };
                   }}"
                 >
                   <app-icon name="edit" size="sm"></app-icon>
