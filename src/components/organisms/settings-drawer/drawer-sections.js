@@ -17,8 +17,25 @@ import {
   handleSystemDiagnostic,
 } from './drawer-handlers.js';
 import '#molecules/accordion-panel/accordion-panel.js';
+import '#molecules/share-source/share-source.js';
 
 export { dangerSection, footerSection } from './drawer-danger.js';
+
+/**
+ * Share results section — QR-based LAN peer sharing.
+ */
+export function nearbySection() {
+  return html`
+    <section class="settings-drawer__section">
+      <h3><app-icon name="wifi"></app-icon> Share Results</h3>
+      <share-source></share-source>
+      <p class="settings-drawer__note">
+        <app-icon name="info" size="sm"></app-icon>
+        Share with another device on your network. Direct connection — no data leaves your devices.
+      </p>
+    </section>
+  `;
+}
 
 /**
  *

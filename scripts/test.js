@@ -17,7 +17,7 @@
  * @module scripts/test
  */
 
-import { execSync, spawnSync } from 'node:child_process';
+import { execSync } from 'node:child_process';
 import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { readdirSync, existsSync } from 'node:fs';
@@ -41,39 +41,64 @@ function findTests(dir) {
   return results;
 }
 
+/**
+ *
+ */
 function runNode() {
   const componentDir = resolve(ROOT, 'src/components');
   const allTests = findTests(resolve(ROOT, 'src')).concat(findTests(resolve(ROOT, 'packages')));
   const nodeTests = allTests.filter((f) => !f.startsWith(componentDir));
-  if (!nodeTests.length) { console.log('No node tests found.'); return true; }
+  if (!nodeTests.length) {
+    console.log('No node tests found.');
+    return true;
+  }
   console.log(`\n  ▶ Node tests (${nodeTests.length} files)\n`);
   try {
     execSync(`node --test ${nodeTests.join(' ')} ${extra}`, { cwd: ROOT, stdio: 'inherit' });
     return true;
-  } catch { return false; }
+  } catch {
+    return false;
+  }
 }
 
+/**
+ *
+ */
 function runBrowser() {
   const componentDir = resolve(ROOT, 'src/components');
   const browserTests = findTests(componentDir);
-  if (!browserTests.length) { console.log('No browser tests found.'); return true; }
+  if (!browserTests.length) {
+    console.log('No browser tests found.');
+    return true;
+  }
   console.log(`\n  ▶ Browser tests (${browserTests.length} files)\n`);
   try {
     execSync(`npx web-test-runner --config .configs/web-test-runner.config.js ${extra}`, {
-      cwd: ROOT, stdio: 'inherit',
+      cwd: ROOT,
+      stdio: 'inherit',
     });
     return true;
-  } catch { return false; }
+  } catch {
+    return false;
+  }
 }
 
+/**
+ *
+ */
 function runE2E() {
   console.log(`\n  ▶ E2E tests (Playwright)\n`);
   try {
     execSync(`npx playwright test ${extra}`, { cwd: ROOT, stdio: 'inherit' });
     return true;
-  } catch { return false; }
+  } catch {
+    return false;
+  }
 }
 
+/**
+ *
+ */
 async function prompt() {
   const rl = readline.createInterface({ input: process.stdin, output: process.stdout });
   console.log('\n  Which tests to run?\n');
@@ -81,13 +106,25 @@ async function prompt() {
   console.log('    2) browser  — component tests');
   console.log('    3) e2e      — end-to-end (Playwright)');
   console.log('    4) all      — everything\n');
-  const answer = await new Promise(r => rl.question('  Choice [4]: ', r));
+  const answer = await new Promise((r) => rl.question('  Choice [4]: ', r));
   rl.close();
   const choice = answer.trim() || '4';
-  const map = { '1': 'node', '2': 'browser', '3': 'e2e', '4': 'all', node: 'node', browser: 'browser', e2e: 'e2e', all: 'all' };
+  const map = {
+    1: 'node',
+    2: 'browser',
+    3: 'e2e',
+    4: 'all',
+    node: 'node',
+    browser: 'browser',
+    e2e: 'e2e',
+    all: 'all',
+  };
   return map[choice] || 'all';
 }
 
+/**
+ *
+ */
 async function main() {
   let cmd = command;
 
@@ -98,9 +135,15 @@ async function main() {
   }
 
   let passed = true;
-  if (cmd === 'node' || cmd === 'all') { if (!runNode()) passed = false; }
-  if (cmd === 'browser' || cmd === 'all') { if (!runBrowser()) passed = false; }
-  if (cmd === 'e2e' || cmd === 'all') { if (!runE2E()) passed = false; }
+  if (cmd === 'node' || cmd === 'all') {
+    if (!runNode()) passed = false;
+  }
+  if (cmd === 'browser' || cmd === 'all') {
+    if (!runBrowser()) passed = false;
+  }
+  if (cmd === 'e2e' || cmd === 'all') {
+    if (!runE2E()) passed = false;
+  }
 
   if (!['node', 'browser', 'e2e', 'all'].includes(cmd)) {
     console.error(`Unknown test command: ${cmd}`);
