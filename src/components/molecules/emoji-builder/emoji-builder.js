@@ -11,14 +11,14 @@ import { BASES, BASE_LABELS, SKIN_COLORS, STYLES, HAIRS, ROLES, build } from './
  *
  */
 function getEmoji(host) {
-  return build(host.gender, host.skin, host.style, host.hair, host.role);
+  return build(host.gender, host.skin, host.outfit, host.hair, host.role);
 }
 
 export default define({
   tag: 'emoji-builder',
   gender: 0,
   skin: 0,
-  style: 0,
+  outfit: 0,
   hair: -1,
   role: -1,
   _init: {
@@ -26,7 +26,7 @@ export default define({
     connect() {},
   },
   render: {
-    value: ({ gender, skin, style, hair, role }) => html`
+    value: ({ gender, skin, outfit, hair, role }) => html`
       <div class="emoji-builder">
         <div class="emoji-builder__row">
           ${BASES.map(
@@ -60,13 +60,13 @@ export default define({
             (s, i) => html`
               <button
                 type="button"
-                class="emoji-builder__opt ${role < 0 && hair < 0 && style === i
+                class="emoji-builder__opt ${role < 0 && hair < 0 && outfit === i
                   ? 'emoji-builder__opt--sel'
                   : ''}"
                 onclick="${(host) => {
                   host.hair = -1;
                   host.role = -1;
-                  setVal(host, 'style', i);
+                  setVal(host, 'outfit', i);
                 }}"
               >
                 ${s.icon}
@@ -116,6 +116,6 @@ export default define({
 function setVal(host, key, val) {
   host[key] = val;
   const emoji = getEmoji(host);
-  const params = `${host.gender},${host.skin},${host.style},${host.hair},${host.role}`;
+  const params = `${host.gender},${host.skin},${host.outfit},${host.hair},${host.role}`;
   dispatch(host, 'emoji-change', { detail: { emoji, params }, bubbles: true });
 }

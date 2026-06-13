@@ -49,8 +49,11 @@ export default define({
               >
                 <button
                   class="individual-list__select"
-                  onclick="${(host) =>
-                    dispatch(host, 'select-individual', { detail: ind, bubbles: true })}"
+                  onclick="${(host) => {
+                    host.editId = host.editId === ind.id ? '' : ind.id;
+                    host.editState = { name: ind.name, emoji: ind.emoji, emojiParams: ind.emojiParams || '' };
+                    dispatch(host, 'select-individual', { detail: ind, bubbles: true });
+                  }}"
                 >
                   <span class="individual-list__emoji">${ind.emoji}</span>
                   <span class="individual-list__info">
@@ -59,7 +62,6 @@ export default define({
                     >
                     <span class="individual-list__meta">
                       ${ind.variantCount?.toLocaleString() || 0} variants
-                      ${ind.hasImputed ? '· Imputed' : ''}
                     </span>
                   </span>
                 </button>

@@ -6,7 +6,6 @@
 import { html, dispatch } from 'hybrids';
 // @ts-ignore
 import '#molecules/emoji-builder/emoji-builder.js';
-import { getDataLayer } from '/packages/core/src/data-layer/create.js';
 
 /** @param {object} ind @param {string} editId @param {object} editState */
 export function editArea(ind, editId, editState) {
@@ -31,7 +30,7 @@ export function editArea(ind, editId, editState) {
       <emoji-builder
         gender="${params[0] || 0}"
         skin="${params[1] || 0}"
-        style="${params[2] || 0}"
+        outfit="${params[2] || 0}"
         hair="${params[3] ?? -1}"
         role="${params[4] ?? -1}"
         onemoji-change="${(host, e) => {
@@ -68,6 +67,7 @@ async function saveEdit(host, indId) {
   const emoji = host.editState?.emoji;
   if (!name?.trim()) return;
   try {
+    const { getDataLayer } = await import('/packages/core/src/data-layer/create.js');
     const dl = getDataLayer();
     await dl.updateIndividual(indId, {
       name: name.trim(),
