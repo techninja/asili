@@ -9,7 +9,6 @@ import { buildScoredMaps } from '/packages/core/src/duckdb/scored-maps.js';
 import { fetchTopVariants } from '/packages/core/src/duckdb/top-variants.js';
 import { finalize } from '/packages/core/src/scorer.js';
 import { loadManifest } from '#utils/manifest.js';
-import { get as storageGet } from '#utils/storage.js';
 import { DATA_BASE } from '#utils/data-url.js';
 import { loadTraitPack } from '#utils/score-fetch.js';
 
@@ -44,21 +43,11 @@ export async function getNormParams() {
   } catch {
     /* manifest may not have pgs */
   }
-  const ancestry = storageGet('ancestry');
-  if (ancestry) {
-    for (const [, entry] of Object.entries(normCache)) {
-      const pop = entry.ancestry?.[ancestry];
-      if (pop) {
-        entry.norm_mean = pop.m;
-        entry.norm_sd = pop.s;
-      }
-    }
-  }
   return normCache;
 }
 
-/** @param {string} url @param {object} t @param {Function} [onProgress] */
-export async function scoreUnifiedTrait(url, t, onProgress) {
+/** @param {string} url @param {object} t @param {Function} [onProgress] @param {object} [opts] */
+export async function scoreUnifiedTrait(url, t, onProgress, opts = {}) {
   const { chrMap, cleanup } = await loadTraitPack(url, t.trait_id);
   const onChr = onProgress
     ? (done, total, matched) =>
@@ -71,6 +60,7 @@ export async function scoreUnifiedTrait(url, t, onProgress) {
       traitType: t.trait_type,
       phenotypeMean: t.phenotype_mean ?? null,
       phenotypeSd: t.phenotype_sd ?? null,
+      ancestry: opts.ancestry || '',
     });
     if (result.bestPGS) {
       try {

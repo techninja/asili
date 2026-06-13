@@ -77,12 +77,17 @@ export async function scoreFromMatches(matchIterator, _pgsVariantCounts) {
  */
 export function finalize(scored, normParams = {}, opts = {}) {
   const { pgsDetails, pgsBreakdown, totalMatches } = scored;
-  const { traitType, phenotypeMean, phenotypeSd, pgsPerformance = {} } = opts;
+  const { traitType, phenotypeMean, phenotypeSd, pgsPerformance = {}, ancestry = '' } = opts;
 
   for (const [pgsId, details] of pgsDetails) {
     const breakdown = pgsBreakdown.get(pgsId);
-    const np = normParams[pgsId] || {};
+    const np = { ...(normParams[pgsId] || {}) };
     np.variants_number = np.variants_number || breakdown.total;
+    // Apply ancestry-specific norms if available
+    if (ancestry && np.ancestry?.[ancestry]) {
+      np.norm_mean = np.ancestry[ancestry].m;
+      np.norm_sd = np.ancestry[ancestry].s;
+    }
     normalizePGS(details, breakdown, np, traitType, phenotypeMean, phenotypeSd,
       pgsPerformance[pgsId]);
   }

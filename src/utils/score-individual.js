@@ -59,10 +59,20 @@ export async function scoreIndividual(individualId) {
 
   if (!S.startMs) S.startMs = Date.now();
 
+  // Load individual's ancestry preference
+  let ancestry = '';
+  try {
+    const ind = await idb.get('individuals', individualId);
+    ancestry = ind?.ancestry || '';
+  } catch {
+    /* default to global */
+  }
+
   const retrySet = new Set();
 
   try {
     await scoreAll(session, traitsToScore, DATA_BASE, {
+      ancestry,
       onProgress: ({ traitName, chrDone, chrTotal, variantsSoFar }) => {
         S.currentTraitName = traitName;
         S.currentChrDone = chrDone || 0;
@@ -94,6 +104,7 @@ export async function scoreIndividual(individualId) {
     const retryTraits = allTraits.filter((t) => retrySet.has(t.trait_id));
     try {
       await scoreAll(session, retryTraits, DATA_BASE, {
+        ancestry,
         onTraitScored: async ({ traitId, result }) => {
           await idb.put('results', `${individualId}:${traitId}`, {
             ...result,

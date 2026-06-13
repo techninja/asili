@@ -13,6 +13,7 @@ export function editArea(ind, editId, editState) {
   const name = editState?.name ?? ind.name;
   const emoji = editState?.emoji ?? ind.emoji;
   const params = (editState?.emojiParams || ind.emojiParams || '').split(',').map(Number);
+  if (editState && editState.ancestry === undefined) editState.ancestry = ind.ancestry || '';
   return html`
     <div class="individual-list__edit">
       <div class="individual-list__edit-top">
@@ -38,6 +39,28 @@ export function editArea(ind, editId, editState) {
           host.editState = { ...host.editState, emoji: d.emoji || d, emojiParams: d.params || '' };
         }}"
       ></emoji-builder>
+      <label class="individual-list__edit-ancestry">
+        <app-icon name="earth" size="sm"></app-icon>
+        <select
+          onchange="${(host, e) => {
+            host.editState = { ...host.editState, ancestry: e.target.value };
+          }}"
+        >
+          <option value="" selected="${!editState?.ancestry}">Global (default)</option>
+          <option value="NFE" selected="${editState?.ancestry === 'NFE'}">European</option>
+          <option value="FIN" selected="${editState?.ancestry === 'FIN'}">Finnish</option>
+          <option value="AFR" selected="${editState?.ancestry === 'AFR'}">African</option>
+          <option value="EAS" selected="${editState?.ancestry === 'EAS'}">East Asian</option>
+          <option value="SAS" selected="${editState?.ancestry === 'SAS'}">South Asian</option>
+          <option value="AMR" selected="${editState?.ancestry === 'AMR'}">American</option>
+          <option value="ASJ" selected="${editState?.ancestry === 'ASJ'}">Ashkenazi</option>
+          <option value="MID" selected="${editState?.ancestry === 'MID'}">Middle Eastern</option>
+        </select>
+        <span class="individual-list__edit-ancestry-hint">
+          Select the ancestry background for this individual for better score normalization. Rescore
+          after changing.
+        </span>
+      </label>
       <div class="individual-list__edit-actions">
         <button
           class="btn btn-ghost btn-sm"
@@ -67,12 +90,16 @@ async function saveEdit(host, indId) {
   const emoji = host.editState?.emoji;
   if (!name?.trim()) return;
   try {
-    const { getDataLayer } = await import('/packages/core/src/data-layer/create.js');
-    const dl = getDataLayer();
-    await dl.updateIndividual(indId, {
+    const idb = await import('/packages/core/src/data-layer/idb.js');
+    await idb.openDB();
+    const existing = await idb.get('individuals', indId);
+    if (!existing) return;
+    await idb.put('individuals', indId, {
+      ...existing,
       name: name.trim(),
       emoji,
       emojiParams: host.editState?.emojiParams || '',
+      ancestry: host.editState?.ancestry || '',
     });
   } catch (e) {
     console.error('edit save:', e);

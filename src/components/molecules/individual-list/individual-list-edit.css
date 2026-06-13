@@ -1,0 +1,91 @@
+/* Inline edit */
+.individual-list__edit {
+  width: calc(100% + var(--space-sm) * 2);
+  margin: var(--space-sm) calc(-1 * var(--space-sm)) calc(-1 * var(--space-sm))
+    calc(-1 * var(--space-sm));
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-sm);
+  padding: var(--space-sm);
+  padding-top: var(--space-md);
+  border-top: 1px solid var(--color-border);
+  border-bottom-left-radius: var(--radius-md);
+  border-bottom-right-radius: var(--radius-md);
+  background: linear-gradient(
+    to top,
+    color-mix(in srgb, var(--color-primary) 18%, transparent),
+    transparent 85%
+  );
+  animation: edit-slide-in 0.2s ease-out;
+}
+
+@keyframes edit-slide-in {
+  from {
+    opacity: 0;
+    transform: translateY(-8px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.individual-list__edit-top {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+}
+
+.individual-list__edit-input {
+  flex: 1;
+  padding: var(--space-xs) var(--space-sm);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  background: var(--color-surface-alt);
+  color: var(--color-text);
+  font-size: var(--text-base);
+  font-weight: 600;
+
+  &:focus {
+    outline: 2px solid var(--color-primary);
+    outline-offset: 1px;
+  }
+}
+
+.individual-list__edit-preview {
+  font-size: 2.5rem;
+  line-height: 1;
+}
+
+.individual-list__edit-actions {
+  display: flex;
+  justify-content: space-between;
+  gap: var(--space-sm);
+}
+
+.individual-list__edit-ancestry {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-xs);
+  font-size: var(--text-sm);
+  color: var(--color-text-muted);
+}
+
+.individual-list__edit-ancestry select {
+  padding: var(--space-xs) var(--space-sm);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  background: var(--color-surface);
+  color: var(--color-text);
+  font: inherit;
+  font-size: var(--text-sm);
+}
+
+.individual-list__edit-ancestry-hint {
+  flex-basis: 100%;
+  font-size: var(--text-xs);
+  color: var(--color-text-muted);
+  opacity: 0.8;
+}

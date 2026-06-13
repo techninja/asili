@@ -24,7 +24,6 @@ export default define({
   autoScore: true,
   memoryLimit: '2GB',
   bandwidthLimit: 0,
-  ancestry: '',
   units: {
     value: 'metric',
     connect(host) {

@@ -7,7 +7,7 @@ import * as idb from '/packages/core/src/data-layer/idb.js';
 import { getScoringSettings, saveScoringSettings } from '#utils/queue-settings.js';
 import { resetQueue } from '#utils/scoring-queue.js';
 import { clearFamilyCache } from '#organisms/trait-grid/render-card.js';
-import { clearLocalStorage, IDB_STORES, get, set, remove } from '#utils/storage.js';
+import { clearLocalStorage, IDB_STORES } from '#utils/storage.js';
 
 /** @param {object} host */
 export function close(host) {
@@ -27,7 +27,6 @@ export async function loadData(host) {
   host.autoScore = prefs.autoScore;
   host.memoryLimit = prefs.memoryLimit;
   host.bandwidthLimit = prefs.bandwidthLimit || 0;
-  host.ancestry = get('ancestry') || '';
 
   // Defer heavy storage calculation so the drawer renders immediately
   host.storageInfo = 'Calculating…';
@@ -87,14 +86,6 @@ export async function handleMemory(host, e) {
 export async function handleBandwidth(host, e) {
   host.bandwidthLimit = Number(/** @type {HTMLSelectElement} */ (e.target).value);
   await saveScoringSettings({ bandwidthLimit: host.bandwidthLimit });
-}
-
-/** @param {object} host @param {Event} e */
-export function handleAncestry(host, e) {
-  const val = /** @type {HTMLSelectElement} */ (e.target).value;
-  host.ancestry = val;
-  if (val) set('ancestry', val);
-  else remove('ancestry');
 }
 
 /** @param {object} host @param {Event} e */

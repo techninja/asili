@@ -11,7 +11,6 @@ import {
   handleAutoScore,
   handleMemory,
   handleBandwidth,
-  handleAncestry,
   handleUnits,
   handleToggleDiagnostic,
   handleSystemDiagnostic,
@@ -123,25 +122,6 @@ export function scoringSection(host) {
           <option value="imperial" selected="${host.units === 'imperial'}">Imperial</option>
         </select>
       </label>
-      <label class="settings-drawer__row">
-        <span>Ancestry normalization</span>
-        <select onchange="${handleAncestry}">
-          <option value="" selected="${!host.ancestry}">Global (default)</option>
-          <option value="NFE" selected="${host.ancestry === 'NFE'}">European</option>
-          <option value="FIN" selected="${host.ancestry === 'FIN'}">Finnish</option>
-          <option value="AFR" selected="${host.ancestry === 'AFR'}">African</option>
-          <option value="EAS" selected="${host.ancestry === 'EAS'}">East Asian</option>
-          <option value="SAS" selected="${host.ancestry === 'SAS'}">South Asian</option>
-          <option value="AMR" selected="${host.ancestry === 'AMR'}">American</option>
-          <option value="ASJ" selected="${host.ancestry === 'ASJ'}">Ashkenazi</option>
-          <option value="MID" selected="${host.ancestry === 'MID'}">Middle Eastern</option>
-        </select>
-      </label>
-      <p class="settings-drawer__note">
-        <app-icon name="earth" size="sm"></app-icon>
-        Adjusts PGS normalization to compare against a specific ancestry group. Scores must be
-        recalculated after changing. Applies to all individuals.
-      </p>
     </section>
   `;
 }

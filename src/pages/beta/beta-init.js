@@ -12,6 +12,20 @@ import { clearTransfer } from '#utils/transfer-tracker.js';
 export async function initApp(host) {
   await idb.openDB();
   host.individuals = await idb.getAll('individuals');
+
+  // Migration: move global ancestry setting to per-individual
+  const globalAncestry = localStorage.getItem('asili-ancestry') || localStorage.getItem('ancestry');
+  if (globalAncestry && host.individuals.length > 0) {
+    for (const ind of host.individuals) {
+      if (!ind.ancestry) {
+        await idb.put('individuals', ind.id, { ...ind, ancestry: globalAncestry });
+      }
+    }
+    localStorage.removeItem('asili-ancestry');
+    localStorage.removeItem('ancestry');
+    host.individuals = await idb.getAll('individuals');
+  }
+
   if (host.individuals.length > 0) {
     const id = host.activeId || host.individuals[0].id;
     host.activeId = id;

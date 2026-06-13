@@ -86,7 +86,7 @@ export async function scoreAll(s, traits, base, cb = {}) {
       await new Promise((r) => setTimeout(r, 0));
       try {
         const url = `${base}/${t.file_path}`;
-        const result = await scoreUnifiedTrait(url, t, cb.onProgress);
+        const result = await scoreUnifiedTrait(url, t, cb.onProgress, { ancestry: cb.ancestry });
         result.calculatedAt = new Date().toISOString();
         if (cb.onTraitScored) await cb.onTraitScored({ traitId: t.trait_id, result });
       } catch (err) {

@@ -17,7 +17,7 @@ function handleSubmit(host, e) {
   const name = host.name.trim() || m?.individual || '';
   if (!name) return;
   dispatch(host, 'setup-complete', {
-    detail: { name, emoji: host.emoji, emojiParams: host.emojiParams },
+    detail: { name, emoji: host.emoji, emojiParams: host.emojiParams, ancestry: host.ancestry },
     bubbles: true,
   });
 }
@@ -27,6 +27,7 @@ export default define({
   name: '',
   emoji: '👨',
   emojiParams: '',
+  ancestry: '',
   variantCount: 0,
   format: '',
   filename: '',
@@ -59,6 +60,27 @@ export default define({
               host.emojiParams = e.detail.params || '';
             }}"
           ></emoji-builder>
+          <label class="individual-setup__ancestry">
+            <app-icon name="earth" size="sm"></app-icon>
+            <select
+              onchange="${(host, e) => {
+                host.ancestry = e.target.value;
+              }}"
+            >
+              <option value="">Ancestry: Global (default)</option>
+              <option value="NFE">European</option>
+              <option value="FIN">Finnish</option>
+              <option value="AFR">African</option>
+              <option value="EAS">East Asian</option>
+              <option value="SAS">South Asian</option>
+              <option value="AMR">American</option>
+              <option value="ASJ">Ashkenazi</option>
+              <option value="MID">Middle Eastern</option>
+            </select>
+            <span class="individual-setup__ancestry-hint">
+              Select the ancestry background for this individual for better score normalization.
+            </span>
+          </label>
           <div class="individual-setup__actions">
             <button
               type="button"

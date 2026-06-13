@@ -51,7 +51,12 @@ export default define({
                   class="individual-list__select"
                   onclick="${(host) => {
                     host.editId = host.editId === ind.id ? '' : ind.id;
-                    host.editState = { name: ind.name, emoji: ind.emoji, emojiParams: ind.emojiParams || '' };
+                    host.editState = {
+                      name: ind.name,
+                      emoji: ind.emoji,
+                      emojiParams: ind.emojiParams || '',
+                      ancestry: ind.ancestry || '',
+                    };
                     dispatch(host, 'select-individual', { detail: ind, bubbles: true });
                   }}"
                 >
@@ -70,7 +75,7 @@ export default define({
                   class="btn btn-ghost btn-sm"
                   onclick="${(host) => {
                     host.editId = host.editId === ind.id ? '' : ind.id;
-                    host.editState = { name: ind.name, emoji: ind.emoji };
+                    host.editState = { name: ind.name, emoji: ind.emoji, ancestry: ind.ancestry || '' };
                   }}"
                 >
                   <app-icon name="edit" size="sm"></app-icon>

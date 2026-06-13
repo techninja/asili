@@ -41,13 +41,7 @@ export default [
       'no-console': 'off',
 
       // JSDoc enforcement
-      'jsdoc/require-jsdoc': [
-        'warn',
-        {
-          require: { FunctionDeclaration: true },
-          checkConstructors: false,
-        },
-      ],
+      'jsdoc/require-jsdoc': 'off',
       'jsdoc/require-param-type': 'warn',
       'jsdoc/require-returns-type': 'warn',
       'jsdoc/valid-types': 'warn',

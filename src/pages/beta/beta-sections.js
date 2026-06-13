@@ -82,7 +82,7 @@ export function clearPendingImputedFile() {
 
 /** @param {object & HTMLElement} host @param {CustomEvent} e */
 export async function handleSetup(host, e) {
-  const { name, emoji, emojiParams } = e.detail;
+  const { name, emoji, emojiParams, ancestry } = e.detail;
   const isImputed = host.parsedFormat === 'asili-imputed';
   const id = `${Date.now()}_${name.replace(/\s+/g, '_')}`;
   await idb.openDB();
@@ -91,6 +91,7 @@ export async function handleSetup(host, e) {
     name,
     emoji,
     emojiParams: emojiParams || '',
+    ancestry: ancestry || '',
     relationship: 'self',
     variantCount: host.parsedCount,
     status: 'ready',
