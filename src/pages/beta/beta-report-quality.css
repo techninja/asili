@@ -1,0 +1,94 @@
+.report-tab__quality-summary {
+  font-size: var(--text-sm);
+  color: var(--color-text-muted);
+  margin: 0;
+}
+
+.report-tab__quality-hint {
+  font-size: var(--text-xs);
+  color: var(--color-text-muted);
+  margin: var(--space-xs) 0 var(--space-sm);
+}
+
+.report-tab__quality-hint a {
+  color: var(--color-primary);
+  text-decoration: underline;
+}
+
+.report-tab__histogram {
+  display: flex;
+  align-items: flex-end;
+  gap: 2px;
+  height: 80px;
+  padding-top: var(--space-xs);
+}
+
+.report-tab__histogram-col {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  height: 100%;
+  justify-content: flex-end;
+}
+
+.report-tab__histogram-bar {
+  width: 100%;
+  min-height: 2px;
+  border-radius: var(--radius-sm) var(--radius-sm) 0 0;
+  opacity: 0.85;
+  transition: height 0.3s ease;
+}
+
+.report-tab__histogram-col:nth-child(1) .report-tab__histogram-bar {
+  background: #dc2626;
+}
+
+.report-tab__histogram-col:nth-child(2) .report-tab__histogram-bar {
+  background: #ea580c;
+}
+
+.report-tab__histogram-col:nth-child(3) .report-tab__histogram-bar {
+  background: #d97706;
+}
+
+.report-tab__histogram-col:nth-child(4) .report-tab__histogram-bar {
+  background: #ca8a04;
+}
+
+.report-tab__histogram-col:nth-child(5) .report-tab__histogram-bar {
+  background: #65a30d;
+}
+
+.report-tab__histogram-col:nth-child(6) .report-tab__histogram-bar {
+  background: #16a34a;
+}
+
+.report-tab__histogram-col:nth-child(7) .report-tab__histogram-bar {
+  background: #0d9488;
+}
+
+.report-tab__histogram-col:nth-child(8) .report-tab__histogram-bar {
+  background: #0284c7;
+}
+
+.report-tab__histogram-col:nth-child(9) .report-tab__histogram-bar {
+  background: #2563eb;
+}
+
+.report-tab__histogram-col:nth-child(10) .report-tab__histogram-bar {
+  background: #4f46e5;
+}
+
+.report-tab__histogram-label {
+  font-size: 9px;
+  color: var(--color-text-muted);
+  margin-top: 2px;
+}
+
+.report-tab__histogram-axis {
+  font-size: var(--text-xs);
+  color: var(--color-text-muted);
+  text-align: center;
+  margin: var(--space-xs) 0 0;
+}

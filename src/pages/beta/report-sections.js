@@ -103,9 +103,7 @@ export function qualitySection(scored) {
   return html`
     <section class="report-tab__section">
       <h3><app-icon name="shield-check" size="sm"></app-icon> Data Quality</h3>
-      <p class="report-tab__quality-summary">
-        ${s.source} · ${s.avgCov}% avg variant coverage
-      </p>
+      <p class="report-tab__quality-summary">${s.source} · ${s.avgCov}% avg variant coverage</p>
       ${s.source === 'Raw DNA'
         ? html`<p class="report-tab__quality-hint">
             Improve coverage and signal strength by upgrading to an
