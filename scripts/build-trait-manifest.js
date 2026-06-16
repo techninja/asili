@@ -28,7 +28,9 @@ if (existsSync(LOCAL)) {
 
 // Write full manifest for OG image generation (route config references this)
 const manifestOut = resolve(ROOT, 'src/data/trait_manifest.json');
-mkdirSync(dirname(manifestOut), { recursive: true });
+const manifestDir = resolve(ROOT, 'src/data');
+if (!existsSync(manifestDir)) mkdirSync(manifestDir, { recursive: true });
+console.log(`→ Writing manifest to ${manifestOut} (dir exists: ${existsSync(manifestDir)})`);
 writeFileSync(manifestOut, JSON.stringify(manifest));
 
 const traits = Object.entries(manifest.traits).map(([id, t]) => ({
