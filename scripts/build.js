@@ -74,6 +74,7 @@ try {
 // Generate per-trait OG images for social previews
 console.log('→ Generating OG images...');
 try {
+  execSync('npx playwright install chromium', { cwd: ROOT, stdio: 'inherit' });
   const { buildOGImages } = await import('@techninja/clearstack/lib/build-og-images.js');
   await buildOGImages({ projectDir: ROOT, outDir: 'dist', siteName: 'Asili' });
 } catch (e) {
