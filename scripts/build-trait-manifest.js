@@ -1,8 +1,11 @@
 #!/usr/bin/env node
 
 /**
- * Fetch or read trait manifest and write a flat array for OG generation.
- * Outputs: data/traits-og.json
+ * Fetch or read trait manifest, write to /tmp for the build pipeline.
+ * Sources (in order): local symlink → data/ cache → CDN
+ * Outputs:
+ *   /tmp/trait_manifest.json  — full manifest for OG image generation
+ *   data/traits-og.json       — flat array for legacy OG HTML generation
  */
 
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
@@ -10,28 +13,37 @@ import { resolve, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const ROOT = dirname(dirname(fileURLToPath(import.meta.url)));
-const LOCAL = resolve(ROOT, '../asili-lab/data_out/trait_manifest.json');
 const CDN = 'https://data.asili.dev/trait_manifest.json';
 
-let manifest;
-if (existsSync(LOCAL)) {
-  manifest = JSON.parse(readFileSync(LOCAL, 'utf-8'));
-} else {
+const SOURCES = [
+  resolve(ROOT, '../asili-lab/data_out/trait_manifest.json'),
+  resolve(ROOT, 'data/trait_manifest.json'),
+];
+
+async function resolveManifest() {
+  for (const src of SOURCES) {
+    if (existsSync(src)) {
+      console.log(`→ Reading manifest from ${src}`);
+      return JSON.parse(readFileSync(src, 'utf-8'));
+    }
+  }
   console.log('→ Fetching manifest from CDN...');
   const resp = await fetch(CDN);
-  if (!resp.ok) {
-    console.warn('⚠ Could not fetch trait_manifest.json — skipping');
-    process.exit(0);
-  }
-  manifest = await resp.json();
+  if (!resp.ok) throw new Error(`CDN fetch failed: ${resp.status}`);
+  return resp.json();
 }
 
-// Write full manifest for OG image generation (route config references this)
-const manifestOut = resolve(ROOT, 'src/data/trait_manifest.json');
-const manifestDir = resolve(ROOT, 'src/data');
-if (!existsSync(manifestDir)) mkdirSync(manifestDir, { recursive: true });
-writeFileSync(manifestOut, Buffer.from(JSON.stringify(manifest)));
+const manifest = await resolveManifest().catch((e) => {
+  console.warn('⚠ Could not load trait_manifest.json —', e.message);
+  process.exit(0);
+});
 
+// Write to /tmp for OG image generation (never committed, works in any env)
+const tmpOut = '/tmp/trait_manifest.json';
+writeFileSync(tmpOut, JSON.stringify(manifest));
+console.log(`→ Manifest cached to ${tmpOut}`);
+
+// Write flat array for legacy OG HTML generation
 const traits = Object.entries(manifest.traits).map(([id, t]) => ({
   slug: id,
   name: t.name,

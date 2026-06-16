@@ -10,7 +10,7 @@
     "description": "{slug.description}",
     "image": "{slug.cover_image.url}",
     "ogImage": "https://app.asili.dev/trait/{slug.slug}.png",
-    "data": "src/data/trait_manifest.json:traits",
+    "data": "/tmp/trait_manifest.json:traits",
     "ogTemplate": "trait"
   }
 }
