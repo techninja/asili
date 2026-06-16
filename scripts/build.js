@@ -71,4 +71,13 @@ try {
   console.warn('⚠ OG generation failed:', e.message);
 }
 
+// Generate per-trait OG images for social previews
+console.log('→ Generating OG images...');
+try {
+  const { buildOGImages } = await import('@techninja/clearstack/lib/build-og-images.js');
+  await buildOGImages({ projectDir: ROOT, outDir: 'dist', siteName: 'Asili' });
+} catch (e) {
+  console.warn('⚠ OG image generation failed:', e.message);
+}
+
 console.log('✓ Build complete → dist/');
