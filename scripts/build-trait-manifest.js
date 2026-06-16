@@ -30,8 +30,7 @@ if (existsSync(LOCAL)) {
 const manifestOut = resolve(ROOT, 'src/data/trait_manifest.json');
 const manifestDir = resolve(ROOT, 'src/data');
 if (!existsSync(manifestDir)) mkdirSync(manifestDir, { recursive: true });
-console.log(`→ Writing manifest to ${manifestOut} (dir exists: ${existsSync(manifestDir)})`);
-writeFileSync(manifestOut, JSON.stringify(manifest));
+writeFileSync(manifestOut, Buffer.from(JSON.stringify(manifest)));
 
 const traits = Object.entries(manifest.traits).map(([id, t]) => ({
   slug: id,
