@@ -38,22 +38,6 @@ cpSync(resolve(ROOT, 'src'), DIST, {
 console.log('→ Copying packages/ → dist/packages/');
 cpSync(resolve(ROOT, 'packages'), resolve(DIST, 'packages'), { recursive: true });
 
-// Inject deploy hash into index.html for cache busting
-const VERSION = JSON.parse(readFileSync(resolve(ROOT, 'package.json'), 'utf-8')).version;
-console.log(`→ Injecting deploy hash: ${HASH}, version: ${VERSION}`);
-const indexPath = resolve(DIST, 'index.html');
-let html = readFileSync(indexPath, 'utf-8');
-html = html.replace(/(\.css|\.js)"/g, `$1?v=${HASH}"`);
-html = html.replace(
-  /<meta name="app-version" content="[^"]*" \/>/,
-  `<meta name="app-version" content="${VERSION}" />`,
-);
-writeFileSync(indexPath, html);
-
-// SPA fallback — copy index.html to 404.html for client-side routing
-console.log('→ Creating 404.html for SPA routing');
-cpSync(resolve(DIST, 'index.html'), resolve(DIST, '404.html'));
-
 // Generate trait manifest for OG
 console.log('→ Building trait manifest...');
 try {
@@ -80,5 +64,21 @@ try {
 } catch (e) {
   console.warn('⚠ OG image generation failed:', e.message);
 }
+
+// Inject version + cache-bust AFTER OG generation (which may rewrite index.html)
+const VERSION = JSON.parse(readFileSync(resolve(ROOT, 'package.json'), 'utf-8')).version;
+console.log(`→ Injecting deploy hash: ${HASH}, version: ${VERSION}`);
+const indexPath = resolve(DIST, 'index.html');
+let html = readFileSync(indexPath, 'utf-8');
+html = html.replace(/(\.css|\.js)"/g, `$1?v=${HASH}"`);
+html = html.replace(
+  /<meta name="app-version" content="[^"]*" \/>/,
+  `<meta name="app-version" content="${VERSION}" />`,
+);
+writeFileSync(indexPath, html);
+
+// SPA fallback — copy index.html to 404.html for client-side routing
+console.log('→ Creating 404.html for SPA routing');
+cpSync(resolve(DIST, 'index.html'), resolve(DIST, '404.html'));
 
 console.log('✓ Build complete → dist/');
