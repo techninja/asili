@@ -498,20 +498,3 @@ See `docs/ALLELE_KEY.md`. The deterministic hash is pre-computed in parquet file
 ```
 
 The app does NOT compute this — it's a column in the parquet files.
-
----
-
-## Launch Checklist
-
-- [ ] 44 public launch traits curated with editorial names/descriptions/emojis
-- [ ] All parquet packs built with allele_key column
-- [ ] TOPMed refstats computed with allele-aware JOIN
-- [ ] Web app rewrite complete, all screens functional
-- [ ] DNA upload + parse working for all supported formats
-- [ ] Scoring produces results matching current CLI output
-- [ ] Virtual scroll performs at 60fps with 44+ cards
-- [ ] Export/import cache working
-- [ ] Deployed to CDN with settings.json { tier: 1 }
-- [ ] No disease traits accessible in public build
-- [ ] Privacy statement visible and accurate
-- [ ] README and QUICKSTART updated

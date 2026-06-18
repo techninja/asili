@@ -22,5 +22,5 @@
     }
   },
   "include": ["../src/**/*.js", "../scripts/**/*.js"],
-  "exclude": ["../node_modules", "../src/vendor", "../src/deps", "../dist", "../**/*.test.js"]
+  "exclude": ["../node_modules", "../src/vendor", "../src/deps", "../dist", "../**/*.test.js", "../node_modules/.pnpm"]
 }

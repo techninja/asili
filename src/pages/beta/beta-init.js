@@ -37,19 +37,21 @@ export async function initApp(host) {
 /** Connect handler for _init property. */
 export function connectInit(host, _key, invalidate) {
   document.title = 'Asili | Polygenic Risk Scores';
-  initApp(host).then(() => {
-    invalidate();
-    if (sessionStorage.getItem('asili-open-upload')) {
-      sessionStorage.removeItem('asili-open-upload');
-      host.showUpload = true;
-    }
-    requestAnimationFrame(() => {
-      if (host.activeId) switchIndividual(host, host.activeId);
+  initApp(host)
+    .then(() => {
+      invalidate();
+      if (sessionStorage.getItem('asili-open-upload')) {
+        sessionStorage.removeItem('asili-open-upload');
+        host.showUpload = true;
+      }
+      requestAnimationFrame(() => {
+        if (host.activeId) switchIndividual(host, host.activeId);
+      });
+    })
+    .catch((e) => {
+      console.error('[asili] initApp failed:', e);
+      invalidate();
     });
-  }).catch((e) => {
-    console.error('[asili] initApp failed:', e);
-    invalidate();
-  });
   const refresh = () => {
     idb.getAll('individuals').then((list) => {
       host.individuals = list;

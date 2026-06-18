@@ -77,7 +77,11 @@ html = html.replace(
 );
 writeFileSync(indexPath, html);
 
-// SPA fallback — copy index.html to 404.html for client-side routing
+console.log('→ Injecting modulepreload hints...');
+const { buildModulePreload } = await import('@techninja/clearstack/lib/build-modulepreload.js');
+buildModulePreload({ projectDir: ROOT, outDir: 'dist' });
+
+// SPA fallback — copy index.html to 404.html after all mutations
 console.log('→ Creating 404.html for SPA routing');
 cpSync(resolve(DIST, 'index.html'), resolve(DIST, '404.html'));
 
