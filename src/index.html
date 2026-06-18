@@ -4,6 +4,8 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta name="app-version" content="0.0.0" />
+    <!-- FOUC prevention -->
+    <style>html,body{background:#0f172a;color:#e2e8f0;margin:0}</style>
     <title>Asili — Privacy-first polygenic risk score analysis</title>
     <meta
       name="description"
@@ -93,7 +95,21 @@
     </script>
   </head>
   <body>
+    <noscript>
+      <div style="font-family:system-ui;background:#0f172a;color:#e2e8f0;padding:2rem;max-width:40rem;margin:4rem auto;text-align:center">
+        <h1>JavaScript required</h1>
+        <p>Asili requires JavaScript to run DNA analysis in your browser. Please enable it in your browser settings.</p>
+      </div>
+    </noscript>
     <app-router></app-router>
     <script type="module" src="/router/index.js"></script>
+    <script>
+      window.addEventListener('unhandledrejection', (e) => {
+        console.error('[asili] Unhandled rejection:', e.reason);
+      });
+      window.addEventListener('error', (e) => {
+        console.error('[asili] Uncaught error:', e.message, e.filename, e.lineno);
+      });
+    </script>
   </body>
 </html>

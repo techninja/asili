@@ -20,17 +20,19 @@ export function close(host) {
 
 /** @param {object} host */
 export async function loadData(host) {
-  await idb.openDB();
-  host.individuals = await idb.getAll('individuals');
-
-  const prefs = await getScoringSettings();
-  host.autoScore = prefs.autoScore;
-  host.memoryLimit = prefs.memoryLimit;
-  host.bandwidthLimit = prefs.bandwidthLimit || 0;
-
-  // Defer heavy storage calculation so the drawer renders immediately
-  host.storageInfo = 'Calculating…';
-  setTimeout(() => computeStorage(host), 50);
+  try {
+    await idb.openDB();
+    host.individuals = await idb.getAll('individuals');
+    const prefs = await getScoringSettings();
+    host.autoScore = prefs.autoScore;
+    host.memoryLimit = prefs.memoryLimit;
+    host.bandwidthLimit = prefs.bandwidthLimit || 0;
+    host.storageInfo = 'Calculating…';
+    setTimeout(() => computeStorage(host), 50);
+  } catch (e) {
+    console.error('[asili] loadData failed:', e);
+    host.storageInfo = 'Storage unavailable';
+  }
 }
 
 /**
@@ -52,8 +54,12 @@ async function computeStorage(host) {
 
 /** @param {object} host */
 export async function handleDelete(host) {
-  await idb.openDB();
-  host.individuals = await idb.getAll('individuals');
+  try {
+    await idb.openDB();
+    host.individuals = await idb.getAll('individuals');
+  } catch (e) {
+    console.error('[asili] handleDelete failed:', e);
+  }
 }
 
 /** Rescore: clear results and dispatch global event to restart scoring. */
@@ -66,7 +72,11 @@ export async function handleRescore(_host, e) {
 /** Rescore all individuals sequentially. */
 export async function rescoreAll(host) {
   for (const ind of host.individuals || []) {
-    window.dispatchEvent(new CustomEvent('asili-rescore', { detail: ind.id }));
+    try {
+      window.dispatchEvent(new CustomEvent('asili-rescore', { detail: ind.id }));
+    } catch (e) {
+      console.error('[asili] rescoreAll failed for', ind.id, e);
+    }
   }
 }
 
@@ -97,12 +107,16 @@ export function handleUnits(host, e) {
 
 /** @param {object} _host */
 export async function doClearAll(_host) {
-  await resetQueue();
-  clearFamilyCache();
-  clearLocalStorage();
-  await idb.openDB();
-  for (const s of IDB_STORES) await idb.clear(s);
-  window.location.href = '/';
+  try {
+    await resetQueue();
+    clearFamilyCache();
+    clearLocalStorage();
+    await idb.openDB();
+    for (const s of IDB_STORES) await idb.clear(s);
+    window.location.href = '/';
+  } catch (e) {
+    console.error('[asili] doClearAll failed:', e);
+  }
 }
 
 export { handleToggleDiagnostic, handleSystemDiagnostic } from './drawer-diagnostics.js';

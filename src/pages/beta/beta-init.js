@@ -46,6 +46,9 @@ export function connectInit(host, _key, invalidate) {
     requestAnimationFrame(() => {
       if (host.activeId) switchIndividual(host, host.activeId);
     });
+  }).catch((e) => {
+    console.error('[asili] initApp failed:', e);
+    invalidate();
   });
   const refresh = () => {
     idb.getAll('individuals').then((list) => {
@@ -54,19 +57,23 @@ export function connectInit(host, _key, invalidate) {
   };
   window.addEventListener('asili-individuals-changed', refresh);
   const rescore = async (e) => {
-    const id = e.detail;
-    await clearTransfer(id);
-    if (id === host.activeId) {
-      await clearResults();
-      host.resultCount = 0;
-      host.scoringStatus = '';
-    } else {
-      const dl = await import('/packages/core/src/data-layer/create.js').then((m) =>
-        m.getDataLayer(),
-      );
-      await dl.clearResults(id);
+    try {
+      const id = e.detail;
+      await clearTransfer(id);
+      if (id === host.activeId) {
+        await clearResults();
+        host.resultCount = 0;
+        host.scoringStatus = '';
+      } else {
+        const dl = await import('/packages/core/src/data-layer/create.js').then((m) =>
+          m.getDataLayer(),
+        );
+        await dl.clearResults(id);
+      }
+      await initQueue(host);
+    } catch (e) {
+      console.error('[asili] rescore failed:', e);
     }
-    await initQueue(host);
   };
   window.addEventListener('asili-rescore', rescore);
   return () => {

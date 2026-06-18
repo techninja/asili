@@ -20,11 +20,18 @@ export function loadManifest(url = `${DATA_BASE}/trait_manifest.json`) {
   if (cache) return Promise.resolve(cache);
   if (pending) return pending;
   pending = fetch(url)
-    .then((r) => r.json())
+    .then((r) => {
+      if (!r.ok) throw new Error(`manifest fetch failed: ${r.status}`);
+      return r.json();
+    })
     .then((data) => {
       cache = data;
       pending = null;
       return data;
+    })
+    .catch((e) => {
+      pending = null;
+      throw e;
     });
   return pending;
 }
