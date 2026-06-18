@@ -46,11 +46,13 @@ try {
   console.warn('⚠ Trait manifest skipped (no source)');
 }
 
-// Generate per-trait OG pages for link previews
+// Generate per-trait OG pages + sitemap for link previews
 console.log('→ Generating OG metadata pages...');
 try {
   const { buildOG } = await import('@techninja/clearstack/lib/build-og.js');
   buildOG({ projectDir: ROOT, outDir: 'dist', baseUrl: 'https://app.asili.dev' });
+  const { buildSitemap } = await import('@techninja/clearstack/lib/build-sitemap.js');
+  buildSitemap({ projectDir: ROOT, outDir: 'dist', baseUrl: 'https://app.asili.dev' });
 } catch (e) {
   console.warn('⚠ OG generation failed:', e.message);
 }
