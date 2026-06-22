@@ -34,10 +34,11 @@ export default define({
   scoring: false,
   switchEpoch: {
     value: 0,
-    observe() {
-      loadActiveEmoji();
+    observe(host) {
+      loadActiveEmoji().then(() => { host.emojiEpoch++; });
     },
   },
+  emojiEpoch: 0,
   showAll: false,
   search: '',
   sortBy: 'name',
@@ -55,6 +56,7 @@ export default define({
       void host.resultCount;
       void host.scoring;
       void host.switchEpoch;
+      void host.emojiEpoch;
       const cats = getCategories(host.traits);
       const { visible, totalScored } = filterAndSort(host.traits, {
         search: host.search,
