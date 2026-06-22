@@ -35,7 +35,9 @@ export default define({
   switchEpoch: {
     value: 0,
     observe(host) {
-      loadActiveEmoji().then(() => { host.emojiEpoch++; });
+      loadActiveEmoji().then(() => {
+        host.emojiEpoch++;
+      });
     },
   },
   emojiEpoch: 0,
