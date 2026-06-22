@@ -21,7 +21,7 @@ import { get, set } from '#utils/storage.js';
 
 /** @type {import('hybrids').Model<AppState>} */
 const AppState = {
-  theme: 'dark',
+  theme: globalThis.matchMedia?.('(prefers-color-scheme: light)').matches ? 'light' : 'dark',
   activeIndividualId: '',
   searchQuery: '',
   sortBy: 'name',
