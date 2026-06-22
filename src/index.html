@@ -6,16 +6,33 @@
     <meta name="app-version" content="0.0.0" />
     <!-- FOUC prevention -->
     <style>
-      html, body { background: #0f172a; color: #e2e8f0; margin: 0; }
-      [data-theme='light'], [data-theme='light'] body { background: #eef0f6; color: #1e293b; }
+      html,
+      body {
+        background: #0f172a;
+        color: #e2e8f0;
+        margin: 0;
+      }
+      [data-theme='light'],
+      [data-theme='light'] body {
+        background: #eef0f6;
+        color: #1e293b;
+      }
       @media (prefers-color-scheme: light) {
-        html:not([data-theme]), body { background: #eef0f6; color: #1e293b; }
+        html:not([data-theme]),
+        body {
+          background: #eef0f6;
+          color: #1e293b;
+        }
       }
     </style>
-    <script>/* Apply stored theme immediately to prevent flash */
-      try{const t=JSON.parse(localStorage.getItem('asili-appState')||'{}').theme
-        ||((matchMedia('(prefers-color-scheme:light)').matches)?'light':'dark');
-        document.documentElement.setAttribute('data-theme',t)}catch{}
+    <script>
+      /* Apply stored theme immediately to prevent flash */
+      try {
+        const t =
+          JSON.parse(localStorage.getItem('asili-appState') || '{}').theme ||
+          (matchMedia('(prefers-color-scheme:light)').matches ? 'light' : 'dark');
+        document.documentElement.setAttribute('data-theme', t);
+      } catch {}
     </script>
     <title>Asili — Privacy-first polygenic risk score analysis</title>
     <meta
