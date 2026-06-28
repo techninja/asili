@@ -54,6 +54,7 @@ export function createBrowserAdapter(manifestUrl = '/data/trait_manifest.json') 
     async deleteIndividual(id) {
       await idb.del('individuals', id);
       await idb.del('variants', id);
+      await idb.del('settings', `profile:${id}`);
       const keys = await idb.getAllKeys('results');
       for (const k of keys) {
         if (String(k).startsWith(`${id}:`)) await idb.del('results', k);

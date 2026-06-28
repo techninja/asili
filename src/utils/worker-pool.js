@@ -15,6 +15,7 @@ import { loadGenotypedDNA, dropGenotypedDNA } from '/packages/core/src/duckdb/ge
 import { loadUnifiedDNA, resetUnifiedDNA } from '/packages/core/src/duckdb/unified-source.js';
 import { scoreUnifiedTrait, parseTar } from './score-trait.js';
 import { loadLiftover, dropLiftover } from './liftover.js';
+import { extractAndStoreProfile } from './individual-profile.js';
 import { isDev } from '#utils/data-url.js';
 
 /** @type {boolean} */ let dbReady = false;
@@ -66,6 +67,10 @@ export async function loadDNA(s, variants, file, onProgress) {
       entries.filter((e) => e.name.endsWith('.parquet')).map((e) => prefix + e.name),
     );
     await new Promise((r) => setTimeout(r, 200));
+    // Extract individual profile (DR2 bins, coverage) while chr files are registered
+    if (/** @type {any} */ (file)._individualId) {
+      extractAndStoreProfile(/** @type {any} */ (file)._individualId).catch(() => {});
+    }
   } else {
     const liftoverFiles = await loadLiftover();
     genotypedTables = await loadGenotypedDNA(variants, onProgress, liftoverFiles);

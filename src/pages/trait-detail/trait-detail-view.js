@@ -26,6 +26,7 @@ import { unscoredContent } from './trait-detail-unscored.js';
 import { scoreHero } from './trait-detail-hero.js';
 import { initView, handleSwitch } from './trait-detail-init.js';
 import { sourceLabel, coverStyle, coverAttribution } from './trait-detail-helpers.js';
+import { registerKeyNav } from '#utils/keyboard-nav.js';
 
 const TraitDetail = define({
   tag: 'trait-detail-view',
@@ -41,11 +42,14 @@ const TraitDetail = define({
   pgsMeta: { value: /** @type {object} */ ({}) },
   familyData: { value: /** @type {Array<object>} */ ([]), connect: () => {} },
   indEmoji: '🧬',
-  isImputed: false,
   _init: {
     value: false,
     connect: (host) => {
       initView(host);
+      return registerKeyNav({
+        getPrev: () => (host.trait?._prev ? '/trait/' + host.trait._prev : ''),
+        getNext: () => (host.trait?._next ? '/trait/' + host.trait._next : ''),
+      });
     },
   },
   render: {

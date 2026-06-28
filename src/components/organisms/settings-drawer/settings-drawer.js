@@ -35,6 +35,8 @@ export default define({
   closing: false,
   diagnosticOutput: '',
   systemDiagnosticOutput: '',
+  profileRebuilding: false,
+  profileProgress: 0,
   _loaded: {
     value: false,
     observe(host, _, last) {

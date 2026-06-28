@@ -104,14 +104,14 @@ export function pagerContent(prevHref, nextHref) {
   return html`
     <div class="floating-bar__pager">
       ${prevHref
-        ? html`<a href="${prevHref}" class="floating-bar__btn" title="Previous trait">
+        ? html`<a href="${prevHref}" class="floating-bar__btn" title="Previous">
             <app-icon name="step-back"></app-icon>
           </a>`
         : html`<span class="floating-bar__btn floating-bar__btn--disabled">
             <app-icon name="step-back"></app-icon>
           </span>`}
       ${nextHref
-        ? html`<a href="${nextHref}" class="floating-bar__btn" title="Next trait">
+        ? html`<a href="${nextHref}" class="floating-bar__btn" title="Next">
             <app-icon name="step-forward"></app-icon>
           </a>`
         : html`<span class="floating-bar__btn floating-bar__btn--disabled">

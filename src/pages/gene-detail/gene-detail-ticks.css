@@ -1,0 +1,122 @@
+/* Gene ticks */
+.chr-rail__tick {
+  position: absolute;
+  left: 0;
+  right: 0;
+  height: 0;
+  text-decoration: none;
+  z-index: 2;
+}
+
+.chr-rail__tick-mark {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: -1px;
+  height: 2px;
+  background: rgb(255 255 255 / 45%);
+  border-radius: 1px;
+  box-shadow: 0 0 2px rgb(0 0 0 / 60%);
+  transition:
+    background 0.2s,
+    height 0.2s,
+    box-shadow 0.2s;
+}
+
+.chr-rail__tick--active .chr-rail__tick-mark {
+  height: 4px;
+  top: -2px;
+  background: var(--color-primary);
+  box-shadow: 0 0 8px var(--color-primary);
+}
+
+.chr-rail__tick:hover .chr-rail__tick-mark {
+  background: rgb(255 255 255 / 90%);
+  height: 3px;
+}
+
+.chr-rail__tick-highlight {
+  position: absolute;
+  left: -3px;
+  right: -3px;
+  top: -12px;
+  height: 24px;
+  background: rgb(255 255 255 / 8%);
+  border-radius: 4px;
+  transition: opacity 0.25s ease;
+  opacity: 0;
+}
+
+.chr-rail__tick:hover .chr-rail__tick-highlight {
+  opacity: 1;
+  animation: tick-pulse 1s ease-in-out infinite;
+}
+
+.chr-rail__tick--active .chr-rail__tick-highlight {
+  opacity: 1;
+  background: rgb(99 102 241 / 15%);
+  animation: tick-pulse 2s ease-in-out infinite;
+}
+
+@keyframes tick-pulse {
+  0%,
+  100% {
+    transform: scaleX(1);
+    opacity: 0.8;
+  }
+
+  50% {
+    transform: scaleX(1.3);
+    opacity: 1;
+  }
+}
+
+/* Mobile: rail flush right edge */
+@media (width <= 640px) {
+  .gene-detail--with-rail {
+    display: block;
+    position: relative;
+  }
+
+  .gene-detail__main {
+    padding-right: 65px;
+  }
+
+  .chr-rail {
+    position: absolute;
+    top: 0;
+    right: -50px;
+    height: 100%;
+    min-height: unset;
+    width: 120px;
+  }
+
+  .chr-rail__body {
+    height: 100%;
+  }
+
+  .chr-rail__track {
+    width: 40px;
+    border-radius: 20px;
+  }
+
+  .chr-rail__strip {
+    border-radius: 19px;
+  }
+
+  .chr-rail__labels {
+    width: 50px;
+  }
+
+  .chr-rail__conn-wrap {
+    width: 20px;
+  }
+
+  .chr-rail__label {
+    font-size: 10px;
+  }
+
+  .chr-rail__label--active {
+    font-size: 11px;
+  }
+}

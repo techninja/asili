@@ -120,3 +120,4 @@ export async function doClearAll(_host) {
 }
 
 export { handleToggleDiagnostic, handleSystemDiagnostic } from './drawer-diagnostics.js';
+export { handleRebuildProfiles } from './drawer-profiles.js';

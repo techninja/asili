@@ -9,8 +9,15 @@
     "title": "{slug.name}",
     "description": "{slug.description}",
     "image": "{slug.cover_image.url}",
-    "ogImage": "https://app.asili.dev/trait/{slug.slug}.png",
+    "ogImage": "https://data.asili.dev/og/trait/{slug.slug}.png",
     "data": "/tmp/trait_manifest.json:traits",
     "ogTemplate": "trait"
+  },
+  "/gene/:symbol": {
+    "title": "{symbol.emoji} {symbol.symbol} — {symbol.name}",
+    "description": "{symbol.editorial_description}",
+    "ogImage": "https://data.asili.dev/og/gene/{symbol.symbol}.png",
+    "data": "src/data/gene_catalog.json:genes",
+    "ogTemplate": "gene"
   }
 }
