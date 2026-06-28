@@ -1,0 +1,196 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Montserrat:wght@700;800&family=JetBrains+Mono:wght@700&display=swap"
+      rel="stylesheet"
+    />
+    <style>
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+      body {
+        width: 1200px;
+        height: 630px;
+        overflow: hidden;
+        font-family:
+          'Montserrat',
+          -apple-system,
+          BlinkMacSystemFont,
+          sans-serif;
+        background: #0f172a;
+        color: #e2e8f0;
+        position: relative;
+      }
+      .bg-gradient {
+        position: absolute;
+        inset: 0;
+        background: linear-gradient(
+          135deg,
+          rgba(26, 16, 64, 0.95) 0%,
+          rgba(15, 23, 42, 1) 50%,
+          rgba(10, 30, 40, 1) 100%
+        );
+      }
+      .glow {
+        position: absolute;
+        width: 500px;
+        height: 500px;
+        border-radius: 50%;
+        filter: blur(120px);
+        opacity: 0.15;
+        background: #818cf8;
+        top: -150px;
+        right: -100px;
+      }
+      .glow-2 {
+        position: absolute;
+        width: 300px;
+        height: 300px;
+        border-radius: 50%;
+        filter: blur(80px);
+        opacity: 0.1;
+        background: #34d399;
+        bottom: -80px;
+        left: 100px;
+      }
+      .chr-strip {
+        position: absolute;
+        right: 60px;
+        top: 80px;
+        bottom: 80px;
+        width: 40px;
+        border-radius: 20px;
+        background: linear-gradient(
+          180deg,
+          hsl(0, 90%, 55%) 0%,
+          hsl(60, 90%, 55%) 20%,
+          hsl(120, 90%, 45%) 40%,
+          hsl(180, 90%, 45%) 60%,
+          hsl(240, 90%, 55%) 80%,
+          hsl(300, 90%, 55%) 100%
+        );
+        opacity: 0.7;
+      }
+      .chr-label {
+        position: absolute;
+        right: 52px;
+        top: 50%;
+        transform: translateY(-50%) rotate(-90deg);
+        font-size: 14px;
+        font-family: 'JetBrains Mono', monospace;
+        color: rgba(255, 255, 255, 0.4);
+        letter-spacing: 2px;
+        text-transform: uppercase;
+      }
+      .logo {
+        position: absolute;
+        bottom: 44px;
+        left: 60px;
+        z-index: 2;
+        display: flex;
+        align-items: center;
+        gap: 16px;
+      }
+      .logo img {
+        width: 56px;
+        height: 56px;
+      }
+      .logo-text {
+        display: flex;
+        flex-direction: column;
+        gap: 2px;
+      }
+      .logo-name {
+        font-size: 24px;
+        font-weight: 700;
+        color: #e2e8f0;
+      }
+      .logo-sub {
+        font-size: 14px;
+        color: #a8b8cc;
+      }
+      .content {
+        position: relative;
+        z-index: 1;
+        padding: 80px 60px 120px;
+        height: 100%;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        gap: 20px;
+        max-width: 900px;
+      }
+      .emoji {
+        font-size: 72px;
+        line-height: 1;
+      }
+      .symbol {
+        font-size: 82px;
+        font-weight: 800;
+        font-family: 'JetBrains Mono', monospace;
+        line-height: 1;
+        color: #e2e8f0;
+      }
+      .name {
+        font-size: 24px;
+        line-height: 1.3;
+        color: #a8b8cc;
+        max-width: 700px;
+      }
+      .meta {
+        display: flex;
+        gap: 24px;
+        margin-top: 12px;
+      }
+      .badge {
+        display: inline-flex;
+        align-items: center;
+        padding: 6px 16px;
+        border-radius: 8px;
+        font-size: 16px;
+        font-weight: 600;
+      }
+      .badge-cat {
+        background: rgba(99, 102, 241, 0.15);
+        color: #a5b4fc;
+      }
+      .badge-chr {
+        background: rgba(52, 211, 153, 0.12);
+        color: #6ee7b7;
+        font-family: 'JetBrains Mono', monospace;
+      }
+      .badge-pubs {
+        background: rgba(251, 191, 36, 0.1);
+        color: #fcd34d;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="bg-gradient"></div>
+    <div class="glow"></div>
+    <div class="glow-2"></div>
+    <div class="chr-strip"></div>
+    <div class="chr-label">chr{chr}</div>
+    <div class="logo">
+      <img src="/logo.svg" />
+      <div class="logo-text">
+        <span class="logo-name">Asili</span>
+        <span class="logo-sub">Explore your genome</span>
+      </div>
+    </div>
+    <div class="content">
+      <div class="emoji">{emoji}</div>
+      <div class="symbol">{symbol}</div>
+      <div class="name">{name}</div>
+      <div class="meta">
+        <span class="badge badge-cat">{category}</span>
+        <span class="badge badge-chr">chr{chr}</span>
+        <span class="badge badge-pubs">{publications} studies</span>
+      </div>
+    </div>
+  </body>
+</html>

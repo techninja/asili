@@ -10,7 +10,7 @@
  *   node scripts/deploy-data.js --trait EFO_0004340  # Deploy single trait pack
  */
 
-import { readdirSync, readFileSync } from 'fs';
+import { existsSync, readdirSync, readFileSync } from 'fs';
 import { resolve } from 'path';
 import { loadDeployLog, saveDeployLog, upload } from './deploy-helpers.js';
 
@@ -19,8 +19,10 @@ const DATA_DIR = resolve(import.meta.dirname, '../../asili-lab/data_out');
 const MANIFEST = `${DATA_DIR}/trait_manifest.json`;
 const NORMS = `${DATA_DIR}/pgs_norm_params.json`;
 const HG19MAP = `${DATA_DIR}/hg19map.asili`;
+const GENE_CATALOG = `${DATA_DIR}/gene_catalog.json`;
 const PGS_DETAIL_DIR = `${DATA_DIR}/pgs_detail`;
 const PACKS_DIR = `${DATA_DIR}/packs/asili`;
+const OG_DIR = resolve(import.meta.dirname, '../dist');
 
 const args = process.argv.slice(2);
 const smallOnly = args.includes('--small');
@@ -33,10 +35,11 @@ const up = (local, remote, ct = null) => upload(local, remote, state, BUCKET, fo
 console.log('🚀 Deploying data to Cloudflare R2\n');
 
 // Small files (always deployed)
-console.log('📋 Manifest + norms + hg19map...');
+console.log('📋 Manifest + norms + hg19map + gene catalog...');
 up(MANIFEST, 'trait_manifest.json', 'application/json');
 up(NORMS, 'pgs_norm_params.json', 'application/json');
 up(HG19MAP, 'hg19map.asili', 'application/octet-stream');
+up(GENE_CATALOG, 'gene_catalog.json', 'application/json');
 
 // PGS detail files
 console.log('📦 PGS detail files...');
@@ -61,6 +64,23 @@ for (const f of depFiles) {
   up(`${DEPS_DIR}/${f}`, `deps/duckdb/${f}`, ct);
 }
 console.log(`  ✓ ${depFiles.length} dep files\n`);
+
+// OG images (trait + gene)
+console.log('🖼️  OG images...');
+const ogTraitDir = `${OG_DIR}/trait`;
+const ogGeneDir = `${OG_DIR}/gene`;
+let ogCount = 0;
+if (existsSync(ogTraitDir)) {
+  const traitPngs = readdirSync(ogTraitDir).filter((f) => f.endsWith('.png'));
+  for (const f of traitPngs) up(`${ogTraitDir}/${f}`, `og/trait/${f}`, 'image/png');
+  ogCount += traitPngs.length;
+}
+if (existsSync(ogGeneDir)) {
+  const genePngs = readdirSync(ogGeneDir).filter((f) => f.endsWith('.png'));
+  for (const f of genePngs) up(`${ogGeneDir}/${f}`, `og/gene/${f}`, 'image/png');
+  ogCount += genePngs.length;
+}
+console.log(`  ✓ ${ogCount} OG images\n`);
 
 if (smallOnly) {
   console.log('✅ Small files deployed (--small mode)');
