@@ -10,6 +10,9 @@ import '#pages/beta/beta-report.js';
 import '#atoms/app-icon/app-icon.js';
 // @ts-ignore
 import '#organisms/data-table/data-table.js';
+// @ts-ignore
+import '#organisms/explore-grid/explore-grid.js';
+import '#organisms/gene-table/gene-table.js';
 
 export { uploadPanel } from './beta-upload-panel.js';
 
@@ -43,6 +46,7 @@ export function individualSelector(host, list, switchFn) {
 
 const TABS = [
   { id: 'traits', label: 'Traits', icon: 'grid' },
+  { id: 'explore', label: 'Genes', icon: 'dna' },
   { id: 'table', label: 'Table', icon: 'list' },
   { id: 'report', label: 'Report', icon: 'chart-pie' },
 ];
@@ -73,6 +77,7 @@ export function appSubHeader(host) {
 export function appContent(host) {
   return html`
     ${host.activeTab === 'traits' ? traitsTab(host) : html``}
+    ${host.activeTab === 'explore' ? html`<explore-grid></explore-grid>` : html``}
     ${host.activeTab === 'table' ? tableTab(host) : html``}
     ${host.activeTab === 'report'
       ? html`<report-content
@@ -105,8 +110,33 @@ function traitsTab(host) {
  *
  */
 function tableTab(host) {
-  return html`<data-table
-    resultCount="${host.resultCount}"
-    switchEpoch="${host._switchEpoch}"
-  ></data-table>`;
+  const sub = host._tableSub || 'traits';
+  return html`
+    <div class="table-tab">
+      <div class="table-tab__subs">
+        <button
+          class="table-tab__sub ${sub === 'traits' ? 'table-tab__sub--active' : ''}"
+          onclick="${(h) => {
+            h._tableSub = 'traits';
+          }}"
+        >
+          Traits
+        </button>
+        <button
+          class="table-tab__sub ${sub === 'genes' ? 'table-tab__sub--active' : ''}"
+          onclick="${(h) => {
+            h._tableSub = 'genes';
+          }}"
+        >
+          Genes
+        </button>
+      </div>
+      ${sub === 'traits'
+        ? html`<data-table
+            resultCount="${host.resultCount}"
+            switchEpoch="${host._switchEpoch}"
+          ></data-table>`
+        : html`<gene-table></gene-table>`}
+    </div>
+  `;
 }

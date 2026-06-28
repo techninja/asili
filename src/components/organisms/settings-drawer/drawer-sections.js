@@ -14,6 +14,7 @@ import {
   handleUnits,
   handleToggleDiagnostic,
   handleSystemDiagnostic,
+  handleRebuildProfiles,
 } from './drawer-handlers.js';
 import '#molecules/accordion-panel/accordion-panel.js';
 
@@ -122,6 +123,21 @@ export function scoringSection(host) {
           <option value="imperial" selected="${host.units === 'imperial'}">Imperial</option>
         </select>
       </label>
+      <div
+        class="settings-drawer__row settings-drawer__row--profile ${host.profileRebuilding
+          ? 'settings-drawer__row--rebuilding'
+          : ''}"
+        style="--progress: ${Math.round((host.profileProgress || 0) * 100)}%;"
+      >
+        <span>Gene profiles</span>
+        ${host.profileRebuilding
+          ? html`<span class="settings-drawer__profile-progress">
+              ${Math.round((host.profileProgress || 0) * 100)}%
+            </span>`
+          : html`<button class="btn btn-ghost btn-sm" onclick="${handleRebuildProfiles}">
+              <app-icon name="refresh" size="sm"></app-icon> Rebuild
+            </button>`}
+      </div>
     </section>
   `;
 }

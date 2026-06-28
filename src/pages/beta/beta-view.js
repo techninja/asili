@@ -29,15 +29,17 @@ import { appHeader } from '#molecules/app-header/app-header.js';
 import { appFooter } from '#molecules/app-footer/app-footer.js';
 import { toggleSettings } from '#utils/settings-toggle.js';
 import TraitDetailView from '#pages/trait-detail/trait-detail-view.js';
+import GeneDetailView from '#pages/gene-detail/gene-detail-view.js';
 import { connectInit } from './beta-init.js';
 
 export default define({
   tag: 'beta-view',
-  [router.connect]: { url: '/beta', stack: [TraitDetailView] },
+  [router.connect]: { url: '/beta', stack: [TraitDetailView, GeneDetailView] },
   individuals: { value: [], connect: () => {} },
   activeId: '',
   resultCount: 0,
   _switchEpoch: 0,
+  _tableSub: 'traits',
   parseStatus: { value: '', connect: () => {} },
   parsedCount: { value: 0, connect: () => {} },
   parsedFormat: { value: '', connect: () => {} },
@@ -83,7 +85,7 @@ export default define({
     },
     connect(host) {
       const saved = sessionStorage.getItem('asili-source-tab');
-      if (saved && ['traits', 'table', 'report'].includes(saved)) host.activeTab = saved;
+      if (saved && ['traits', 'explore', 'table', 'report'].includes(saved)) host.activeTab = saved;
     },
   },
   _variants: { value: [], connect: () => {} },
