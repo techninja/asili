@@ -6,6 +6,7 @@
 import * as idb from '/packages/core/src/data-layer/idb.js';
 import { loadDNA } from './worker-pool.js';
 import { S, markAllError } from './queue-state.js';
+import { storeRawProfile } from './individual-profile.js';
 
 /**
  * Load DNA for an individual into a worker session.
@@ -21,6 +22,7 @@ export async function loadIndividualDNA(session, individualId, onProgress) {
       markAllError(individualId, 'Imputed file not available — re-upload needed');
       throw new Error('No imputed file');
     }
+    /** @type {any} */ (file)._individualId = individualId;
     await loadDNA(session, null, file);
   } else {
     const stored = await idb.get('variants', individualId);
@@ -29,5 +31,7 @@ export async function loadIndividualDNA(session, individualId, onProgress) {
       throw new Error('No variant data');
     }
     await loadDNA(session, stored.variants, undefined, onProgress);
+    // Build profile for raw users from variant array (no DuckDB query needed)
+    storeRawProfile(individualId, stored.variants).catch(() => {});
   }
 }
