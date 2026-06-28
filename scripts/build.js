@@ -46,6 +46,22 @@ try {
   console.warn('⚠ Trait manifest skipped (no source)');
 }
 
+// Fetch gene catalog for OG (local symlink won't exist in CI)
+const GENE_CATALOG_PATH = resolve(ROOT, 'src/data/gene_catalog.json');
+if (!existsSync(GENE_CATALOG_PATH)) {
+  console.log('→ Fetching gene catalog from CDN...');
+  try {
+    const resp = await fetch('https://data.asili.dev/gene_catalog.json');
+    if (resp.ok) {
+      mkdirSync(resolve(ROOT, 'src/data'), { recursive: true });
+      writeFileSync(GENE_CATALOG_PATH, await resp.text());
+      console.log('  ✓ gene_catalog.json cached for OG generation');
+    }
+  } catch (e) {
+    console.warn('⚠ Gene catalog fetch failed:', e.message);
+  }
+}
+
 // Generate per-trait OG pages + sitemap for link previews
 console.log('→ Generating OG metadata pages...');
 try {
@@ -57,15 +73,8 @@ try {
   console.warn('⚠ OG generation failed:', e.message);
 }
 
-// Generate per-trait OG images for social previews
-console.log('→ Generating OG images...');
-try {
-  execSync('npx playwright install chromium', { cwd: ROOT, stdio: 'inherit' });
-  const { buildOGImages } = await import('@techninja/clearstack/lib/build-og-images.js');
-  await buildOGImages({ projectDir: ROOT, outDir: 'dist', siteName: 'Asili' });
-} catch (e) {
-  console.warn('⚠ OG image generation failed:', e.message);
-}
+// OG images are pre-generated locally and deployed to R2 via deploy-data.js.
+// CI only needs the HTML pages (meta tags) for social crawlers.
 
 // Inject version + cache-bust AFTER OG generation (which may rewrite index.html)
 const VERSION = JSON.parse(readFileSync(resolve(ROOT, 'package.json'), 'utf-8')).version;
