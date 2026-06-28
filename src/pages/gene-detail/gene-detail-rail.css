@@ -1,0 +1,137 @@
+@import './gene-detail-ticks.css';
+
+/* ===== Vertical chromosome rail ===== */
+.chr-rail {
+  position: sticky;
+  top: 80px;
+  align-self: start;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  height: calc(100vh - 120px);
+  min-height: 500px;
+  user-select: none;
+}
+
+.chr-rail__header,
+.chr-rail__footer {
+  font-size: 10px;
+  font-family: var(--font-mono, monospace);
+  color: var(--color-text-muted);
+  text-align: right;
+  white-space: nowrap;
+}
+
+.chr-rail__body {
+  flex: 1;
+  display: flex;
+  gap: 0;
+  min-height: 0;
+  position: relative;
+}
+
+.chr-rail__labels {
+  position: relative;
+  width: 50px;
+  flex-shrink: 0;
+}
+
+.chr-rail__label {
+  position: absolute;
+  right: 0;
+  transform: translateY(-50%);
+  font-size: 9px;
+  font-family: var(--font-mono, monospace);
+  color: var(--color-text-muted);
+  text-decoration: none;
+  opacity: 0.7;
+  white-space: nowrap;
+  transition:
+    opacity 0.2s,
+    color 0.2s;
+}
+
+.chr-rail__label--active {
+  opacity: 1;
+  color: var(--color-primary, #6366f1);
+  font-weight: 600;
+  font-size: 10px;
+}
+
+.chr-rail__label:hover {
+  opacity: 1;
+  color: var(--color-text, #e5e7eb);
+}
+
+/* SVG connector lines */
+.chr-rail__conn-wrap {
+  width: 24px;
+  flex-shrink: 0;
+  position: relative;
+}
+
+.chr-rail__conn-svg {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}
+
+.chr-rail__svg-line {
+  stroke: var(--color-text-muted, #6b7280);
+  vector-effect: non-scaling-stroke;
+  stroke-width: 1;
+}
+
+.chr-rail__svg-line.chr-rail__svg-active {
+  stroke: var(--color-primary, #6366f1);
+  stroke-width: 1.5;
+}
+
+.chr-rail__track {
+  width: 36px;
+  flex-shrink: 0;
+  align-self: stretch;
+  position: relative;
+  border-radius: 18px;
+  overflow: visible;
+  background: var(--color-surface-alt);
+  border: 1px solid var(--color-border);
+}
+
+.chr-rail--raw .chr-rail__track {
+  background: var(--color-surface);
+  border-color: var(--color-border);
+}
+
+.chr-rail__track::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: 17px;
+  pointer-events: none;
+  background-image: repeating-linear-gradient(
+    -45deg,
+    transparent,
+    transparent 4px,
+    rgb(120 120 150 / 25%) 4px,
+    rgb(120 120 150 / 25%) 6px
+  );
+  z-index: 0;
+}
+
+.chr-rail__strip {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  border-radius: 17px;
+  overflow: hidden;
+  z-index: 1;
+}
+
+.chr-rail__strip--empty {
+  background: var(--color-surface-alt);
+  border-radius: 17px;
+}

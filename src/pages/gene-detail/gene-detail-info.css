@@ -1,0 +1,65 @@
+/* Stats */
+.gene-detail__stats {
+  padding: var(--space-md);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: var(--color-surface);
+}
+
+.gene-detail__stat-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+  gap: var(--space-md);
+}
+
+.gene-detail__stat {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.gene-detail__stat-value {
+  font-size: var(--text-lg);
+  font-weight: 700;
+  font-family: var(--font-mono, monospace);
+  color: var(--color-text);
+}
+
+.gene-detail__stat-label {
+  font-size: var(--text-xs);
+  color: var(--color-text-muted);
+}
+
+/* Links */
+.gene-detail__links {
+  padding: var(--space-md);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: var(--color-surface);
+}
+
+.gene-detail__link-list {
+  display: flex;
+  gap: var(--space-md);
+  flex-wrap: wrap;
+}
+
+.gene-detail__link {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: var(--text-sm);
+  color: var(--color-primary);
+  text-decoration: none;
+
+  &:hover {
+    text-decoration: underline;
+  }
+}
+
+/* Loading */
+.gene-detail__loading {
+  text-align: center;
+  padding: var(--space-xl);
+  color: var(--color-text-muted);
+}
