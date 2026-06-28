@@ -16,7 +16,7 @@ export function variantSection(
 ) {
   const popularCount = gene.popular_variants.length;
 
-  if (!variantCount && !isImputed && !geneStats) {
+  if (!variantCount && !isImputed && !geneStats?.total) {
     return html`
       <section class="gene-detail__variants gene-detail__variants--empty">
         <h2 class="gene-detail__section-title">
@@ -29,8 +29,8 @@ export function variantSection(
 
   const nameLabel = indName ? `${indEmoji} ${indName}` : 'this individual';
   const hasContent =
-    (isImputed && (geneStats || popularCount)) ||
-    (!isImputed && geneStats) ||
+    (isImputed && (geneStats?.total || popularCount)) ||
+    (!isImputed && geneStats?.total) ||
     (!isImputed && popularCount && variantHits.length);
 
   if (!hasContent) return html``;
@@ -45,7 +45,7 @@ export function variantSection(
           <app-icon name="check-circle" size="sm"></app-icon>
           Full coverage (imputed)
         </div>
-        ${geneStats ? geneStatsBlock(geneStats, gene) : html``}
+        ${geneStats?.total ? geneStatsBlock(geneStats, gene) : html``}
         ${popularCount
           ? html`<p class="gene-detail__coverage-note">
               All ${popularCount} key variant${popularCount > 1 ? 's' : ''} available.
@@ -61,7 +61,7 @@ export function variantSection(
       <h2 class="gene-detail__section-title">
         <app-icon name="dna" size="sm"></app-icon> ${nameLabel} at ${gene.symbol}
       </h2>
-      ${geneStats ? geneStatsBlock(geneStats, gene) : html``}
+      ${geneStats?.total ? geneStatsBlock(geneStats, gene) : html``}
       ${popularCount
         ? html`
             <div class="gene-detail__variant-summary">

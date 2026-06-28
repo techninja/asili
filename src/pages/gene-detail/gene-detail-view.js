@@ -42,7 +42,7 @@ const GeneDetail = define({
   variantHits: { value: /** @type {Array<string>} */ ([]), connect: () => {} },
   variantCount: 0,
   dr2Bins: { value: /** @type {object|null} */ ({}), connect: () => {} },
-  geneStats: { value: /** @type {object|null} */ (null), connect: () => {} },
+  geneStats: { value: /** @type {object|null} */ ({}), connect: () => {} },
   prevGene: '',
   nextGene: '',
   _init: {

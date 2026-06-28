@@ -21,7 +21,7 @@ export async function initGeneView(host) {
   const idx = catalog.genes.indexOf(gene);
   host.prevGene = idx > 0 ? catalog.genes[idx - 1].symbol : '';
   host.nextGene = idx < catalog.genes.length - 1 ? catalog.genes[idx + 1].symbol : '';
-  host.gene = gene || null;
+  host.gene = gene || {};
 
   if (!gene) return;
 
@@ -34,6 +34,7 @@ export async function initGeneView(host) {
     host.variantHits = [];
     host.variantCount = 0;
     host.dr2Bins = {};
+    host.geneStats = {};
     return;
   }
 
@@ -46,8 +47,8 @@ export async function initGeneView(host) {
 
     // Load DR2 quality bins for imputed individuals
     const profile = (await loadProfile(id)) || {};
-    host.dr2Bins = profile;
-    host.geneStats = profile?.geneStats?.[gene.symbol] || null;
+    host.dr2Bins = profile || {};
+    host.geneStats = profile?.geneStats?.[gene.symbol] || {};
 
     if (host.isImputed) {
       host.variantHits = gene.popular_variants || [];
