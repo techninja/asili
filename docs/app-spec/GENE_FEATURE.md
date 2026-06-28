@@ -80,8 +80,6 @@ imputation pipeline at `impute.asili.dev`.
   (3-4 genes with editorial overrides: emoji + symbol + one-liner)
 - **Related traits** — link gene detail to overlapping scored traits via related_trait_ids
 - **Variant genotype display** — show actual alleles for matched popular_variants
-- **Deploy integration** — add `gene_catalog.json` to `deploy-data.js` for R2
-- **Social share metadata** — OG tags for gene pages
 - **Imputation quality fix** — replace custom DR2 formula with max GP
   (see `asili-lab/docs/FIX_IMPUTATION_QUALITY.md`)
 - **More editorial overrides** — expand from 8 to 50+ genes in batches
@@ -206,6 +204,7 @@ selected by relevance to the individual (e.g., genes where they have
 non-reference variants, or highest publication count).
 
 **Layout:** Compact single row, print-friendly:
+
 ```
 🎀 BRCA1 — Tumor suppressor, hereditary breast cancer  |  🥬 MTHFR — Folate metabolism  |  ⚡ COMT — Dopamine clearance
 ```
@@ -214,6 +213,7 @@ Each entry: emoji + symbol + one-line editorial_description (truncated).
 Clickable in browser, plain text in print.
 
 **Selection logic:**
+
 1. Filter catalog to genes with editorial overrides
 2. If individual has profile geneStats, prefer genes with nonref > 0
 3. Fall back to highest publication count
@@ -224,6 +224,16 @@ Clickable in browser, plain text in print.
 ## Open Questions
 
 - [ ] Should related_traits be computed at build time or runtime?
-- [ ] Should the gene table support column customization like the trait table?
-- [ ] Should we add OG image generation for gene pages?
 - [ ] What to cut from Report to keep it 1-page when Notable Genes is added?
+
+---
+
+## Decisions Made
+
+- **Gene table column customization** — No. Keep it simple; the trait table's
+  column picker adds complexity that isn't justified for 200 rows.
+- **OG images for gene pages** — Yes. Generated via `clearstack build og-images`,
+  stored on R2 at `data.asili.dev/og/gene/{SYMBOL}.png`, served via
+  `ogImage` field in `clearstack.routes.json`.
+- **OG image hosting** — Both trait and gene OG PNGs deploy to R2 via
+  `deploy-data.js`, not bundled with Cloudflare Pages (too heavy).
