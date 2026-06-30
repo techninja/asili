@@ -20,6 +20,7 @@
   border-left: 4px solid hsl(var(--card-hue, 200) 65% 55%);
   border-radius: var(--radius-md);
   background: var(--color-surface);
+  position: relative;
   transition:
     border-color 0.15s,
     box-shadow 0.15s,
@@ -36,8 +37,13 @@
 .explore-grid__card-header {
   display: flex;
   align-items: baseline;
-  justify-content: space-between;
   gap: var(--space-sm);
+}
+
+.explore-grid__card chr-ideogram {
+  position: absolute;
+  top: var(--space-sm);
+  right: var(--space-sm);
 }
 
 .explore-grid__symbol {
