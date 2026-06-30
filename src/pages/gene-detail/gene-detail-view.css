@@ -19,6 +19,13 @@
   max-width: 900px;
 }
 
+@media (width <= 640px) {
+  .gene-detail--with-rail {
+    grid-template-columns: 1fr 72px;
+    gap: 0;
+  }
+}
+
 .gene-detail__main {
   display: flex;
   flex-direction: column;

@@ -10,6 +10,7 @@ html {
   font-family: var(--font-sans);
   line-height: 1.5;
   color: var(--color-text);
+  overflow-x: clip;
   background: var(--color-bg);
 }
 

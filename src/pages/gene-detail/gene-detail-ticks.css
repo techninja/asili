@@ -71,24 +71,25 @@
   }
 }
 
-/* Mobile: rail flush right edge */
+/* Mobile: rail clips off right edge, content gets max space */
 @media (width <= 640px) {
   .gene-detail--with-rail {
-    display: block;
-    position: relative;
+    grid-template-columns: 1fr 72px;
+    gap: 0;
   }
 
   .gene-detail__main {
-    padding-right: 65px;
+    padding-right: 0;
   }
 
-  .chr-rail {
-    position: absolute;
+  .gene-detail--with-rail .chr-rail {
+    align-self: stretch;
+    height: auto;
+    min-height: 100%;
+    position: relative;
     top: 0;
-    right: -50px;
-    height: 100%;
-    min-height: unset;
-    width: 120px;
+    margin-right: -36px;
+    gap: 2px;
   }
 
   .chr-rail__body {
@@ -96,27 +97,35 @@
   }
 
   .chr-rail__track {
-    width: 40px;
-    border-radius: 20px;
+    width: 34px;
+    border-radius: 17px;
   }
 
   .chr-rail__strip {
-    border-radius: 19px;
+    border-radius: 16px;
   }
 
   .chr-rail__labels {
-    width: 50px;
+    width: 18px;
   }
 
   .chr-rail__conn-wrap {
-    width: 20px;
+    width: 8px;
   }
 
   .chr-rail__label {
-    font-size: 10px;
+    font-size: 8px;
   }
 
   .chr-rail__label--active {
-    font-size: 11px;
+    font-size: 9px;
+  }
+
+  .chr-rail__header {
+    font-size: 9px;
+  }
+
+  .chr-rail__footer {
+    font-size: 8px;
   }
 }
