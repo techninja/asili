@@ -16,9 +16,12 @@ function dr2ConfidenceColor(t) {
 function rawCoverageColor(count, maxCount) {
   if (!count) return 'transparent';
   const t = Math.log1p(count) / Math.log1p(maxCount);
-  if (t < 0.05) return 'transparent';
-  const c = Math.pow(t, 0.6);
-  return `hsl(${c * 300}, 90%, ${25 + c * 40}%)`;
+  // Any bin with data gets color — sparse arrays need visibility
+  const c = Math.pow(t, 0.4);
+  const h = 260 - c * 40;
+  const s = 60 + c * 30;
+  const l = 20 + c * 45;
+  return `hsl(${h}, ${s}%, ${l}%)`;
 }
 
 export function buildVerticalStrip(dr2, coverage) {
