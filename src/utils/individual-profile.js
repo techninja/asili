@@ -26,7 +26,7 @@ export async function extractProfile() {
   const regionCoverage = {};
 
   for (const f of chrFiles) {
-    const chrNum = f.match(/chr(\d+)/)?.[1] || f.replace(/[^0-9]/g, '');
+    const chrNum = f.match(/chr([0-9XY]+)/i)?.[1] || '';
     if (!chrNum) continue;
     const ref = f.startsWith('_') ? f : `'${f}'`;
 

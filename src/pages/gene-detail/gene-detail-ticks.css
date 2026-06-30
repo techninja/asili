@@ -74,8 +74,13 @@
 /* Mobile: rail clips off right edge, content gets max space */
 @media (width <= 640px) {
   .gene-detail--with-rail {
-    grid-template-columns: 1fr 72px;
+    grid-template-columns: 1fr 42px;
     gap: 0;
+  }
+
+  /* Break out of app-layout__content right padding */
+  .app-layout__content:has(.gene-detail--with-rail) {
+    padding-right: 0;
   }
 
   .gene-detail__main {
@@ -83,34 +88,41 @@
   }
 
   .gene-detail--with-rail .chr-rail {
+    --rail-labels-w: 57px;
+    --rail-conn-w: 9px;
+    --rail-track-w: 36px;
+
     align-self: stretch;
     height: auto;
     min-height: 100%;
     position: relative;
     top: 0;
-    margin-right: -36px;
+    width: 60px;
     gap: 2px;
+  }
+
+  .gene-detail--with-rail .chr-rail__header,
+  .gene-detail--with-rail .chr-rail__footer {
+    margin-left: 0;
+    width: auto;
+    align-self: center;
   }
 
   .chr-rail__body {
     height: 100%;
   }
 
-  .chr-rail__track {
-    width: 34px;
+  .gene-detail--with-rail .chr-rail__track-clip {
+    width: calc(var(--rail-track-w) / 2);
+    overflow: hidden;
+  }
+
+  .gene-detail--with-rail .chr-rail__track {
     border-radius: 17px;
   }
 
   .chr-rail__strip {
     border-radius: 16px;
-  }
-
-  .chr-rail__labels {
-    width: 18px;
-  }
-
-  .chr-rail__conn-wrap {
-    width: 8px;
   }
 
   .chr-rail__label {

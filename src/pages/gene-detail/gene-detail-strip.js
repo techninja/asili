@@ -7,17 +7,18 @@ import { html } from 'hybrids';
 
 /** DR2 confidence tier color: 0–1 normalized range → hue spectrum. */
 function dr2ConfidenceColor(t) {
-  if (t === null || t === undefined || t < 0.2) return 'transparent';
-  const c = (t - 0.2) / 0.8;
-  return `hsl(${c * 300}, 95%, ${50 + c * 15}%)`;
+  if (t === null || t === undefined) return 'transparent';
+  if (t === 0) return 'rgb(20 20 30)';
+  const c = Math.pow(t, 0.7);
+  return `hsl(${c * 300}, 95%, ${30 + c * 35}%)`;
 }
 
 function rawCoverageColor(count, maxCount) {
   if (!count) return 'transparent';
   const t = Math.log1p(count) / Math.log1p(maxCount);
-  if (t < 0.5) return 'transparent';
-  const c = (t - 0.5) * 2;
-  return `hsl(${c * 300}, 90%, ${45 + c * 20}%)`;
+  if (t < 0.05) return 'transparent';
+  const c = Math.pow(t, 0.6);
+  return `hsl(${c * 300}, 90%, ${25 + c * 40}%)`;
 }
 
 export function buildVerticalStrip(dr2, coverage) {

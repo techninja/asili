@@ -18,7 +18,7 @@ export async function extractGeneStats(chrFiles) {
 
   for (const g of geneLoci) {
     const f = chrFiles.find((fn) => {
-      const n = fn.match(/chr(\d+)/)?.[1] || fn.replace(/[^0-9]/g, '');
+      const n = fn.match(/chr([0-9XY]+)/i)?.[1] || '';
       return n === g.chr;
     });
     if (!f) continue;
