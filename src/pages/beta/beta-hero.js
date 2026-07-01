@@ -6,7 +6,9 @@
 
 import { html } from 'hybrids';
 import { handleFile } from './beta-sections.js';
+import { loadDemoData } from './beta-init.js';
 import { traitShowcase, howItWorks, privacySection } from './beta-hero-sections.js';
+import '#atoms/hero-canvas/hero-canvas.js';
 
 /** @param {object} host @param {Function} cancelFn */
 export function heroContent(host, cancelFn) {
@@ -17,26 +19,21 @@ export function heroContent(host, cancelFn) {
 
   return html`
     <div class="beta-hero">
+      <hero-canvas></hero-canvas>
       <section class="beta-hero__intro">
+        <img src="/logo.svg" alt="Asili" class="beta-hero__logo" />
         <h1 class="beta-hero__title">Discover what your DNA says about you</h1>
         <p class="beta-hero__sub">
-          Explore polygenic scores for 64 traits like BMI, height, cholesterol, caffeine metabolism,
-          and chronotype. All processing happens on your device. We never see your data.
+          Explore polygenic scores and common genes for 64 traits — BMI, height, cholesterol,
+          caffeine metabolism, and chronotype. All processing happens on your device. We never see
+          your data.
         </p>
       </section>
 
       <section class="beta-hero__upload">
         ${showUpload ? html`<upload-zone onfile-selected="${handleFile}"></upload-zone>` : html``}
         ${isParsing ? parsingState(host) : html``} ${isSetup ? setupState(host, cancelFn) : html``}
-        ${isError ? errorState(host, cancelFn) : html``}
-        ${showUpload
-          ? html`<p class="beta-hero__source-link">
-              Don't have your DNA file yet?
-              <a href="https://asili.dev/dna-sources" target="_blank" rel="noopener"
-                >See where to get it →</a
-              >
-            </p>`
-          : html``}
+        ${isError ? errorState(host, cancelFn) : html``} ${showUpload ? demoOption(host) : html``}
       </section>
 
       ${showUpload ? traitShowcase() : html``} ${showUpload ? howItWorks() : html``}
@@ -79,6 +76,45 @@ function errorState(host, cancelFn) {
     <div class="beta-hero__error">
       <p>❌ ${host.parseError}</p>
       <button class="btn btn-ghost" onclick="${cancelFn}">Try again</button>
+    </div>
+  `;
+}
+
+/** Below-upload divider with demo opt-in and DNA source link. */
+function demoOption(host) {
+  return html`
+    <div class="beta-hero__below-upload">
+      <p class="beta-hero__source-link">
+        Don't have your file yet?
+        <a href="https://asili.dev/dna-sources" target="_blank" rel="noopener"
+          >See where to get it →</a
+        >
+      </p>
+      <div class="beta-hero__divider"><span>or</span></div>
+      <button
+        class="btn btn-primary beta-hero__demo-btn"
+        onclick="${async (h) => {
+          h._demoLoading = true;
+          await loadDemoData();
+          const idb = await import('/packages/core/src/data-layer/idb.js');
+          await idb.openDB();
+          h.individuals = await idb.getAll('individuals');
+          h.isDemo = true;
+          const { loadResults } = await import('./results-store.js');
+          if (h.individuals.length) {
+            h.activeId = h.individuals[0].id;
+            h.resultCount = await loadResults(h.activeId);
+          }
+          const { initQueue, switchIndividual } = await import('./scoring-controller.js');
+          await initQueue(h);
+          if (h.activeId) switchIndividual(h, h.activeId);
+          h._demoLoading = false;
+        }}"
+      >
+        ${host._demoLoading
+          ? html`<app-icon name="loader"></app-icon> Loading…`
+          : html`<app-icon name="sparkles"></app-icon> Explore with sample data`}
+      </button>
     </div>
   `;
 }

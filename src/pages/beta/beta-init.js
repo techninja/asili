@@ -7,6 +7,41 @@ import * as idb from '/packages/core/src/data-layer/idb.js';
 import { loadResults, clearResults } from './results-store.js';
 import { initQueue, switchIndividual } from './scoring-controller.js';
 import { clearTransfer } from '#utils/transfer-tracker.js';
+import { DATA_BASE } from '#utils/data-url.js';
+
+/**
+ * Load demo individuals from demo-individuals.json into IDB.
+ * Only called when IDB has no individuals.
+ */
+export async function loadDemoData() {
+  try {
+    const res = await fetch(`${DATA_BASE}/demo-individuals.json`);
+    if (!res.ok) return;
+    const demoData = await res.json();
+    const { individuals, results } = demoData;
+    for (const ind of individuals) {
+      await idb.put('individuals', ind.id, ind);
+    }
+    for (const [key, result] of Object.entries(results)) {
+      const indId = key.split(':')[0];
+      await idb.put('results', `${indId}:${result.traitId}`, result);
+    }
+    // Write profiles to IDB settings (gene chromosome visualizations)
+    const profiles = demoData.profiles || {};
+    for (const ind of individuals) {
+      const profile = profiles[ind.id] || {
+        version: 1,
+        extractedAt: new Date().toISOString(),
+        dr2Bins: {},
+        regionCoverage: {},
+        geneStats: {},
+      };
+      await idb.put('settings', `profile:${ind.id}`, profile);
+    }
+  } catch (e) {
+    console.warn('[asili] demo data load failed:', e);
+  }
+}
 
 /** @param {object} host */
 export async function initApp(host) {
@@ -55,6 +90,7 @@ export function connectInit(host, _key, invalidate) {
   const refresh = () => {
     idb.getAll('individuals').then((list) => {
       host.individuals = list;
+      host.isDemo = list.length > 0 && list.every((i) => i.isDemo);
     });
   };
   window.addEventListener('asili-individuals-changed', refresh);

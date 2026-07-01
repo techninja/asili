@@ -63,7 +63,9 @@ export default define({
                   <span class="individual-list__emoji">${ind.emoji}</span>
                   <span class="individual-list__info">
                     <span class="individual-list__name"
-                      >${ind.hasImputed ? '⭐ ' : ''}${ind.name}</span
+                      >${ind.hasImputed ? '⭐ ' : ''}${ind.name}${ind.isDemo
+                        ? html` <span class="demo-badge">Demo</span>`
+                        : html``}</span
                     >
                     <span class="individual-list__meta">
                       ${ind.variantCount?.toLocaleString() || 0} variants

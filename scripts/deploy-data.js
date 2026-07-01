@@ -20,6 +20,7 @@ const MANIFEST = `${DATA_DIR}/trait_manifest.json`;
 const NORMS = `${DATA_DIR}/pgs_norm_params.json`;
 const HG19MAP = `${DATA_DIR}/hg19map.asili`;
 const GENE_CATALOG = `${DATA_DIR}/gene_catalog.json`;
+const DEMO_INDIVIDUALS = `${DATA_DIR}/demo-individuals.json`;
 const PGS_DETAIL_DIR = `${DATA_DIR}/pgs_detail`;
 const PACKS_DIR = `${DATA_DIR}/packs/asili`;
 const OG_DIR = resolve(import.meta.dirname, '../dist');
@@ -40,6 +41,7 @@ up(MANIFEST, 'trait_manifest.json', 'application/json');
 up(NORMS, 'pgs_norm_params.json', 'application/json');
 up(HG19MAP, 'hg19map.asili', 'application/octet-stream');
 up(GENE_CATALOG, 'gene_catalog.json', 'application/json');
+up(DEMO_INDIVIDUALS, 'demo-individuals.json', 'application/json');
 
 // PGS detail files
 console.log('📦 PGS detail files...');

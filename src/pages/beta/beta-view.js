@@ -34,9 +34,11 @@ import { connectInit } from './beta-init.js';
 
 export default define({
   tag: 'beta-view',
-  [router.connect]: { url: '/beta', stack: [TraitDetailView, GeneDetailView] },
+  [router.connect]: { url: '/', stack: [TraitDetailView, GeneDetailView] },
   individuals: { value: [], connect: () => {} },
   activeId: '',
+  isDemo: { value: false, connect: () => {} },
+  _demoLoading: false,
   resultCount: 0,
   _switchEpoch: 0,
   _tableSub: 'traits',

@@ -70,7 +70,7 @@ export default define({
           })}
           <div class="report__content">
             <header class="report__header">
-              <a href="/beta" class="report__back no-print"
+              <a href="/" class="report__back no-print"
                 ><app-icon name="arrow-left"></app-icon> Back</a
               >
               <h1>${name} — Genomic Report</h1>

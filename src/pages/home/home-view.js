@@ -12,7 +12,7 @@ import BetaView from '#pages/beta/beta-view.js';
 
 export default define({
   tag: 'home-view',
-  [router.connect]: { url: '/', stack: [BetaView] },
+  [router.connect]: { url: '/beta', stack: [BetaView] },
   render: {
     value: () => html`
       <div class="coming-soon">

@@ -70,7 +70,7 @@ const TraitDetail = define({
                 onswitch-individual="${handleSwitch}"
               ></individual-switcher>`,
               trailing: html`<a
-                href="/beta"
+                href="/"
                 class="app-header__link"
                 title="Add individual"
                 onclick="${() => sessionStorage.setItem('asili-open-upload', '1')}"
@@ -80,7 +80,7 @@ const TraitDetail = define({
             })}
             <div class="app-layout__sub-header">
               <nav class="app-layout__sub-header-inner trait-detail__breadcrumb">
-                <a href="/beta" class="trait-detail__breadcrumb-back">
+                <a href="/" class="trait-detail__breadcrumb-back">
                   <app-icon name="arrow-left"></app-icon>
                   ${sourceLabel()}
                 </a>

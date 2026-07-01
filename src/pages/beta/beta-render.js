@@ -5,6 +5,7 @@
 
 import { html } from 'hybrids';
 import { heroContent } from './beta-hero.js';
+import { demoBanner } from './beta-demo-banner.js';
 import '#pages/beta/beta-report.js';
 // @ts-ignore
 import '#atoms/app-icon/app-icon.js';
@@ -21,7 +22,10 @@ export function individualSelector(host, list, switchFn) {
   // Single individual: compact inline display
   if (list.length === 1) {
     const ind = list[0];
-    return html`<span class="beta-view__ind-single">${ind.emoji} ${ind.name}</span>`;
+    return html`<span class="beta-view__ind-single"
+      >${ind.emoji}
+      ${ind.name}${ind.isDemo ? html` <span class="demo-badge">Demo</span>` : html``}</span
+    >`;
   }
   return html`
     <div class="beta-view__selector">
@@ -36,7 +40,8 @@ export function individualSelector(host, list, switchFn) {
               switchFn(h, ind.id);
             }}"
           >
-            ${ind.hasImputed ? '⭐' : ''} ${ind.emoji} ${ind.name}
+            ${ind.hasImputed ? '⭐' : ''} ${ind.emoji}
+            ${ind.name}${ind.isDemo ? html` <span class="demo-badge">Demo</span>` : html``}
           </button>
         `,
       )}
@@ -76,7 +81,7 @@ export function appSubHeader(host) {
 /** @param {object} host */
 export function appContent(host) {
   return html`
-    ${host.activeTab === 'traits' ? traitsTab(host) : html``}
+    ${host.isDemo ? demoBanner() : html``} ${host.activeTab === 'traits' ? traitsTab(host) : html``}
     ${host.activeTab === 'explore' ? html`<explore-grid></explore-grid>` : html``}
     ${host.activeTab === 'table' ? tableTab(host) : html``}
     ${host.activeTab === 'report'
@@ -87,6 +92,8 @@ export function appContent(host) {
       : html``}
   `;
 }
+
+/** Demo mode banner — shown when viewing pre-loaded sample data. */
 
 /** @param {object} host @param {Function} cancelFn */
 export function uploadContent(host, cancelFn) {

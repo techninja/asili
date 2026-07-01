@@ -77,7 +77,7 @@ const GeneDetail = define({
             <div class="app-layout__sub-header">
               <nav class="app-layout__sub-header-inner gene-detail__breadcrumb">
                 <a
-                  href="/beta"
+                  href="/"
                   class="gene-detail__breadcrumb-back"
                   onclick="${() => sessionStorage.setItem('asili-source-tab', 'explore')}"
                 >
