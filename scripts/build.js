@@ -106,6 +106,13 @@ console.log('→ Injecting modulepreload hints...');
 const { buildModulePreload } = await import('@techninja/clearstack/lib/build-modulepreload.js');
 buildModulePreload({ projectDir: ROOT, outDir: 'dist' });
 
+// Apply cache-bust hash to modulepreload hrefs (buildModulePreload runs after hash injection)
+{
+  let h = readFileSync(indexPath, 'utf-8');
+  h = h.replace(/(rel="modulepreload" href="[^"]+\.js)"/g, `$1?v=${HASH}"`);
+  writeFileSync(indexPath, h);
+}
+
 // SPA fallback — copy index.html to 404.html after all mutations
 console.log('→ Creating 404.html for SPA routing');
 cpSync(resolve(DIST, 'index.html'), resolve(DIST, '404.html'));
