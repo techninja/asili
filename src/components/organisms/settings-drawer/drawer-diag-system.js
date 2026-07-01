@@ -17,6 +17,10 @@ export async function handleSystemDiagnostic(host) {
     const version =
       /** @type {HTMLMetaElement|null} */ (document.querySelector('meta[name="app-version"]'))
         ?.content || '?';
+    const commit =
+      /** @type {HTMLMetaElement|null} */ (document.querySelector('meta[name="app-commit"]'))
+        ?.content || '';
+    const commitSuffix = commit ? ` (${commit.slice(-7)})` : '';
     const now = new Date();
     const offset = -now.getTimezoneOffset();
     const sign = offset >= 0 ? '+' : '-';
@@ -32,7 +36,7 @@ export async function handleSystemDiagnostic(host) {
     const mem = /** @type {any} */ (navigator).deviceMemory || '?';
 
     const lines = [
-      `Asili v${version} \u2014 ${ts}`,
+      `Asili v${version}${commitSuffix} \u2014 ${ts}`,
       '',
       'System:',
       `  Platform: ${navigator.platform}`,

@@ -13,6 +13,15 @@ import { fileURLToPath } from 'node:url';
 import { execSync } from 'node:child_process';
 import { randomBytes } from 'node:crypto';
 
+const IS_BETA =
+  process.argv.includes('--beta') || process.env.DEPLOY_ENV === 'beta';
+const BASE_URL = IS_BETA ? 'https://beta.asili.dev' : 'https://app.asili.dev';
+const COMMIT_SHA = process.env.GITHUB_SHA || '';
+const REPO = process.env.GITHUB_REPOSITORY || 'techninja/asili';
+const COMMIT_URL = COMMIT_SHA
+  ? `https://github.com/${REPO}/commit/${COMMIT_SHA}`
+  : '';
+
 const ROOT = dirname(dirname(fileURLToPath(import.meta.url)));
 const DIST = resolve(ROOT, 'dist');
 
@@ -62,15 +71,17 @@ if (!existsSync(GENE_CATALOG_PATH)) {
   }
 }
 
-// Generate per-trait OG pages + sitemap for link previews
-console.log('→ Generating OG metadata pages...');
-try {
-  const { buildOG } = await import('@techninja/clearstack/lib/build-og.js');
-  buildOG({ projectDir: ROOT, outDir: 'dist', baseUrl: 'https://app.asili.dev' });
-  const { buildSitemap } = await import('@techninja/clearstack/lib/build-sitemap.js');
-  buildSitemap({ projectDir: ROOT, outDir: 'dist', baseUrl: 'https://app.asili.dev' });
-} catch (e) {
-  console.warn('⚠ OG generation failed:', e.message);
+// Generate per-trait OG pages + sitemap for link previews (prod only)
+if (!IS_BETA) {
+  console.log('→ Generating OG metadata pages...');
+  try {
+    const { buildOG } = await import('@techninja/clearstack/lib/build-og.js');
+    buildOG({ projectDir: ROOT, outDir: 'dist', baseUrl: BASE_URL });
+    const { buildSitemap } = await import('@techninja/clearstack/lib/build-sitemap.js');
+    buildSitemap({ projectDir: ROOT, outDir: 'dist', baseUrl: BASE_URL });
+  } catch (e) {
+    console.warn('⚠ OG generation failed:', e.message);
+  }
 }
 
 // OG images are pre-generated locally and deployed to R2 via deploy-data.js.
@@ -86,6 +97,12 @@ html = html.replace(
   /<meta name="app-version" content="[^"]*" \/>/,
   `<meta name="app-version" content="${VERSION}" />`,
 );
+if (COMMIT_URL) {
+  html = html.replace(
+    /<meta name="app-commit" content="[^"]*" \/>/,
+    `<meta name="app-commit" content="${COMMIT_URL}" />`,
+  );
+}
 writeFileSync(indexPath, html);
 
 console.log('→ Injecting modulepreload hints...');
