@@ -11,8 +11,8 @@
     "build": "node scripts/build.js",
     "postinstall": "node scripts/setup.js",
     "spec": "clearstack",
-"deploy:data": "node --env-file=.env --env-file=.env.local scripts/deploy-data.js",
-    "deploy:data:small": "node --env-file=.env --env-file=.env.local scripts/deploy-data.js --small"
+    "sync": "node scripts/sync-data.js",
+    "deploy-data": "node --env-file=.env --env-file=.env.local scripts/deploy-data.js"
   },
   "keywords": [
     "genomics",
