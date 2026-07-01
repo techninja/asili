@@ -9,17 +9,23 @@
 
 <p align="center">
   <a href="https://asili.dev">Website</a> ·
-  <a href="https://app.asili.dev/beta">App (beta)</a> ·
+  <a href="https://app.asili.dev">App</a> ·
+  <a href="https://beta.asili.dev">Beta</a> ·
   <a href="docs/app-spec/">Specification</a>
 </p>
 
 ---
 
-## 🧬 Beta Launch
+## 🧬 Deployments
 
-The frontend scoring app is live at [app.asili.dev/beta](https://app.asili.dev/beta).
-Upload your DNA file and explore polygenic risk scores for 64 traits — entirely
-in your browser. No server, no accounts, no data leaves your device.
+| Environment | URL | Branch | Purpose |
+| ----------- | --- | ------ | ------- |
+| Production | [app.asili.dev](https://app.asili.dev) | `main` | Stable releases for end users |
+| Beta | [beta.asili.dev](https://beta.asili.dev) | `dev` | Preview of in-progress work — auto-deploys on every push |
+
+The app lets you upload a consumer DNA file (23andMe, AncestryDNA, etc.) and
+explore polygenic risk scores for 64 traits — entirely in your browser. No
+server, no accounts, no data leaves your device.
 
 **Currently shipping:**
 
@@ -151,10 +157,10 @@ To test on a phone on the same network, access via your machine's hostname
 ## Roadmap
 
 - [x] Frontend scoring rebuild (this repo)
+- [x] Public launch at app.asili.dev
 - [ ] Pipeline rebuild — expand to 647+ traits
 - [ ] Ancestry-specific normalization improvements
 - [ ] Imputation service rebuild (impute.asili.dev)
-- [ ] Public launch at app.asili.dev root
 
 ## License
 

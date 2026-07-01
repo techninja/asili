@@ -13,14 +13,11 @@ import { fileURLToPath } from 'node:url';
 import { execSync } from 'node:child_process';
 import { randomBytes } from 'node:crypto';
 
-const IS_BETA =
-  process.argv.includes('--beta') || process.env.DEPLOY_ENV === 'beta';
+const IS_BETA = process.argv.includes('--beta') || process.env.DEPLOY_ENV === 'beta';
 const BASE_URL = IS_BETA ? 'https://beta.asili.dev' : 'https://app.asili.dev';
 const COMMIT_SHA = process.env.GITHUB_SHA || '';
 const REPO = process.env.GITHUB_REPOSITORY || 'techninja/asili';
-const COMMIT_URL = COMMIT_SHA
-  ? `https://github.com/${REPO}/commit/${COMMIT_SHA}`
-  : '';
+const COMMIT_URL = COMMIT_SHA ? `https://github.com/${REPO}/commit/${COMMIT_SHA}` : '';
 
 const ROOT = dirname(dirname(fileURLToPath(import.meta.url)));
 const DIST = resolve(ROOT, 'dist');

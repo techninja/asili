@@ -83,7 +83,8 @@ export function footerSection() {
     <section class="settings-drawer__section">
       <p class="settings-drawer__meta">
         <app-icon name="shield-check" size="sm"></app-icon>
-        Asili v${version}${shortSha
+        Asili
+        v${version}${shortSha
           ? html` (<a href="${commitUrl}" target="_blank" rel="noopener">${shortSha}</a>)`
           : ''}
         · Privacy-first · Your data never leaves this device
