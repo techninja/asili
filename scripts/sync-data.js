@@ -71,6 +71,18 @@ async function syncSmall() {
     'demo-individuals.json',
   ];
   for (const f of files) await syncFile(f, resolve(DATA_DIR, f));
+
+  console.log('\n🦆 DuckDB WASM deps...');
+  const DEPS_DIR = resolve(ROOT, 'src/deps/duckdb');
+  const depFiles = [
+    'duckdb.js',
+    'duckdb-browser.mjs',
+    'duckdb-browser-eh.worker.js',
+    'duckdb-browser-mvp.worker.js',
+    'duckdb-eh.wasm',
+    'duckdb-mvp.wasm',
+  ];
+  for (const f of depFiles) await syncFile(`deps/duckdb/${f}`, resolve(DEPS_DIR, f));
 }
 
 async function syncPgsDetail(manifest) {
