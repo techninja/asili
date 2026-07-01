@@ -102,14 +102,27 @@ if (COMMIT_URL) {
 }
 writeFileSync(indexPath, html);
 
+// Inject critical-path modulepreload hints (vendor first to satisfy importmap, then shallow entry chain)
 console.log('→ Injecting modulepreload hints...');
-const { buildModulePreload } = await import('@techninja/clearstack/lib/build-modulepreload.js');
-buildModulePreload({ projectDir: ROOT, outDir: 'dist' });
-
-// Apply cache-bust hash to modulepreload hrefs (buildModulePreload runs after hash injection)
 {
+  const criticalModules = [
+    // Vendor first — must be in module map before any module that imports 'hybrids'
+    '/vendor/hybrids/index.js',
+    // Entry chain
+    '/router/index.js',
+    '/pages/app/view.js',
+    '/pages/app/render.js',
+    '/pages/app/actions.js',
+    '/pages/app/results-store.js',
+    '/store/AppState.js',
+    '/utils/storage.js',
+    '/utils/manifest.js',
+    '/utils/categories.js',
+    '/utils/data-url.js',
+  ];
+  const tags = criticalModules.map((m) => `  <link rel="modulepreload" href="${m}?v=${HASH}">`).join('\n');
   let h = readFileSync(indexPath, 'utf-8');
-  h = h.replace(/(rel="modulepreload" href="[^"]+\.js)"/g, `$1?v=${HASH}"`);
+  h = h.replace('</head>', `${tags}\n</head>`);
   writeFileSync(indexPath, h);
 }
 
