@@ -20,7 +20,8 @@ export async function handleSystemDiagnostic(host) {
     const commit =
       /** @type {HTMLMetaElement|null} */ (document.querySelector('meta[name="app-commit"]'))
         ?.content || '';
-    const commitSuffix = commit ? ` (${commit.slice(-7)})` : '';
+    const shortSha = commit ? commit.split('/').pop().slice(0, 7) : '';
+    const commitSuffix = shortSha ? ` (${shortSha})` : '';
     const now = new Date();
     const offset = -now.getTimezoneOffset();
     const sign = offset >= 0 ? '+' : '-';

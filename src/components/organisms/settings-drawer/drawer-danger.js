@@ -72,16 +72,21 @@ function startClear(host) {
  *
  */
 export function footerSection() {
+  const version =
+    /** @type {HTMLMetaElement|null} */ (document.querySelector('meta[name="app-version"]'))
+      ?.content || '?';
+  const commitUrl =
+    /** @type {HTMLMetaElement|null} */ (document.querySelector('meta[name="app-commit"]'))
+      ?.content || '';
+  const shortSha = commitUrl ? commitUrl.split('/').pop().slice(0, 7) : '';
   return html`
     <section class="settings-drawer__section">
       <p class="settings-drawer__meta">
         <app-icon name="shield-check" size="sm"></app-icon>
-        Asili
-        v${
-          /** @type {HTMLMetaElement|null} */ (document.querySelector('meta[name="app-version"]'))
-            ?.content || '?'
-        }
-        Privacy-first · Your data never leaves this device
+        Asili v${version}${shortSha
+          ? html` (<a href="${commitUrl}" target="_blank" rel="noopener">${shortSha}</a>)`
+          : ''}
+        · Privacy-first · Your data never leaves this device
       </p>
       <p class="settings-drawer__meta">
         <a href="https://github.com/techninja/asili/issues" target="_blank" rel="noopener">
