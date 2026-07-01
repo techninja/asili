@@ -122,7 +122,7 @@ see its README for pipeline setup and data generation.
 2. Copy the env example and fill in your values (only needed for R2 deploy):
 
    ```bash
-   cp .env.example .env.local
+   cp .env .env.local
    ```
 
 3. Symlink the data output into the dev server's static path:
