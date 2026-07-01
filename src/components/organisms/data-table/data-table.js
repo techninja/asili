@@ -5,7 +5,7 @@
 
 import { html, define } from 'hybrids';
 import { getTraitList } from '#utils/manifest.js';
-import { results, getActiveId } from '#pages/beta/results-store.js';
+import { results, getActiveId } from '#pages/app/results-store.js';
 import { buildRows, toggleSort, applySort, loadAll } from './table-helpers.js';
 import { COLS, COL_MAP } from './table-columns.js';
 import { renderColGroups, tableMarkup } from './table-render.js';

@@ -13,7 +13,7 @@ import '#organisms/radar-chart/radar-chart.js';
 import '#atoms/confidence-badge/confidence-badge.js';
 // @ts-ignore
 import '#molecules/individual-switcher/individual-switcher.js';
-import { results, getActiveId, loadResults } from '#pages/beta/results-store.js';
+import { results, getActiveId, loadResults } from '#pages/app/results-store.js';
 import { buildCategorySummary } from '#utils/categories.js';
 import { getTraitList } from '#utils/manifest.js';
 import { appHeader } from '#molecules/app-header/app-header.js';
@@ -61,7 +61,6 @@ export default define({
       return html`
         <div class="report">
           ${appHeader({
-            badge: 'beta',
             onSettings: () => toggleSettings(),
             center: html`<individual-switcher
               activeId="${activeId}"

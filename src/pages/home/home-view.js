@@ -8,11 +8,11 @@ import '#atoms/theme-toggle/theme-toggle.js';
 import '#atoms/hero-canvas/hero-canvas.js';
 import { appHeader } from '#molecules/app-header/app-header.js';
 import { appFooter } from '#molecules/app-footer/app-footer.js';
-import BetaView from '#pages/beta/beta-view.js';
+import AppView from '#pages/app/view.js';
 
 export default define({
   tag: 'home-view',
-  [router.connect]: { url: '/beta', stack: [BetaView] },
+  [router.connect]: { url: '/beta', stack: [AppView] },
   render: {
     value: () => html`
       <div class="coming-soon">

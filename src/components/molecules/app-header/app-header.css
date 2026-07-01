@@ -92,7 +92,7 @@
     flex-basis: 100%;
   }
 
-  .app-header__center:has(.beta-view__ind-single) {
+  .app-header__center:has(.app-view__ind-single) {
     order: unset;
     flex: 0 0 auto;
   }

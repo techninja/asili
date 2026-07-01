@@ -4,7 +4,7 @@
  */
 
 import { html, router } from 'hybrids';
-import { results, getActiveId } from '#pages/beta/results-store.js';
+import { results, getActiveId } from '#pages/app/results-store.js';
 import * as idb from '/packages/core/src/data-layer/idb.js';
 import { formatTraitValue } from '/packages/core/src/formatter.js';
 import { traitCategory } from './helpers.js';

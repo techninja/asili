@@ -1,6 +1,6 @@
 /**
  * Scoring action handlers — pause, resume, permission, state query.
- * @module pages/beta/scoring-actions
+ * @module pages/app/scoring-actions
  */
 
 import * as queue from '#utils/scoring-queue.js';

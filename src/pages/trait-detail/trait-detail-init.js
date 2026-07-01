@@ -3,7 +3,7 @@
  * @module pages/trait-detail/trait-detail-init
  */
 
-import { results, getActiveId, loadResults } from '#pages/beta/results-store.js';
+import { results, getActiveId, loadResults } from '#pages/app/results-store.js';
 import { getTraitList, getPgsDetail } from '#utils/manifest.js';
 import * as idb from '/packages/core/src/data-layer/idb.js';
 import { loadFamily } from './trait-detail-helpers.js';

@@ -6,7 +6,7 @@
  */
 
 import { html, define, router } from 'hybrids';
-import BetaView from '#pages/beta/beta-view.js';
+import AppView from '#pages/app/view.js';
 
 // Access the Hybrids transition module to set its instance property
 // so restoreLayout knows to wait for the view transition
@@ -31,7 +31,7 @@ const tpl = ({ stack }) => html`<div class="app-router">${stack}</div>`;
 
 export default define({
   tag: 'app-router',
-  stack: router(BetaView, { transition: true }),
+  stack: router(AppView, { transition: true }),
   render: {
     value: (host) => vt(tpl(host)),
     shadow: false,

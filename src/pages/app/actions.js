@@ -1,6 +1,6 @@
 /**
  * Beta view action handlers — switch, cancel, toggle upload.
- * @module pages/beta/beta-actions
+ * @module pages/app/beta-actions
  */
 
 import { switchIndividual } from './scoring-controller.js';

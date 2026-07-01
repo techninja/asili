@@ -1,10 +1,10 @@
 /* Tab bar for beta view */
-.beta-view__tabs {
+.app-view__tabs {
   display: flex;
   gap: 0;
 }
 
-.beta-view__tab {
+.app-view__tab {
   display: flex;
   align-items: center;
   gap: var(--space-xs);
@@ -25,7 +25,7 @@
   }
 }
 
-.beta-view__tab--active {
+.app-view__tab--active {
   color: var(--color-primary);
   border-bottom-color: var(--color-primary);
 }

@@ -1,13 +1,13 @@
 /**
  * App landing hero — shown when no individuals are loaded.
  * Sells the discovery experience, links to DNA sources, upload CTA.
- * @module pages/beta/beta-hero
+ * @module pages/app/beta-hero
  */
 
 import { html } from 'hybrids';
-import { handleFile } from './beta-sections.js';
-import { loadDemoData } from './beta-init.js';
-import { traitShowcase, howItWorks, privacySection } from './beta-hero-sections.js';
+import { handleFile } from './sections.js';
+import { loadDemoData } from './init.js';
+import { traitShowcase, howItWorks, privacySection } from './hero-sections.js';
 import '#atoms/hero-canvas/hero-canvas.js';
 
 /** @param {object} host @param {Function} cancelFn */
@@ -63,7 +63,7 @@ function setupState(host, cancelFn) {
       filename="${host.parsedFilename}"
       manifest="${host._manifest || ''}"
       onsetup-complete="${(h, e) => {
-        import('./beta-sections.js').then((m) => m.handleSetup(h, e));
+        import('./sections.js').then((m) => m.handleSetup(h, e));
       }}"
       onsetup-cancel="${cancelFn}"
     ></individual-setup>

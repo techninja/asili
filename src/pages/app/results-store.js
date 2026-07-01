@@ -1,7 +1,7 @@
 /**
  * Results store — data-layer-backed with in-memory cache.
  * Keyed by individualId:traitId. Routes through the unified data layer.
- * @module pages/beta/results-store
+ * @module pages/app/results-store
  */
 
 import { createDataLayer, getDataLayer } from '/packages/core/src/data-layer/create.js';

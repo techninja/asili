@@ -1,6 +1,6 @@
 /**
  * Beta view initialization — app startup, event listeners, rescore handling.
- * @module pages/beta/beta-init
+ * @module pages/app/beta-init
  */
 
 import * as idb from '/packages/core/src/data-layer/idb.js';

@@ -1,6 +1,6 @@
 /**
  * Report data helpers — stats computation and trait table renderer.
- * @module pages/beta/report-helpers
+ * @module pages/app/report-helpers
  */
 
 import { html, router } from 'hybrids';

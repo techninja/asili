@@ -67,7 +67,6 @@ const GeneDetail = define({
         <div class="app-layout">
           <div class="app-layout__sticky-top">
             ${appHeader({
-              badge: 'beta',
               onSettings: () => toggleSettings(),
               center: html`<individual-switcher
                 activeId="${host.activeId}"

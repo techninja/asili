@@ -4,8 +4,8 @@
  */
 
 import { html, dispatch } from 'hybrids';
-import { handlePause, handleResume } from '#pages/beta/scoring-controller.js';
-import { handleResumePermission } from '#pages/beta/scoring-actions.js';
+import { handlePause, handleResume } from '#pages/app/scoring-controller.js';
+import { handleResumePermission } from '#pages/app/scoring-actions.js';
 import { getImputedNeedingReupload } from '#utils/scoring-queue.js';
 import { fmtN, fmtRate, fmtT } from './floating-bar-helpers.js';
 

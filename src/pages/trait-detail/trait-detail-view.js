@@ -17,7 +17,7 @@ import '#molecules/family-compare/family-compare.js';
 import '#molecules/individual-switcher/individual-switcher.js';
 // @ts-ignore
 import '#molecules/floating-bar/floating-bar.js';
-import { results } from '#pages/beta/results-store.js';
+import { results } from '#pages/app/results-store.js';
 import { appHeader } from '#molecules/app-header/app-header.js';
 import { appFooter } from '#molecules/app-footer/app-footer.js';
 import { toggleSettings } from '#utils/settings-toggle.js';
@@ -63,7 +63,6 @@ const TraitDetail = define({
         <div class="app-layout">
           <div class="app-layout__sticky-top">
             ${appHeader({
-              badge: 'beta',
               onSettings: () => toggleSettings(),
               center: html`<individual-switcher
                 activeId="${host.activeId}"

@@ -29,7 +29,7 @@ export default define({
       if (list.length === 0) return html``;
       if (list.length === 1) {
         const ind = list[0];
-        return html`<span class="beta-view__ind-single">${ind.emoji} ${ind.name}</span>`;
+        return html`<span class="app-view__ind-single">${ind.emoji} ${ind.name}</span>`;
       }
       return html`
         <div class="individual-switcher">

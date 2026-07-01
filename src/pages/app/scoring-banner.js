@@ -1,6 +1,6 @@
 /**
  * Scoring banner — global queue progress with dual bars, ETA, variants/sec, pause/resume.
- * @module pages/beta/scoring-banner
+ * @module pages/app/scoring-banner
  */
 
 import { html } from 'hybrids';
@@ -48,22 +48,22 @@ export function scoringBanner(host) {
     const trait = state.currentTraitName || '';
 
     return html`
-      <div class="beta-view__scoring-panel">
-        <div class="beta-view__scoring-bars">
+      <div class="app-view__scoring-panel">
+        <div class="app-view__scoring-bars">
           <div
-            class="beta-view__scoring-bar"
+            class="app-view__scoring-bar"
             title="${totalPct}% · ${d}/${t} traits across all individuals"
           >
-            <div class="beta-view__scoring-fill" style="${{ width: `${totalPct}%` }}"></div>
+            <div class="app-view__scoring-fill" style="${{ width: `${totalPct}%` }}"></div>
           </div>
           <div
-            class="beta-view__scoring-bar beta-view__scoring-bar--chr"
+            class="app-view__scoring-bar app-view__scoring-bar--chr"
             title="${chrPct}% complete for ${trait}"
           >
-            <div class="beta-view__scoring-fill--chr" style="${{ width: `${chrPct}%` }}"></div>
+            <div class="app-view__scoring-fill--chr" style="${{ width: `${chrPct}%` }}"></div>
           </div>
         </div>
-        <p class="beta-view__scoring">
+        <p class="app-view__scoring">
           ${indLabel}${trait}${state.currentChrTotal > 0
             ? html` chr ${state.currentChrDone}/${state.currentChrTotal}`
             : html``}
@@ -81,25 +81,25 @@ export function scoringBanner(host) {
     const state = getQueueState();
     const d = state.done + state.errors;
     return html`
-      <p class="beta-view__scoring">
+      <p class="app-view__scoring">
         ⏸ Paused · ${d}/${state.total} traits scored
         <button class="btn btn-ghost btn-sm" onclick="${() => handleResume()}">▶ Resume</button>
       </p>
     `;
   }
   if (host.scoringStatus === 'init')
-    return html`<p class="beta-view__scoring">Initializing DuckDB…</p>`;
+    return html`<p class="app-view__scoring">Initializing DuckDB…</p>`;
   if (host.scoringStatus === 'done') {
     const state = getQueueState();
     const ind = state.byIndividual[host.activeId];
     const errors = ind?.errors || 0;
-    return html`<p class="beta-view__scoring beta-view__scoring--done">
+    return html`<p class="app-view__scoring app-view__scoring--done">
       ✅ ${host.resultCount} traits scored${errors ? html` · ${errors} failed` : html``}
     </p>`;
   }
   if (host.scoringStatus === 'blocked') {
     const need = getImputedNeedingReupload().length;
-    return html`<p class="beta-view__scoring">
+    return html`<p class="app-view__scoring">
       ⏸ ${need} imputed file${need !== 1 ? 's' : ''} needed to continue
       <button class="btn btn-ghost btn-sm" onclick="${handleResumePermission}">
         ▶ Select file${need !== 1 ? 's' : ''}

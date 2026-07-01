@@ -3,7 +3,7 @@
  * @module components/organisms/trait-grid/helpers
  */
 
-import { results } from '#pages/beta/results-store.js';
+import { results } from '#pages/app/results-store.js';
 import { CATEGORY_ORDER, resolveCategory } from '#utils/categories.js';
 import { getShowFamily, hasFamilyScore } from './render-card.js';
 

@@ -5,7 +5,7 @@
 
 import { html } from 'hybrids';
 import { formatTraitValue } from '/packages/core/src/formatter.js';
-import { results } from '#pages/beta/results-store.js';
+import { results } from '#pages/app/results-store.js';
 
 /** @param {Array<object>} traits */
 export function traitTable(traits) {

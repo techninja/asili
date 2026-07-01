@@ -1,10 +1,10 @@
 /**
  * Upload panel — header drawer overlay for adding individuals.
- * @module pages/beta/beta-upload-panel
+ * @module pages/app/beta-upload-panel
  */
 
 import { html } from 'hybrids';
-import { handleFile, handleSetup } from './beta-sections.js';
+import { handleFile, handleSetup } from './sections.js';
 
 /** Upload panel — slides down from header as an overlay drawer */
 export function uploadPanel(host, cancelFn) {
@@ -12,11 +12,11 @@ export function uploadPanel(host, cancelFn) {
   const isSetup = host.parseStatus === 'setup';
   const isError = host.parseStatus === 'error';
   const closeable = !isParsing;
-  const cls = host.closingUpload ? 'beta-view__upload--closing' : '';
+  const cls = host.closingUpload ? 'app-view__upload--closing' : '';
   return html`
     <div class="${cls}">
       ${closeable ? backdrop(cancelFn) : html``}
-      <div class="beta-view__upload-panel">
+      <div class="app-view__upload-panel">
         ${!isParsing && !isSetup && !isError
           ? html`<upload-zone onfile-selected="${handleFile}"></upload-zone>`
           : html``}
@@ -33,7 +33,7 @@ export function uploadPanel(host, cancelFn) {
  */
 function backdrop(cancelFn) {
   return html`<div
-    class="beta-view__upload-backdrop"
+    class="app-view__upload-backdrop"
     onclick="${(h) => {
       h.closingUpload = true;
       setTimeout(() => {
@@ -50,8 +50,8 @@ function backdrop(cancelFn) {
  */
 function parsingInline(host) {
   return html`
-    <div class="beta-view__status">
-      <span class="beta-view__spinner">🧬</span>
+    <div class="app-view__status">
+      <span class="app-view__spinner">🧬</span>
       <p>
         ${host.parsedCount > 0 ? `${host.parsedCount.toLocaleString()} variants` : 'Reading file…'}
       </p>
@@ -64,9 +64,9 @@ function parsingInline(host) {
  */
 function errorInline(host, cancelFn) {
   return html`
-    <div class="beta-view__error">
-      <p class="beta-view__error-icon">❌</p>
-      <p class="beta-view__error-msg">${host.parseError}</p>
+    <div class="app-view__error">
+      <p class="app-view__error-icon">❌</p>
+      <p class="app-view__error-msg">${host.parseError}</p>
       <button class="btn btn-ghost" onclick="${cancelFn}">Try again</button>
     </div>
   `;

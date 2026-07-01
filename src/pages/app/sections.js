@@ -1,7 +1,7 @@
 /**
  * Beta dashboard handlers — file parsing and individual creation.
  * Supports text DNA files and .asili imputed archives.
- * @module pages/beta/beta-handlers
+ * @module pages/app/beta-handlers
  */
 
 import * as idb from '/packages/core/src/data-layer/idb.js';

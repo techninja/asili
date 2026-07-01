@@ -1,6 +1,6 @@
 /**
  * Demo mode banner — shown when viewing pre-loaded sample data.
- * @module pages/beta/beta-demo-banner
+ * @module pages/app/beta-demo-banner
  */
 
 import { html } from 'hybrids';

@@ -1,11 +1,12 @@
 /**
  * Beta app view — individual selector + trait grid + upload.
  * Single-page app: switch individual context, scores update in place.
- * @module pages/beta
+ * @module pages/app
  */
 
 import { html, define, router } from 'hybrids';
 // @ts-ignore
+import '#atoms/theme-toggle/theme-toggle.js';
 import '#molecules/upload-zone/upload-zone.js';
 // @ts-ignore
 import '#molecules/individual-setup/individual-setup.js';
@@ -23,17 +24,17 @@ import {
   appContent,
   uploadContent,
   uploadPanel,
-} from './beta-render.js';
-import { handleSwitch, closeOrToggleUpload, cancelSetup } from './beta-actions.js';
+} from './render.js';
+import { handleSwitch, closeOrToggleUpload, cancelSetup } from './actions.js';
 import { appHeader } from '#molecules/app-header/app-header.js';
 import { appFooter } from '#molecules/app-footer/app-footer.js';
 import { toggleSettings } from '#utils/settings-toggle.js';
 import TraitDetailView from '#pages/trait-detail/trait-detail-view.js';
 import GeneDetailView from '#pages/gene-detail/gene-detail-view.js';
-import { connectInit } from './beta-init.js';
+import { connectInit } from './init.js';
 
 export default define({
-  tag: 'beta-view',
+  tag: 'app-view',
   [router.connect]: { url: '/', stack: [TraitDetailView, GeneDetailView] },
   individuals: { value: [], connect: () => {} },
   activeId: '',
@@ -102,7 +103,6 @@ export default define({
         <div class="app-layout">
           <div class="app-layout__sticky-top">
             ${appHeader({
-              badge: 'beta',
               onSettings: (h) => {
                 h.showUpload = false;
                 toggleSettings();

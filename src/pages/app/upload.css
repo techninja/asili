@@ -1,5 +1,5 @@
 /* Upload panel — header drawer */
-.beta-view__upload-panel {
+.app-view__upload-panel {
   position: fixed;
   top: var(--header-height, 3.5rem);
   right: var(--space-lg);
@@ -21,7 +21,7 @@
   animation: upload-slide-down 0.25s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
-.beta-view__upload-backdrop {
+.app-view__upload-backdrop {
   position: fixed;
   inset: 0;
   z-index: 94;
@@ -35,11 +35,11 @@
   }
 }
 
-.beta-view__upload--closing .beta-view__upload-panel {
+.app-view__upload--closing .app-view__upload-panel {
   animation: upload-slide-up 0.2s cubic-bezier(0.4, 0, 0.2, 1) forwards;
 }
 
-.beta-view__upload--closing .beta-view__upload-backdrop::after {
+.app-view__upload--closing .app-view__upload-backdrop::after {
   animation: upload-fade-out 0.2s cubic-bezier(0.4, 0, 0.2, 1) forwards;
 }
 
@@ -68,7 +68,7 @@
 }
 
 /* Upload inline states */
-.beta-view__status {
+.app-view__status {
   text-align: center;
   display: flex;
   flex-direction: column;
@@ -76,7 +76,7 @@
   gap: var(--space-md);
 }
 
-.beta-view__spinner {
+.app-view__spinner {
   font-size: 3rem;
   animation: spin 2s linear infinite;
 }
@@ -87,7 +87,7 @@
   }
 }
 
-.beta-view__error {
+.app-view__error {
   text-align: center;
   display: flex;
   flex-direction: column;
@@ -96,19 +96,19 @@
   padding: var(--space-lg);
 }
 
-.beta-view__error-icon {
+.app-view__error-icon {
   font-size: 2rem;
   margin: 0;
 }
 
-.beta-view__error-msg {
+.app-view__error-msg {
   color: var(--color-danger);
   margin: 0;
   max-width: 24rem;
 }
 
 @media (width <= 640px) {
-  .beta-view__upload-panel {
+  .app-view__upload-panel {
     right: 0;
     left: 0;
     width: auto;

@@ -1,6 +1,6 @@
 /**
  * Report section renderers — stats, categories, quality.
- * @module pages/beta/report-sections
+ * @module pages/app/report-sections
  */
 
 import { html } from 'hybrids';

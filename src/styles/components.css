@@ -14,9 +14,9 @@
 /* Pages */
 @import '../pages/home/home-view.css';
 @import '../pages/home/home-sections.css';
-@import '../pages/beta/beta-view.css';
-@import '../pages/beta/beta-upload.css';
-@import '../pages/beta/beta-scoring.css';
+@import '../pages/app/view.css';
+@import '../pages/app/upload.css';
+@import '../pages/app/scoring.css';
 
 /* Molecules */
 @import '../components/molecules/upload-zone/upload-zone.css';
@@ -36,8 +36,8 @@
 /* Pages (additional) */
 @import '../pages/trait-detail/trait-detail-view.css';
 @import '../pages/report/report-view.css';
-@import '../pages/beta/beta-hero.css';
-@import '../pages/beta/beta-hero-sections.css';
+@import '../pages/app/hero.css';
+@import '../pages/app/hero-sections.css';
 @import '../components/atoms/mini-curve/mini-curve.css';
 @import '../components/atoms/chr-coverage/chr-coverage.css';
 

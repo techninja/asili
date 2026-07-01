@@ -4,7 +4,7 @@
  */
 
 import { loadGeneCatalog } from '#utils/gene-catalog.js';
-import { getActiveId, loadResults } from '#pages/beta/results-store.js';
+import { getActiveId, loadResults } from '#pages/app/results-store.js';
 import * as idb from '/packages/core/src/data-layer/idb.js';
 import { loadProfile } from '#utils/individual-profile.js';
 

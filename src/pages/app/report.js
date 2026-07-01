@@ -1,6 +1,6 @@
 /**
  * Report tab component — summary stats, radar chart, trait rankings, data quality.
- * @module pages/beta/beta-report
+ * @module pages/app/beta-report
  */
 
 import { html, define } from 'hybrids';

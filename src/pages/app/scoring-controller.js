@@ -1,7 +1,7 @@
 /**
  * Scoring controller — thin wrapper around the global scoring queue.
  * Bridges queue state to the beta-view host properties.
- * @module pages/beta/scoring-controller
+ * @module pages/app/scoring-controller
  */
 
 import * as queue from '#utils/scoring-queue.js';
@@ -11,7 +11,7 @@ import {
   getPendingImputedFile,
   getPendingImputedHandle,
   clearPendingImputedFile,
-} from './beta-sections.js';
+} from './sections.js';
 import { storeHandle, restoreAll } from '#utils/file-handle.js';
 
 // Re-export action handlers from split module

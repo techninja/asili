@@ -2,7 +2,7 @@
 
 import { html, define } from 'hybrids';
 import { getGeneList } from '#utils/gene-catalog.js';
-import { getActiveId } from '#pages/beta/results-store.js';
+import { getActiveId } from '#pages/app/results-store.js';
 import { loadProfile } from '#utils/individual-profile.js';
 import { ALL_COLS, cellValue, sortValue, isNumeric, colPicker } from './gene-table-columns.js';
 

@@ -1,6 +1,6 @@
 /**
  * Hero static content sections — trait showcase, how it works, privacy.
- * @module pages/beta/beta-hero-sections
+ * @module pages/app/beta-hero-sections
  */
 
 import { html } from 'hybrids';
@@ -23,7 +23,7 @@ export function traitShowcase() {
         ${tp('💓', 'Resting Heart Rate', 'Your cardiovascular genetics', 'OBA_1001087')}
       </div>
       <p class="beta-hero__trait-count">
-        64 traits in the beta ·
+        64 traits ·
         <a href="https://asili.dev/diy" target="_blank" rel="noopener">Self-host for 648+</a>
       </p>
     </section>

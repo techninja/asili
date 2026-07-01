@@ -5,7 +5,7 @@
 
 import { html } from 'hybrids';
 import * as idb from '/packages/core/src/data-layer/idb.js';
-import { getActiveId } from '#pages/beta/results-store.js';
+import { getActiveId } from '#pages/app/results-store.js';
 
 /**
  * Build PGS entries for the comparison table from result data.
