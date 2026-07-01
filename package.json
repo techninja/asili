@@ -48,6 +48,15 @@
     "stylelint-config-standard": "^40.0.0",
     "typescript": "^6.0.2"
   },
+  "imports": {
+    "#store/*": "./src/store/*",
+    "#utils/*": "./src/utils/*",
+    "#atoms/*": "./src/components/atoms/*",
+    "#molecules/*": "./src/components/molecules/*",
+    "#organisms/*": "./src/components/organisms/*",
+    "#templates/*": "./src/components/templates/*",
+    "#pages/*": "./src/pages/*"
+  },
   "main": "src/server.js",
   "dependencies": {
     "@duckdb/duckdb-wasm": "1.33.1-dev44.0",

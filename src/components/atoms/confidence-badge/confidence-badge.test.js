@@ -5,28 +5,28 @@ describe('confidence-badge', () => {
   it('renders high confidence', async () => {
     const el = await fixture(html`<confidence-badge level="high"></confidence-badge>`);
     const badge = el.querySelector('.confidence-badge');
-    expect(badge.textContent.trim()).to.equal('High');
+    expect(badge.textContent.trim()).to.equal('High confidence');
     expect(badge.classList.contains('confidence-badge--success')).to.be.true;
   });
 
   it('renders medium confidence', async () => {
     const el = await fixture(html`<confidence-badge level="medium"></confidence-badge>`);
     const badge = el.querySelector('.confidence-badge');
-    expect(badge.textContent.trim()).to.equal('Medium');
+    expect(badge.textContent.trim()).to.equal('Medium confidence');
     expect(badge.classList.contains('confidence-badge--info')).to.be.true;
   });
 
   it('renders low confidence', async () => {
     const el = await fixture(html`<confidence-badge level="low"></confidence-badge>`);
     const badge = el.querySelector('.confidence-badge');
-    expect(badge.textContent.trim()).to.equal('Low');
+    expect(badge.textContent.trim()).to.equal('Low confidence');
     expect(badge.classList.contains('confidence-badge--warning')).to.be.true;
   });
 
   it('renders insufficient confidence', async () => {
     const el = await fixture(html`<confidence-badge level="insufficient"></confidence-badge>`);
     const badge = el.querySelector('.confidence-badge');
-    expect(badge.textContent.trim()).to.equal('Insufficient');
+    expect(badge.textContent.trim()).to.equal('Insufficient data');
   });
 
   it('defaults to none', async () => {

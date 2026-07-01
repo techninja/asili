@@ -4,8 +4,6 @@
  */
 
 import { html } from 'hybrids';
-// @ts-ignore
-import '#atoms/chr-ideogram/chr-ideogram.js';
 
 /** Genome-position chromosome offsets (Mbp cumulative). */
 const chrOffsets = {

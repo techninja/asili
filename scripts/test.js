@@ -42,9 +42,9 @@ function findTests(dir) {
 }
 
 function runNode() {
-  const componentDir = resolve(ROOT, 'src/components');
+  const browserDir = resolve(ROOT, 'src/components/atoms');
   const allTests = findTests(resolve(ROOT, 'src')).concat(findTests(resolve(ROOT, 'packages')));
-  const nodeTests = allTests.filter((f) => !f.startsWith(componentDir));
+  const nodeTests = allTests.filter((f) => !f.startsWith(browserDir));
   if (!nodeTests.length) {
     console.log('No node tests found.');
     return true;

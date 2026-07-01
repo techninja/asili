@@ -7,6 +7,8 @@ import { html, define } from 'hybrids';
 import { getGeneList } from '#utils/gene-catalog.js';
 // @ts-ignore
 import '#atoms/app-icon/app-icon.js';
+// @ts-ignore
+import '#atoms/chr-ideogram/chr-ideogram.js';
 import { filterGenes, geneCard } from './explore-grid-helpers.js';
 
 function controls(host) {

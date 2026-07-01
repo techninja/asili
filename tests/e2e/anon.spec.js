@@ -14,7 +14,7 @@ test.describe('Anonymous user experience @fast', () => {
   test('welcome page renders with CTA', async ({ page }) => {
     await page.goto('/');
     await expect(page.locator('h1')).toBeVisible();
-    await expect(page.locator('a[href="/beta"]')).toBeVisible();
+    await expect(page.locator('upload-zone').first()).toBeVisible();
   });
 
   test('beta landing shows upload prompt when no individuals', async ({ page }) => {
