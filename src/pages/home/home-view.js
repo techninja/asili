@@ -9,10 +9,11 @@ import '#atoms/hero-canvas/hero-canvas.js';
 import { appHeader } from '#molecules/app-header/app-header.js';
 import { appFooter } from '#molecules/app-footer/app-footer.js';
 import AppView from '#pages/app/view.js';
+import PairView from '#pages/pair/pair-view.js';
 
 export default define({
   tag: 'home-view',
-  [router.connect]: { url: '/beta', stack: [AppView] },
+  [router.connect]: { url: '/', stack: [AppView, PairView] },
   render: {
     value: () => html`
       <div class="coming-soon">

@@ -11,6 +11,7 @@ import {
   individualsSection,
   storageSection,
   scoringSection,
+  nearbySection,
   developerSection,
   dangerSection,
   footerSection,
@@ -59,7 +60,7 @@ export default define({
             </div>
             <div class="settings-drawer__body">
               ${individualsSection(host)} ${storageSection(host)} ${scoringSection(host)}
-              ${developerSection(host)} ${dangerSection(host)} ${footerSection()}
+              ${nearbySection()} ${developerSection(host)} ${dangerSection(host)} ${footerSection()}
             </div>
           </div>
         </div>

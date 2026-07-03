@@ -7,6 +7,7 @@
 import * as queue from '#utils/scoring-queue.js';
 import { get } from '#utils/storage.js';
 import { loadResults } from './results-store.js';
+import { isViewing } from '#utils/peer-state.js';
 import {
   getPendingImputedFile,
   getPendingImputedHandle,
@@ -36,6 +37,7 @@ function ensureSubscribed(host) {
 
 /** Initialize queue — scan IDB, subscribe, start scoring. @param {object} host */
 export async function initQueue(host) {
+  if (isViewing()) return; // no local scoring in viewer mode
   ensureSubscribed(host);
 
   const restored = await restoreAll();
@@ -56,8 +58,11 @@ export async function initQueue(host) {
 
 /** Switch active individual — boost priority, reload results. */
 export async function switchIndividual(host, individualId) {
-  queue.setActiveIndividual(individualId);
+  if (!isViewing()) queue.setActiveIndividual(individualId);
   host.activeId = individualId;
+  // Show loading state while fetching (noticeable in remote viewer mode)
+  host.resultCount = 0;
+  host._switchEpoch = Date.now();
   const count = await loadResults(individualId);
   host.resultCount = count;
   host._switchEpoch = Date.now();
