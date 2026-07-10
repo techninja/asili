@@ -6,6 +6,7 @@
  */
 
 import { html, define, router } from 'hybrids';
+import { loadLocale } from '#utils/i18n.js';
 import AppView from '#pages/app/view.js';
 
 // Access the Hybrids transition module to set its instance property
@@ -28,6 +29,8 @@ const vt =
     : (fn) => fn;
 
 const tpl = ({ stack }) => html`<div class="app-router">${stack}</div>`;
+
+loadLocale(navigator.language);
 
 export default define({
   tag: 'app-router',
