@@ -3,7 +3,7 @@
  * @module pages/app/scoring-banner
  */
 
-import { html } from 'hybrids';
+import { html, msg } from 'hybrids';
 import {
   handlePause,
   handleResume,
@@ -88,21 +88,26 @@ export function scoringBanner(host) {
     `;
   }
   if (host.scoringStatus === 'init')
-    return html`<p class="app-view__scoring">Initializing DuckDB…</p>`;
+    return html`<p class="app-view__scoring">
+      <!-- Initializing the scoring engine -->
+      Initializing DuckDB…
+    </p>`;
   if (host.scoringStatus === 'done') {
     const state = getQueueState();
     const ind = state.byIndividual[host.activeId];
     const errors = ind?.errors || 0;
     return html`<p class="app-view__scoring app-view__scoring--done">
-      ✅ ${host.resultCount} traits scored${errors ? html` · ${errors} failed` : html``}
+      ✅ ${msg`${host.resultCount} traits scored`}${errors
+        ? html` · ${msg`${errors} failed`}`
+        : html``}
     </p>`;
   }
   if (host.scoringStatus === 'blocked') {
     const need = getImputedNeedingReupload().length;
     return html`<p class="app-view__scoring">
-      ⏸ ${need} imputed file${need !== 1 ? 's' : ''} needed to continue
+      ⏸ ${msg`${need} imputed file${need} needed to continue`}
       <button class="btn btn-ghost btn-sm" onclick="${handleResumePermission}">
-        ▶ Select file${need !== 1 ? 's' : ''}
+        ▶ ${msg`Select file${need}`}
       </button>
     </p>`;
   }

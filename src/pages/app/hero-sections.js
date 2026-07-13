@@ -3,8 +3,7 @@
  * @module pages/app/beta-hero-sections
  */
 
-import { html } from 'hybrids';
-
+import { html, msg } from 'hybrids';
 /**
  *
  */
@@ -13,14 +12,14 @@ export function traitShowcase() {
     <section class="beta-hero__showcase">
       <h2 class="beta-hero__section-title">What you'll discover</h2>
       <div class="beta-hero__trait-grid">
-        ${tp('📊', 'Body Mass Index', 'Genetic weight tendency', 'EFO_0004340')}
-        ${tp('📏', 'Height', 'Predicted vs actual comparison', 'OBA_VT0001253')}
-        ${tp('☕', 'Coffee Consumption', 'How much is in your genes?', 'EFO_0006781')}
-        ${tp('🌅', 'Chronotype', 'Morning lark or night owl', 'EFO_0008328')}
-        ${tp('👨\u200d🦲', 'Male Pattern Baldness', 'What does your DNA predict?', 'EFO_0007825')}
-        ${tp('☀️', 'Vitamin D', 'Genetic absorption tendency', 'OBA_1000968')}
-        ${tp('🧠', 'Cognitive Ability', 'Genetic cognitive baseline', 'EFO_0004337')}
-        ${tp('💓', 'Resting Heart Rate', 'Your cardiovascular genetics', 'OBA_1001087')}
+        ${tp('📊', msg`Body Mass Index`, msg`Genetic weight tendency`, 'EFO_0004340')}
+        ${tp('📏', msg`Height`, msg`Predicted vs actual comparison`, 'OBA_VT0001253')}
+        ${tp('☕', msg`Coffee Consumption`, msg`How much is in your genes?`, 'EFO_0006781')}
+        ${tp('🌅', msg`Chronotype`, msg`Morning lark or night owl`, 'EFO_0008328')}
+        ${tp('👨\u200d🦲', msg`Male Pattern Baldness`, msg`What does your DNA predict?`, 'EFO_0007825')}
+        ${tp('☀️', msg`Vitamin D`, msg`Genetic absorption tendency`, 'OBA_1000968')}
+        ${tp('🧠', msg`Cognitive Ability`, msg`Genetic cognitive baseline`, 'EFO_0004337')}
+        ${tp('💓', msg`Resting Heart Rate`, msg`Your cardiovascular genetics`, 'OBA_1001087')}
       </div>
       <p class="beta-hero__trait-count">
         64 traits ·
@@ -53,9 +52,9 @@ export function howItWorks() {
     <section class="beta-hero__steps">
       <h2 class="beta-hero__section-title">How it works</h2>
       <div class="beta-hero__step-grid">
-        ${step('1', '📁', 'Upload', 'Drop your DNA file from 23andMe, AncestryDNA, or others')}
-        ${step('2', '⚡', 'Score', 'DuckDB WASM scores variants against published research')}
-        ${step('3', '📊', 'Explore', 'Browse results, compare family members, print reports')}
+        ${step('1', '📁', msg`Upload`, msg`Drop your DNA file from 23andMe, AncestryDNA, or others`)}
+        ${step('2', '⚡', msg`Score`, msg`DuckDB WASM scores variants against published research`)}
+        ${step('3', '📊', msg`Explore`, msg`Browse results, compare family members, print reports`)}
       </div>
     </section>
   `;

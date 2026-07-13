@@ -3,7 +3,7 @@
  * @module components/molecules/floating-bar/floating-bar-helpers
  */
 
-import { html } from 'hybrids';
+import { html, msg } from 'hybrids';
 
 /** @param {number} n */
 export const fmtN = (n) =>
@@ -48,14 +48,14 @@ export function detailPanel(state, hasError, indCache) {
           </div>`
         : html``}
       <div class="floating-bar__detail-row">
-        <span>Traits:</span>
-        <span>${state.done} done · ${state.errors} failed · ${state.pending} pending</span>
+        <span>${msg`Traits:`}</span>
+        <span>${msg`${state.done} done · ${state.errors} failed · ${state.pending} pending`}</span>
       </div>
       ${state.rate > 0 || state.transferRate > 0
         ? html`<div class="floating-bar__detail-row">
-            <span>Throughput:</span>
+            <span>${msg`Throughput:`}</span>
             <span
-              >${state.rate > 0 ? `${fmtN(Math.round(state.rate))} variants/sec` : ''}${state.rate >
+              >${state.rate > 0 ? msg`${fmtN(Math.round(state.rate))} variants/sec` : ''}${state.rate >
                 0 && state.transferRate > 0
                 ? ' · '
                 : ''}${state.transferRate > 0 ? fmtRate(state.transferRate) : ''}</span
@@ -79,7 +79,10 @@ export function detailPanel(state, hasError, indCache) {
         : html``}
       ${individuals.length > 1
         ? html`
-            <div class="floating-bar__detail-heading">Per individual</div>
+            <div class="floating-bar__detail-heading">
+              <!-- Per individual heading -->
+              Per individual
+            </div>
             ${individuals.map((ind) => {
               const meta = indCache[ind.id];
               const label = meta ? `${meta.emoji} ${meta.name}` : ind.id.slice(0, 8);
@@ -87,8 +90,8 @@ export function detailPanel(state, hasError, indCache) {
               return html`<div class="floating-bar__detail-row">
                 <span>${label}</span>
                 <span
-                  >${ind.done}/${ind.total}${ind.errors ? ` · ${ind.errors} err` : ''}${indBytes
-                    ? ` · ${fmtBytes(indBytes)} scanned`
+                  >${ind.done}/${ind.total}${ind.errors ? msg` · ${ind.errors} err` : ''}${indBytes
+                    ? msg` · ${fmtBytes(indBytes)} scanned`
                     : ''}</span
                 >
               </div>`;

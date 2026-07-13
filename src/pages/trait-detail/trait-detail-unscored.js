@@ -52,8 +52,7 @@ function whatYoullSeeSection(t) {
           <app-icon name="target" size="sm"></app-icon> Your percentile ranking in the population
         </li>
         <li>
-          <app-icon name="bar-chart" size="sm"></app-icon> Population distribution with ancestry
-          overlays
+          <app-icon name="bar-chart" size="sm"></app-icon> Population distribution with ancestry overlays
         </li>
         ${isQuant
           ? html`<li>

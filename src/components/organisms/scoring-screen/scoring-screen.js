@@ -4,7 +4,7 @@
  * @module components/organisms/scoring-screen
  */
 
-import { html, define } from 'hybrids';
+import { html, define, msg } from 'hybrids';
 
 /** @param {number} n */
 const fmtN = (n) =>
@@ -59,14 +59,19 @@ export default define({
                 <div class="ss__fill ss__fill--chr" style="${{ width: `${chrPct}%` }}"></div>
               </div>
             </div>
-            <p class="ss__trait">${traitName || 'Preparing…'}</p>
-            <p class="ss__stats">
-              ${done}/${total}
-              traits${rate > 0 ? html` · ${fmtN(Math.round(rate))}/s` : html``}${eta > 0
-                ? html` · ~${fmtT(eta)}`
-                : html``}
+            <p class="ss__trait">
+              <!-- Current trait name -->
+              ${traitName || 'Preparing…'}
             </p>
-            <p class="ss__hint">tap anywhere to return</p>
+            <p class="ss__stats">
+              ${msg`${done}/${total} traits`}${rate > 0
+                ? html` · ${fmtN(Math.round(rate))}/s`
+                : html``}${eta > 0 ? html` · ~${fmtT(eta)}` : html``}
+            </p>
+            <p class="ss__hint">
+              <!-- Dismiss hint -->
+              tap anywhere to return
+            </p>
           </div>
         </div>
       `;

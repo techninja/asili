@@ -4,7 +4,6 @@
  */
 
 import { html } from 'hybrids';
-
 /** @returns {*} Hybrids html template */
 export function appFooter() {
   return html`

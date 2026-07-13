@@ -1,0 +1,658 @@
+{
+  "· ${0} failed": {
+    "message": "· ${0} failed"
+  },
+  "· ${0}/s": {
+    "message": "· ${0}/s"
+  },
+  "(imputed ⭐)": {
+    "message": "(imputed ⭐)"
+  },
+  "(raw) and": {
+    "message": "(raw) and"
+  },
+  "© ${0} Asili · AGPLv3 ·": {
+    "message": "© ${0} Asili · AGPLv3 ·"
+  },
+  "← Back to": {
+    "message": "← Back to"
+  },
+  "|Z-score|": {
+    "message": "|Z-score|"
+  },
+  "~${0}% of variation explained — ${1} predictor": {
+    "message": "~${0}% of variation explained — ${1} predictor"
+  },
+  "✕ Clear": {
+    "message": "✕ Clear"
+  },
+  "👋 You're viewing sample data —": {
+    "message": "👋 You're viewing sample data —"
+  },
+  "📖 Open Source": {
+    "message": "📖 Open Source"
+  },
+  "🔒 Your data never leaves your device": {
+    "message": "🔒 Your data never leaves your device"
+  },
+  "🔒 Zero Data Collection": {
+    "message": "🔒 Zero Data Collection"
+  },
+  "🧬 64 Traits": {
+    "message": "🧬 64 Traits"
+  },
+  "🪲 Report a Bug": {
+    "message": "🪲 Report a Bug"
+  },
+  "🪲 Report a problem": {
+    "message": "🪲 Report a problem"
+  },
+  "${0} — Genomic Report": {
+    "message": "${0} — Genomic Report"
+  },
+  "${0} / ${1} variants (${2}%)": {
+    "message": "${0} / ${1} variants (${2}%)"
+  },
+  "${0} at ${1}": {
+    "message": "${0} at ${1}"
+  },
+  "${0} chromosomes": {
+    "message": "${0} chromosomes"
+  },
+  "${0} detected": {
+    "message": "${0} detected"
+  },
+  "${0} genes": {
+    "message": "${0} genes"
+  },
+  "${0} geno · ${1} imp": {
+    "message": "${0} geno · ${1} imp"
+  },
+  "${0} GWAS${1}${2}": {
+    "message": "${0} GWAS${1}${2}"
+  },
+  "${0} imputed file${1} need${2} access": {
+    "message": "${0} imputed file${1} need${2} access"
+  },
+  "${0} of ${1}": {
+    "message": "${0} of ${1}"
+  },
+  "${0} publications": {
+    "message": "${0} publications"
+  },
+  "${0} scored · showing ${1} of ${2} traits": {
+    "message": "${0} scored · showing ${1} of ${2} traits"
+  },
+  "${0} studies": {
+    "message": "${0} studies"
+  },
+  "${0} trait${1} failed": {
+    "message": "${0} trait${1} failed"
+  },
+  "${0} traits · ${1} elevated · ${2} low": {
+    "message": "${0} traits · ${1} elevated · ${2} low"
+  },
+  "${0} traits across ${1} categories": {
+    "message": "${0} traits across ${1} categories"
+  },
+  "${0} traits scored": {
+    "message": "${0} traits scored"
+  },
+  "${0} variants": {
+    "message": "${0} variants"
+  },
+  "${0} variants loaded": {
+    "message": "${0} variants loaded"
+  },
+  "${0}'s raw array doesn't cover this gene region. Imputation can fill the gaps using statistical inference from reference panels.": {
+    "message": "${0}'s raw array doesn't cover this gene region. Imputation can fill the gaps using statistical inference from reference panels."
+  },
+  "${0}/${1} scored${2}": {
+    "message": "${0}/${1} scored${2}"
+  },
+  "${0}/${1} traits": {
+    "message": "${0}/${1} traits"
+  },
+  "${0}th": {
+    "message": "${0}th"
+  },
+  "$Genomic Report${0}": {
+    "message": "$Genomic Report${0}"
+  },
+  "1 GB": {
+    "message": "1 GB"
+  },
+  "10 Mbps": {
+    "message": "10 Mbps"
+  },
+  "100 Mbps": {
+    "message": "100 Mbps"
+  },
+  "2 GB": {
+    "message": "2 GB"
+  },
+  "23andMe, AncestryDNA, MyHeritage, FTDNA, VCF, or .asili imputed": {
+    "message": "23andMe, AncestryDNA, MyHeritage, FTDNA, VCF, or .asili imputed"
+  },
+  "25 Mbps": {
+    "message": "25 Mbps"
+  },
+  "4 GB": {
+    "message": "4 GB"
+  },
+  "5 Mbps": {
+    "message": "5 Mbps"
+  },
+  "50 Mbps": {
+    "message": "50 Mbps"
+  },
+  "500 Mbps": {
+    "message": "500 Mbps"
+  },
+  "64 traits ·": {
+    "message": "64 traits ·"
+  },
+  "About This Gene": {
+    "message": "About This Gene"
+  },
+  "About This Trait": {
+    "message": "About This Trait"
+  },
+  "Actionability:": {
+    "message": "Actionability:"
+  },
+  "African": {
+    "message": "African"
+  },
+  "Alex": {
+    "message": "Alex"
+  },
+  "All": {
+    "message": "All"
+  },
+  "All ${0} key variant${1} available.": {
+    "message": "All ${0} key variant${1} available."
+  },
+  "All individuals": {
+    "message": "All individuals"
+  },
+  "Also known as:": {
+    "message": "Also known as:"
+  },
+  "American": {
+    "message": "American"
+  },
+  "Ancestry: Global (default)": {
+    "message": "Ancestry: Global (default)"
+  },
+  "Ashkenazi": {
+    "message": "Ashkenazi"
+  },
+  "Asili": {
+    "message": "Asili"
+  },
+  "Asili Public Beta": {
+    "message": "Asili Public Beta"
+  },
+  "Asili v${0}${1} · Privacy-first · Your data never leaves this device": {
+    "message": "Asili v${0}${1} · Privacy-first · Your data never leaves this device"
+  },
+  "asili.dev": {
+    "message": "asili.dev"
+  },
+  "Auto-score on upload": {
+    "message": "Auto-score on upload"
+  },
+  "Available Data": {
+    "message": "Available Data"
+  },
+  "Back": {
+    "message": "Back"
+  },
+  "Bandwidth limit": {
+    "message": "Bandwidth limit"
+  },
+  "Below Average Traits": {
+    "message": "Below Average Traits"
+  },
+  "Best PGS": {
+    "message": "Best PGS"
+  },
+  "Cancel": {
+    "message": "Cancel"
+  },
+  "Carrier context:": {
+    "message": "Carrier context:"
+  },
+  "Category": {
+    "message": "Category"
+  },
+  "Category Breakdown": {
+    "message": "Category Breakdown"
+  },
+  "Category Overview": {
+    "message": "Category Overview"
+  },
+  "Choose file": {
+    "message": "Choose file"
+  },
+  "chr${0}:${1}–${2}": {
+    "message": "chr${0}:${1}–${2}"
+  },
+  "Chromosome Coverage": {
+    "message": "Chromosome Coverage"
+  },
+  "Clear All Data": {
+    "message": "Clear All Data"
+  },
+  "Clearing all data…": {
+    "message": "Clearing all data…"
+  },
+  "Columns": {
+    "message": "Columns"
+  },
+  "Confidence": {
+    "message": "Confidence"
+  },
+  "Confirm": {
+    "message": "Confirm"
+  },
+  "Cov": {
+    "message": "Cov"
+  },
+  "Coverage": {
+    "message": "Coverage"
+  },
+  "Cytogenetic band": {
+    "message": "Cytogenetic band"
+  },
+  "Danger Zone": {
+    "message": "Danger Zone"
+  },
+  "Data Quality": {
+    "message": "Data Quality"
+  },
+  "Data scanned:": {
+    "message": "Data scanned:"
+  },
+  "Demo": {
+    "message": "Demo"
+  },
+  "Discover what your DNA says about you": {
+    "message": "Discover what your DNA says about you"
+  },
+  "Don't have your file yet?": {
+    "message": "Don't have your file yet?"
+  },
+  "Drop your DNA file here or": {
+    "message": "Drop your DNA file here or"
+  },
+  "East Asian": {
+    "message": "East Asian"
+  },
+  "Effect": {
+    "message": "Effect"
+  },
+  "ETA:": {
+    "message": "ETA:"
+  },
+  "European": {
+    "message": "European"
+  },
+  "Exons": {
+    "message": "Exons"
+  },
+  "Explore polygenic scores and common genes for 64 traits — BMI, height, cholesterol, caffeine metabolism, and chronotype. All processing happens on your device. We never see your data.": {
+    "message": "Explore polygenic scores and common genes for 64 traits — BMI, height, cholesterol, caffeine metabolism, and chronotype. All processing happens on your device. We never see your data."
+  },
+  "Explore with sample data": {
+    "message": "Explore with sample data"
+  },
+  "Family Comparison": {
+    "message": "Family Comparison"
+  },
+  "File": {
+    "message": "File"
+  },
+  "Finnish": {
+    "message": "Finnish"
+  },
+  "Full coverage (imputed)": {
+    "message": "Full coverage (imputed)"
+  },
+  "Gene Info": {
+    "message": "Gene Info"
+  },
+  "Gene length": {
+    "message": "Gene length"
+  },
+  "Gene profiles": {
+    "message": "Gene profiles"
+  },
+  "Generated ${0}": {
+    "message": "Generated ${0}"
+  },
+  "Genes": {
+    "message": "Genes"
+  },
+  "GitHub": {
+    "message": "GitHub"
+  },
+  "Global (default)": {
+    "message": "Global (default)"
+  },
+  "GWAS ancestry: ${0}": {
+    "message": "GWAS ancestry: ${0}"
+  },
+  "How it works": {
+    "message": "How it works"
+  },
+  "Impact": {
+    "message": "Impact"
+  },
+  "Imperial": {
+    "message": "Imperial"
+  },
+  "Improve coverage and signal strength by upgrading to an": {
+    "message": "Improve coverage and signal strength by upgrading to an"
+  },
+  "Impute": {
+    "message": "Impute"
+  },
+  "Impute ${0}'s data →": {
+    "message": "Impute ${0}'s data →"
+  },
+  "Impute your data": {
+    "message": "Impute your data"
+  },
+  "Imputed .asili packs are stored on your device's disk via file handles, not in browser storage. Their size depends on your files.": {
+    "message": "Imputed .asili packs are stored on your device's disk via file handles, not in browser storage. Their size depends on your files."
+  },
+  "imputed genome": {
+    "message": "imputed genome"
+  },
+  "Individual": {
+    "message": "Individual"
+  },
+  "Individuals": {
+    "message": "Individuals"
+  },
+  "Jordan": {
+    "message": "Jordan"
+  },
+  "key variant${0} found": {
+    "message": "key variant${0} found"
+  },
+  "Key variants tracked": {
+    "message": "Key variants tracked"
+  },
+  "Last scored": {
+    "message": "Last scored"
+  },
+  "Launch App →": {
+    "message": "Launch App →"
+  },
+  "Learn More": {
+    "message": "Learn More"
+  },
+  "Loading gene data…": {
+    "message": "Loading gene data…"
+  },
+  "Loading traits…": {
+    "message": "Loading traits…"
+  },
+  "Loading…": {
+    "message": "Loading…"
+  },
+  "Memory limit": {
+    "message": "Memory limit"
+  },
+  "Metric": {
+    "message": "Metric"
+  },
+  "Middle Eastern": {
+    "message": "Middle Eastern"
+  },
+  "Name": {
+    "message": "Name"
+  },
+  "NCBI Gene": {
+    "message": "NCBI Gene"
+  },
+  "NCBI Summary": {
+    "message": "NCBI Summary"
+  },
+  "Need 3+ categories": {
+    "message": "Need 3+ categories"
+  },
+  "No accounts. No servers. No analytics. No cookies. Your genomic data is processed entirely in your browser using WebAssembly. The source code is": {
+    "message": "No accounts. No servers. No analytics. No cookies. Your genomic data is processed entirely in your browser using WebAssembly. The source code is"
+  },
+  "No family data": {
+    "message": "No family data"
+  },
+  "No individuals yet": {
+    "message": "No individuals yet"
+  },
+  "No PGS data available": {
+    "message": "No PGS data available"
+  },
+  "No scored traits yet. Results will appear here as scoring completes.": {
+    "message": "No scored traits yet. Results will appear here as scoring completes."
+  },
+  "OMIM": {
+    "message": "OMIM"
+  },
+  "open source": {
+    "message": "open source"
+  },
+  "or": {
+    "message": "or"
+  },
+  "Pctl": {
+    "message": "Pctl"
+  },
+  "Per individual": {
+    "message": "Per individual",
+    "description": "Per individual heading"
+  },
+  "Per-chromosome score breakdown": {
+    "message": "Per-chromosome score breakdown"
+  },
+  "percentile": {
+    "message": "percentile"
+  },
+  "Percentile": {
+    "message": "Percentile"
+  },
+  "PGS": {
+    "message": "PGS"
+  },
+  "PGS Comparison": {
+    "message": "PGS Comparison"
+  },
+  "Population Distribution": {
+    "message": "Population Distribution"
+  },
+  "Population distribution with ancestry overlays": {
+    "message": "Population distribution with ancestry overlays"
+  },
+  "Position": {
+    "message": "Position"
+  },
+  "Predicted ${0} based on your genetics": {
+    "message": "Predicted ${0} based on your genetics"
+  },
+  "Print": {
+    "message": "Print"
+  },
+  "Print / Save as PDF": {
+    "message": "Print / Save as PDF"
+  },
+  "Privacy": {
+    "message": "Privacy"
+  },
+  "Privacy-first polygenic risk score analysis. Upload your DNA file and explore 64 traits — everything runs in your browser. We never see your data.": {
+    "message": "Privacy-first polygenic risk score analysis. Upload your DNA file and explore 64 traits — everything runs in your browser. We never see your data."
+  },
+  "PubMed citations": {
+    "message": "PubMed citations"
+  },
+  "Quality": {
+    "message": "Quality"
+  },
+  "Quality score rating the reliability of results": {
+    "message": "Quality score rating the reliability of results"
+  },
+  "R²": {
+    "message": "R²"
+  },
+  "Raw DNA covers ${0}% of variants for this trait.": {
+    "message": "Raw DNA covers ${0}% of variants for this trait."
+  },
+  "Rebuild": {
+    "message": "Rebuild"
+  },
+  "Report generated locally. Your data never left this device.": {
+    "message": "Report generated locally. Your data never left this device."
+  },
+  "Save": {
+    "message": "Save"
+  },
+  "Score": {
+    "message": "Score"
+  },
+  "Score by Chromosome": {
+    "message": "Score by Chromosome"
+  },
+  "Score this trait to see your results": {
+    "message": "Score this trait to see your results"
+  },
+  "Scored": {
+    "message": "Scored"
+  },
+  "Scoring": {
+    "message": "Scoring"
+  },
+  "See where to get it →": {
+    "message": "See where to get it →"
+  },
+  "Select the ancestry background for this individual for better score normalization.": {
+    "message": "Select the ancestry background for this individual for better score normalization."
+  },
+  "Select the ancestry background for this individual for better score normalization. Rescore after changing.": {
+    "message": "Select the ancestry background for this individual for better score normalization. Rescore after changing."
+  },
+  "Self-host for 648+": {
+    "message": "Self-host for 648+"
+  },
+  "Settings": {
+    "message": "Settings"
+  },
+  "Showing ${0} of ${1} genes": {
+    "message": "Showing ${0} of ${1} genes"
+  },
+  "so you can verify every line.": {
+    "message": "so you can verify every line."
+  },
+  "Source code": {
+    "message": "Source code"
+  },
+  "South Asian": {
+    "message": "South Asian"
+  },
+  "Storage": {
+    "message": "Storage"
+  },
+  "Studies": {
+    "message": "Studies"
+  },
+  "This is not a medical diagnosis. Consult a healthcare professional.": {
+    "message": "This is not a medical diagnosis. Consult a healthcare professional."
+  },
+  "This report is for informational purposes only and is not a medical diagnosis. Polygenic scores reflect statistical associations, not certainties. Consult a healthcare professional for medical advice.": {
+    "message": "This report is for informational purposes only and is not a medical diagnosis. Polygenic scores reflect statistical associations, not certainties. Consult a healthcare professional for medical advice."
+  },
+  "This will permanently delete all individuals, results, and settings.": {
+    "message": "This will permanently delete all individuals, results, and settings."
+  },
+  "to unlock 60–80% coverage for more accurate scores.": {
+    "message": "to unlock 60–80% coverage for more accurate scores."
+  },
+  "Top contributing genetic variants": {
+    "message": "Top contributing genetic variants"
+  },
+  "Top Elevated Traits": {
+    "message": "Top Elevated Traits"
+  },
+  "Top Variants": {
+    "message": "Top Variants"
+  },
+  "Trait": {
+    "message": "Trait"
+  },
+  "Traits": {
+    "message": "Traits"
+  },
+  "Try again": {
+    "message": "Try again"
+  },
+  "Units": {
+    "message": "Units"
+  },
+  "Unlimited": {
+    "message": "Unlimited"
+  },
+  "Upload DNA data to see your variants at this gene.": {
+    "message": "Upload DNA data to see your variants at this gene."
+  },
+  "Upload your DNA →": {
+    "message": "Upload your DNA →"
+  },
+  "Upload your DNA to unlock scoring for this trait. You'll get:": {
+    "message": "Upload your DNA to unlock scoring for this trait. You'll get:"
+  },
+  "Value": {
+    "message": "Value"
+  },
+  "Variant": {
+    "message": "Variant"
+  },
+  "Variants scored:": {
+    "message": "Variants scored:"
+  },
+  "Verified .asili": {
+    "message": "Verified .asili"
+  },
+  "View on GitHub": {
+    "message": "View on GitHub"
+  },
+  "What it does:": {
+    "message": "What it does:"
+  },
+  "What you'll discover": {
+    "message": "What you'll discover"
+  },
+  "What You'll See": {
+    "message": "What You'll See"
+  },
+  "Wikipedia": {
+    "message": "Wikipedia"
+  },
+  "Yes, Delete Everything": {
+    "message": "Yes, Delete Everything"
+  },
+  "Your Data": {
+    "message": "Your Data"
+  },
+  "Your percentile ranking in the population": {
+    "message": "Your percentile ranking in the population"
+  },
+  "Your score suggests ${0}": {
+    "message": "Your score suggests ${0}"
+  },
+  "z-score": {
+    "message": "z-score"
+  }
+}
+

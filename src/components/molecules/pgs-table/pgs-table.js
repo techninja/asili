@@ -4,7 +4,6 @@
  */
 
 import { html, define } from 'hybrids';
-
 export default define({
   tag: 'pgs-table',
   pgsData: '',

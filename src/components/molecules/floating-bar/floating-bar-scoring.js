@@ -3,7 +3,7 @@
  * @module components/molecules/floating-bar/floating-bar-scoring
  */
 
-import { html, dispatch } from 'hybrids';
+import { html, dispatch, msg } from 'hybrids';
 import { handlePause, handleResume } from '#pages/app/scoring-controller.js';
 import { handleResumePermission } from '#pages/app/scoring-actions.js';
 import { getImputedNeedingReupload } from '#utils/scoring-queue.js';
@@ -11,13 +11,14 @@ import { fmtN, fmtRate, fmtT } from './floating-bar-helpers.js';
 
 /** @param {Function} toggleExpand */
 export function errorContent(host, state, toggleExpand) {
-  const msg = state.lastError || `${state.errors} trait${state.errors !== 1 ? 's' : ''} failed`;
-  const short = msg.length > 60 ? msg.slice(0, 57) + '…' : msg;
+  const errMsg =
+    state.lastError || msg`${state.errors} trait${state.errors} failed`;
+  const short = errMsg.length > 60 ? errMsg.slice(0, 57) + '…' : errMsg;
   return html`<div class="floating-bar__section">
     <button
       class="floating-bar__stats floating-bar__stats--error floating-bar__stats--tappable"
       onclick="${(h) => toggleExpand(h)}"
-      title="${msg}"
+      title="${errMsg}"
     >
       <app-icon name="alert"></app-icon> ${short}
     </button>
@@ -46,7 +47,7 @@ export function scoringContent(host, state, status, toggleExpand) {
         <app-icon name="lock"></app-icon>
       </span>
       <span class="floating-bar__stats">
-        ${need} imputed file${need !== 1 ? 's' : ''} need${need === 1 ? 's' : ''} access
+        ${msg`${need} imputed file${need} need${need} access`}
       </span>
       <button
         class="floating-bar__action floating-bar__action--resume"
@@ -84,7 +85,7 @@ export function scoringContent(host, state, status, toggleExpand) {
   const pct = state.total > 0 ? ((state.done / state.total) * 100).toFixed(1) : 0;
   const subPct = state.subProgress > 0 ? (state.subProgress * 100).toFixed(1) : 0;
   const trait = state.currentTraitName || '';
-  const rate = state.rate > 0 ? fmtN(Math.round(state.rate)) + ' var/s' : '';
+  const rate = state.rate > 0 ? msg`${fmtN(Math.round(state.rate))} var/s` : '';
   const dlRate =
     state.transferRate > 0 ? fmtRate(state.transferRate) : state.done > 0 ? '-- MB/min' : '';
   const eta = state.etaSeconds > 0 ? '~' + fmtT(state.etaSeconds) : '';

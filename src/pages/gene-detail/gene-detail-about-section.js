@@ -4,7 +4,6 @@
  */
 
 import { html } from 'hybrids';
-
 export function descriptionSection(gene) {
   const summary = gene.summary || gene.description;
   if (!summary && !gene.editorial_description) return html``;

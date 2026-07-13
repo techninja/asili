@@ -6,7 +6,6 @@
  */
 
 import { html, define } from 'hybrids';
-
 const CX = 180,
   CY = 170,
   R = 110;

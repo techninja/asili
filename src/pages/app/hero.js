@@ -24,9 +24,7 @@ export function heroContent(host, cancelFn) {
         <img src="/logo.svg" alt="Asili" class="beta-hero__logo" />
         <h1 class="beta-hero__title">Discover what your DNA says about you</h1>
         <p class="beta-hero__sub">
-          Explore polygenic scores and common genes for 64 traits — BMI, height, cholesterol,
-          caffeine metabolism, and chronotype. All processing happens on your device. We never see
-          your data.
+          Explore polygenic scores and common genes for 64 traits — BMI, height, cholesterol, caffeine metabolism, and chronotype. All processing happens on your device. We never see your data.
         </p>
       </section>
 

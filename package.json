@@ -32,7 +32,7 @@
   "devDependencies": {
     "@open-wc/testing": "^4.0.0",
     "@playwright/test": "^1.60.0",
-    "@techninja/clearstack": "^0.4.1",
+    "@techninja/clearstack": "^0.4.3",
     "@types/node": "^22.0.0",
     "@web/test-runner": "^0.20.0",
     "@web/test-runner-playwright": "^0.11.0",
@@ -54,7 +54,8 @@
     "#molecules/*": "./src/components/molecules/*",
     "#organisms/*": "./src/components/organisms/*",
     "#templates/*": "./src/components/templates/*",
-    "#pages/*": "./src/pages/*"
+    "#pages/*": "./src/pages/*",
+    "#locales/*": "./src/locales/*"
   },
   "main": "src/server.js",
   "dependencies": {

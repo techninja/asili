@@ -57,8 +57,7 @@ export function editArea(ind, editId, editState) {
           <option value="MID" selected="${editState?.ancestry === 'MID'}">Middle Eastern</option>
         </select>
         <span class="individual-list__edit-ancestry-hint">
-          Select the ancestry background for this individual for better score normalization. Rescore
-          after changing.
+          Select the ancestry background for this individual for better score normalization. Rescore after changing.
         </span>
       </label>
       <div class="individual-list__edit-actions">
