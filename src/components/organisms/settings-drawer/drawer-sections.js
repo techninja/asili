@@ -56,7 +56,8 @@ export function storageSection(host) {
       <p class="settings-drawer__meta">${host.storageInfo || 'Calculating…'}</p>
       <p class="settings-drawer__note">
         <app-icon name="info" size="sm"></app-icon>
-        Imputed .asili packs are stored on your device's disk via file handles, not in browser storage. Their size depends on your files.
+        Imputed .asili packs are stored on your device's disk via file handles, not in browser
+        storage. Their size depends on your files.
       </p>
     </section>
   `;

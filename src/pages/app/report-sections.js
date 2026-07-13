@@ -19,8 +19,13 @@ export function summarySection(scored) {
   return html`
     <div class="report-tab__stats">
       ${stat(msg`Traits Scored`, s.count, 'flask-conical')}
-      ${stat(msg`Avg Coverage`, s.avgCov + '%', 'dna')} ${stat(msg`Avg Quality`, s.avgAqs, 'sparkles')}
-      ${stat(msg`Data Source`, s.source === 'Imputed' ? msg`Imputed` : msg`Raw DNA`, s.source === 'Imputed' ? 'zap' : 'upload')}
+      ${stat(msg`Avg Coverage`, s.avgCov + '%', 'dna')}
+      ${stat(msg`Avg Quality`, s.avgAqs, 'sparkles')}
+      ${stat(
+        msg`Data Source`,
+        s.source === 'Imputed' ? msg`Imputed` : msg`Raw DNA`,
+        s.source === 'Imputed' ? 'zap' : 'upload',
+      )}
     </div>
   `;
 }

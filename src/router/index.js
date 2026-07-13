@@ -38,7 +38,6 @@ const vt =
 
 const tpl = ({ stack }) => html`<div class="app-router">${stack}</div>`;
 
-
 export default define({
   tag: 'app-router',
   stack: router(AppView, { transition: true }),

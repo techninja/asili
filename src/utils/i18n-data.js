@@ -19,9 +19,7 @@ let _lang = null;
  * @returns {string|null}
  */
 function detectLang() {
-  const langs = navigator.languages?.length
-    ? navigator.languages
-    : [navigator.language || 'en'];
+  const langs = navigator.languages?.length ? navigator.languages : [navigator.language || 'en'];
   for (const l of langs) {
     const code = l.split('-')[0].toLowerCase();
     if (code !== 'en') return code;
@@ -141,6 +139,6 @@ export function translateGene(gene) {
   }
   if (gene.social_tags && _genes.social_tags) {
     gene._social_tags_en = gene.social_tags;
-    gene.social_tags = gene.social_tags.map(t => _genes.social_tags[t] || t);
+    gene.social_tags = gene.social_tags.map((t) => _genes.social_tags[t] || t);
   }
 }

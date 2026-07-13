@@ -7,6 +7,7 @@ import { html, msg } from 'hybrids';
 import { heroContent } from './hero.js';
 import { demoBanner } from './demo-banner.js';
 import '#pages/app/report.js';
+import { tableTab } from './table-tab.js';
 // @ts-ignore
 import '#atoms/app-icon/app-icon.js';
 // @ts-ignore
@@ -48,10 +49,34 @@ export function individualSelector(host, list, switchFn) {
 }
 
 const TABS = [
-  { id: 'traits', get label() { return msg`Traits`; }, icon: 'grid' },
-  { id: 'explore', get label() { return msg`Genes`; }, icon: 'dna' },
-  { id: 'table', get label() { return msg`Table`; }, icon: 'list' },
-  { id: 'report', get label() { return msg`Report`; }, icon: 'chart-pie' },
+  {
+    id: 'traits',
+    get label() {
+      return msg`Traits`;
+    },
+    icon: 'grid',
+  },
+  {
+    id: 'explore',
+    get label() {
+      return msg`Genes`;
+    },
+    icon: 'dna',
+  },
+  {
+    id: 'table',
+    get label() {
+      return msg`Table`;
+    },
+    icon: 'list',
+  },
+  {
+    id: 'report',
+    get label() {
+      return msg`Report`;
+    },
+    icon: 'chart-pie',
+  },
 ];
 
 /** @param {object} host */
@@ -108,40 +133,5 @@ function traitsTab(host) {
       switchEpoch="${host._switchEpoch}"
       scoring="${host.scoringStatus === 'scoring'}"
     ></trait-grid>
-  `;
-}
-
-/**
- *
- */
-function tableTab(host) {
-  const sub = host._tableSub || 'traits';
-  return html`
-    <div class="table-tab">
-      <div class="table-tab__subs">
-        <button
-          class="table-tab__sub ${sub === 'traits' ? 'table-tab__sub--active' : ''}"
-          onclick="${(h) => {
-            h._tableSub = 'traits';
-          }}"
-        >
-          Traits
-        </button>
-        <button
-          class="table-tab__sub ${sub === 'genes' ? 'table-tab__sub--active' : ''}"
-          onclick="${(h) => {
-            h._tableSub = 'genes';
-          }}"
-        >
-          Genes
-        </button>
-      </div>
-      ${sub === 'traits'
-        ? html`<data-table
-            resultCount="${host.resultCount}"
-            switchEpoch="${host._switchEpoch}"
-          ></data-table>`
-        : html`<gene-table></gene-table>`}
-    </div>
   `;
 }

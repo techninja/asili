@@ -2,23 +2,15 @@
 
 /**
  * Sync data assets from data.asili.dev into src/data/ for local development.
- * Local files are never overwritten unless --force is passed.
- * The dev server already serves src/data/ first and falls back to CDN,
- * so synced files are used automatically without any other config changes.
- *
- * Usage:
- *   pnpm run sync           — interactive prompt
- *   pnpm run sync small     — manifest, norms, hg19map, gene catalog, demo individuals
- *   pnpm run sync all       — small files + all trait packs + pgs_detail
- *   pnpm run sync trait EFO_0004340  — single trait pack only
- *
+ * Usage: pnpm run sync [small|all|trait <ID>] [--force]
  * @module scripts/sync-data
  */
 
-import { existsSync, mkdirSync, readFileSync, writeFileSync, statSync } from 'node:fs';
+import { existsSync, readFileSync } from 'node:fs';
 import { resolve, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import readline from 'node:readline';
+import { syncFile, state } from './sync-helpers.js';
 
 const ROOT = dirname(dirname(fileURLToPath(import.meta.url)));
 const DATA_DIR = resolve(ROOT, 'src/data');
@@ -29,37 +21,8 @@ const command = args[0];
 const extra = args[1];
 const force = args.includes('--force');
 
-let fetched = 0;
-let skipped = 0;
-
-/**
- * @param {string} remotePath
- * @param {string} localPath
- */
-async function syncFile(remotePath, localPath) {
-  if (!force && existsSync(localPath)) {
-    skipped++;
-    return;
-  }
-  const url = `${BASE_URL}/${remotePath}`;
-  const res = await fetch(url);
-  if (!res.ok) {
-    console.warn(`  ✗ ${remotePath} (${res.status})`);
-    return;
-  }
-  mkdirSync(dirname(localPath), { recursive: true });
-  writeFileSync(localPath, Buffer.from(await res.arrayBuffer()));
-  const size = statSync(localPath).size;
-  console.log(`  ↓ ${remotePath} (${fmtSize(size)})`);
-  fetched++;
-}
-
-/** @param {number} bytes @returns {string} */
-function fmtSize(bytes) {
-  if (bytes >= 1e6) return `${(bytes / 1e6).toFixed(1)} MB`;
-  if (bytes >= 1e3) return `${(bytes / 1e3).toFixed(0)} KB`;
-  return `${bytes} B`;
-}
+/** @param {string} remote @param {string} local */
+const sync = (remote, local) => syncFile(BASE_URL, remote, local, force);
 
 async function syncSmall() {
   console.log('\n📋 Small files...');
@@ -70,18 +33,18 @@ async function syncSmall() {
     'gene_catalog.json',
     'demo-individuals.json',
   ];
-  for (const f of files) await syncFile(f, resolve(DATA_DIR, f));
+  for (const f of files) await sync(f, resolve(DATA_DIR, f));
 
   console.log('\n🌐 i18n translation packs...');
   const langManifest = await fetch(`${BASE_URL}/i18n/languages.json`).then((r) =>
     r.ok ? r.json() : null,
   );
   if (langManifest) {
-    await syncFile('i18n/languages.json', resolve(DATA_DIR, 'i18n', 'languages.json'));
+    await sync('i18n/languages.json', resolve(DATA_DIR, 'i18n', 'languages.json'));
     for (const lang of Object.keys(langManifest.languages)) {
       for (const tpl of Object.values(langManifest.files)) {
         const f = tpl.replace('{lang}', lang);
-        await syncFile(`i18n/${f}`, resolve(DATA_DIR, 'i18n', f));
+        await sync(`i18n/${f}`, resolve(DATA_DIR, 'i18n', f));
       }
     }
   }
@@ -96,16 +59,14 @@ async function syncSmall() {
     'duckdb-eh.wasm',
     'duckdb-mvp.wasm',
   ];
-  for (const f of depFiles) await syncFile(`deps/duckdb/${f}`, resolve(DEPS_DIR, f));
+  for (const f of depFiles) await sync(`deps/duckdb/${f}`, resolve(DEPS_DIR, f));
 }
 
 async function syncPgsDetail(manifest) {
   const ids = Object.keys(manifest.traits);
   console.log(`\n📦 PGS detail files (${ids.length})...`);
-  for (const id of ids) {
-    const f = `${id}.json`;
-    await syncFile(`pgs_detail/${f}`, resolve(DATA_DIR, 'pgs_detail', f));
-  }
+  for (const id of ids)
+    await sync(`pgs_detail/${id}.json`, resolve(DATA_DIR, 'pgs_detail', `${id}.json`));
 }
 
 async function syncPacks(manifest) {
@@ -113,8 +74,10 @@ async function syncPacks(manifest) {
   console.log(`\n🧬 Trait packs (${ids.length})...`);
   let i = 0;
   for (const id of ids) {
-    const f = `${id}_hg38.asili`;
-    await syncFile(`packs/asili/${f}`, resolve(DATA_DIR, 'packs', 'asili', f));
+    await sync(
+      `packs/asili/${id}_hg38.asili`,
+      resolve(DATA_DIR, 'packs', 'asili', `${id}_hg38.asili`),
+    );
     if (++i % 10 === 0) console.log(`  ... ${i}/${ids.length}`);
   }
 }
@@ -129,13 +92,10 @@ async function loadManifest() {
 
 async function prompt() {
   const rl = readline.createInterface({ input: process.stdin, output: process.stdout });
-  console.log('\n  What to sync?\n');
-  console.log('    1) small  — manifest, norms, hg19map, gene catalog, demo individuals');
-  console.log('    2) all    — small files + all trait packs + pgs_detail\n');
+  console.log('\n  What to sync?\n    1) small  2) all\n');
   const answer = await new Promise((r) => rl.question('  Choice [1]: ', r));
   rl.close();
-  const map = { 1: 'small', 2: 'all', small: 'small', all: 'all' };
-  return map[answer.trim()] || 'small';
+  return { 1: 'small', 2: 'all', small: 'small', all: 'all' }[answer.trim()] || 'small';
 }
 
 async function main() {
@@ -156,16 +116,19 @@ async function main() {
       console.error('Usage: pnpm run sync trait <TRAIT_ID>');
       process.exit(1);
     }
-    const f = `${extra}_hg38.asili`;
-    console.log(`\n🧬 Single trait: ${f}`);
-    await syncFile(`packs/asili/${f}`, resolve(DATA_DIR, 'packs', 'asili', f));
+    console.log(`\n🧬 Single trait: ${extra}_hg38.asili`);
+    await sync(
+      `packs/asili/${extra}_hg38.asili`,
+      resolve(DATA_DIR, 'packs', 'asili', `${extra}_hg38.asili`),
+    );
   } else {
     console.error(`Unknown command: ${cmd}`);
-    console.log('Usage: pnpm run sync [small|all|trait <ID>]');
     process.exit(1);
   }
 
-  console.log(`\n✅ Sync complete — fetched: ${fetched}, skipped: ${skipped} (already local)`);
+  console.log(
+    `\n✅ Sync complete — fetched: ${state.fetched}, skipped: ${state.skipped} (already local)`,
+  );
 }
 
 main();

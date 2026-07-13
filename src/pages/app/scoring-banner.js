@@ -97,7 +97,8 @@ export function scoringBanner(host) {
     const ind = state.byIndividual[host.activeId];
     const errors = ind?.errors || 0;
     return html`<p class="app-view__scoring app-view__scoring--done">
-      ✅ ${msg`${host.resultCount} traits scored`}${errors
+      ✅
+      ${msg`${host.resultCount} traits scored`}${errors
         ? html` · ${msg`${errors} failed`}`
         : html``}
     </p>`;

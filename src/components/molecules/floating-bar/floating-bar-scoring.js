@@ -11,8 +11,7 @@ import { fmtN, fmtRate, fmtT } from './floating-bar-helpers.js';
 
 /** @param {Function} toggleExpand */
 export function errorContent(host, state, toggleExpand) {
-  const errMsg =
-    state.lastError || msg`${state.errors} trait${state.errors} failed`;
+  const errMsg = state.lastError || msg`${state.errors} trait${state.errors} failed`;
   const short = errMsg.length > 60 ? errMsg.slice(0, 57) + '…' : errMsg;
   return html`<div class="floating-bar__section">
     <button

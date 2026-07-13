@@ -16,7 +16,12 @@ export function traitShowcase() {
         ${tp('📏', msg`Height`, msg`Predicted vs actual comparison`, 'OBA_VT0001253')}
         ${tp('☕', msg`Coffee Consumption`, msg`How much is in your genes?`, 'EFO_0006781')}
         ${tp('🌅', msg`Chronotype`, msg`Morning lark or night owl`, 'EFO_0008328')}
-        ${tp('👨\u200d🦲', msg`Male Pattern Baldness`, msg`What does your DNA predict?`, 'EFO_0007825')}
+        ${tp(
+          '👨\u200d🦲',
+          msg`Male Pattern Baldness`,
+          msg`What does your DNA predict?`,
+          'EFO_0007825',
+        )}
         ${tp('☀️', msg`Vitamin D`, msg`Genetic absorption tendency`, 'OBA_1000968')}
         ${tp('🧠', msg`Cognitive Ability`, msg`Genetic cognitive baseline`, 'EFO_0004337')}
         ${tp('💓', msg`Resting Heart Rate`, msg`Your cardiovascular genetics`, 'OBA_1001087')}
@@ -52,7 +57,12 @@ export function howItWorks() {
     <section class="beta-hero__steps">
       <h2 class="beta-hero__section-title">How it works</h2>
       <div class="beta-hero__step-grid">
-        ${step('1', '📁', msg`Upload`, msg`Drop your DNA file from 23andMe, AncestryDNA, or others`)}
+        ${step(
+          '1',
+          '📁',
+          msg`Upload`,
+          msg`Drop your DNA file from 23andMe, AncestryDNA, or others`,
+        )}
         ${step('2', '⚡', msg`Score`, msg`DuckDB WASM scores variants against published research`)}
         ${step('3', '📊', msg`Explore`, msg`Browse results, compare family members, print reports`)}
       </div>

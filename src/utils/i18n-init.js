@@ -48,11 +48,11 @@ localize('default', {
   // --- hero showcase (msg-wrapped dynamic args) ---
   'Body Mass Index': { message: 'Body Mass Index' },
   'Genetic weight tendency': { message: 'Genetic weight tendency' },
-  'Height': { message: 'Height' },
+  Height: { message: 'Height' },
   'Predicted vs actual comparison': { message: 'Predicted vs actual comparison' },
   'Coffee Consumption': { message: 'Coffee Consumption' },
   'How much is in your genes?': { message: 'How much is in your genes?' },
-  'Chronotype': { message: 'Chronotype' },
+  Chronotype: { message: 'Chronotype' },
   'Morning lark or night owl': { message: 'Morning lark or night owl' },
   'Male Pattern Baldness': { message: 'Male Pattern Baldness' },
   'What does your DNA predict?': { message: 'What does your DNA predict?' },
@@ -62,15 +62,15 @@ localize('default', {
   'Genetic cognitive baseline': { message: 'Genetic cognitive baseline' },
   'Resting Heart Rate': { message: 'Resting Heart Rate' },
   'Your cardiovascular genetics': { message: 'Your cardiovascular genetics' },
-  'Upload': { message: 'Upload' },
+  Upload: { message: 'Upload' },
   'Drop your DNA file from 23andMe, AncestryDNA, or others': {
     message: 'Drop your DNA file from 23andMe, AncestryDNA, or others',
   },
-  'Score': { message: 'Score' },
+  Score: { message: 'Score' },
   'DuckDB WASM scores variants against published research': {
     message: 'DuckDB WASM scores variants against published research',
   },
-  'Explore': { message: 'Explore' },
+  Explore: { message: 'Explore' },
   'Browse results, compare family members, print reports': {
     message: 'Browse results, compare family members, print reports',
   },
@@ -87,10 +87,10 @@ localize('default', {
   ' \u00b7 ${0} scanned': { message: ' \u00b7 ${0} scanned' },
 
   // --- tabs & tooltips (msg-wrapped dynamic expressions) ---
-  'Traits': { message: 'Traits' },
-  'Genes': { message: 'Genes' },
-  'Table': { message: 'Table' },
-  'Report': { message: 'Report' },
+  Traits: { message: 'Traits' },
+  Genes: { message: 'Genes' },
+  Table: { message: 'Table' },
+  Report: { message: 'Report' },
   'Toggle sort direction': { message: 'Toggle sort direction' },
 
   // --- scoring status ---
@@ -99,14 +99,14 @@ localize('default', {
 
   // --- explore grid ---
   'Search genes (BRCA1, APOE, dopamine...)': { message: 'Search genes (BRCA1, APOE, dopamine...)' },
-  'Position': { message: 'Position' },
-  'Name': { message: 'Name' },
-  'Studies': { message: 'Studies' },
-  'Category': { message: 'Category' },
+  Position: { message: 'Position' },
+  Name: { message: 'Name' },
+  Studies: { message: 'Studies' },
+  Category: { message: 'Category' },
 
   // --- tooltips ---
   'Add individual': { message: 'Add individual' },
-  'Rescore': { message: 'Rescore' },
+  Rescore: { message: 'Rescore' },
   'Rescore all individuals': { message: 'Rescore all individuals' },
 
   // --- report stats ---
@@ -115,7 +115,7 @@ localize('default', {
   'Avg Quality': { message: 'Avg Quality' },
   'Data Source': { message: 'Data Source' },
   'Raw DNA': { message: 'Raw DNA' },
-  'Imputed': { message: 'Imputed' },
+  Imputed: { message: 'Imputed' },
 
   // --- storage (plural) ---
   '${0} MB stored (${1}, ${2}, ${3})': {

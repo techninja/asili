@@ -55,10 +55,12 @@ export function detailPanel(state, hasError, indCache) {
         ? html`<div class="floating-bar__detail-row">
             <span>${msg`Throughput:`}</span>
             <span
-              >${state.rate > 0 ? msg`${fmtN(Math.round(state.rate))} variants/sec` : ''}${state.rate >
-                0 && state.transferRate > 0
-                ? ' · '
-                : ''}${state.transferRate > 0 ? fmtRate(state.transferRate) : ''}</span
+              >${state.rate > 0
+                ? msg`${fmtN(Math.round(state.rate))} variants/sec`
+                : ''}${state.rate > 0 && state.transferRate > 0 ? ' · ' : ''}${state.transferRate >
+              0
+                ? fmtRate(state.transferRate)
+                : ''}</span
             >
           </div>`
         : html``}

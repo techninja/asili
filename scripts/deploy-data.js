@@ -124,7 +124,6 @@ async function main() {
   }
 
   console.log(`\n🚀 Deploying data to Cloudflare R2 (${force ? 'force' : 'skip unchanged'})\n`);
-
   if (cmd === 'small') {
     deploySmall();
   } else if (cmd === 'all') {
@@ -143,11 +142,9 @@ async function main() {
     console.log('Usage: pnpm run deploy:data [small|all|trait <ID>]');
     process.exit(1);
   }
-
   console.log(
     `\n✅ Deploy complete — uploaded: ${state.uploadCount}, skipped: ${state.skipCount} (unchanged)`,
   );
   saveDeployLog(state.deployed);
 }
-
 main();

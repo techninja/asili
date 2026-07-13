@@ -32,7 +32,9 @@ function controls(host) {
       >
         <option value="position" selected="${host.sortBy === 'position'}">${msg`Position`}</option>
         <option value="name" selected="${host.sortBy === 'name'}">${msg`Name`}</option>
-        <option value="publications" selected="${host.sortBy === 'publications'}">${msg`Studies`}</option>
+        <option value="publications" selected="${host.sortBy === 'publications'}">
+          ${msg`Studies`}
+        </option>
         <option value="category" selected="${host.sortBy === 'category'}">${msg`Category`}</option>
       </select>
       <button
