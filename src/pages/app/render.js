@@ -3,7 +3,7 @@
  * @module pages/app/beta-render
  */
 
-import { html } from 'hybrids';
+import { html, msg } from 'hybrids';
 import { heroContent } from './hero.js';
 import { demoBanner } from './demo-banner.js';
 import '#pages/app/report.js';
@@ -48,10 +48,10 @@ export function individualSelector(host, list, switchFn) {
 }
 
 const TABS = [
-  { id: 'traits', label: 'Traits', icon: 'grid' },
-  { id: 'explore', label: 'Genes', icon: 'dna' },
-  { id: 'table', label: 'Table', icon: 'list' },
-  { id: 'report', label: 'Report', icon: 'chart-pie' },
+  { id: 'traits', get label() { return msg`Traits`; }, icon: 'grid' },
+  { id: 'explore', get label() { return msg`Genes`; }, icon: 'dna' },
+  { id: 'table', get label() { return msg`Table`; }, icon: 'list' },
+  { id: 'report', get label() { return msg`Report`; }, icon: 'chart-pie' },
 ];
 
 /** @param {object} host */
