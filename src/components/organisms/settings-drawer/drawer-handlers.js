@@ -4,6 +4,7 @@
  */
 
 import * as idb from '/packages/core/src/data-layer/idb.js';
+import { msg } from 'hybrids';
 import { getScoringSettings, saveScoringSettings } from '#utils/queue-settings.js';
 import { resetQueue } from '#utils/scoring-queue.js';
 import { clearFamilyCache } from '#organisms/trait-grid/render-card.js';
@@ -49,7 +50,7 @@ async function computeStorage(host) {
   const resultCount = resultKeys.length;
   const variantCount = variantKeys.length;
   const mb = estimate?.usage ? (estimate.usage / 1024 / 1024).toFixed(1) : '?';
-  host.storageInfo = `${mb} MB stored (${indCount} individuals, ${resultCount} results, ${variantCount} variant sets)`;
+  host.storageInfo = msg`${mb} MB stored (${msg`${indCount} individual${indCount}`}, ${msg`${resultCount} result${resultCount}`}, ${msg`${variantCount} variant set${variantCount}`})`;
 }
 
 /** @param {object} host */

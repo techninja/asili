@@ -1,6 +1,6 @@
 /** @module pages/trait-detail */
 
-import { html, define, router } from 'hybrids';
+import { html, define, router, msg } from 'hybrids';
 // @ts-ignore
 import '#atoms/app-icon/app-icon.js';
 // @ts-ignore
@@ -71,7 +71,7 @@ const TraitDetail = define({
               trailing: html`<a
                 href="/"
                 class="app-header__link"
-                title="Add individual"
+                title="${msg`Add individual`}"
                 onclick="${() => sessionStorage.setItem('asili-open-upload', '1')}"
               >
                 <app-icon name="user-plus"></app-icon>

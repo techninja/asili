@@ -4,6 +4,7 @@
  */
 
 import { html } from 'hybrids';
+import { translateGeneCategory } from '#utils/i18n-data.js';
 export { variantSection } from './gene-detail-variant-section.js';
 export { descriptionSection } from './gene-detail-about-section.js';
 
@@ -20,7 +21,7 @@ export function heroSection(gene) {
           <app-icon name="map-pin" size="sm"></app-icon>
           chr${gene.chr}:${gene.start.toLocaleString()}–${gene.end.toLocaleString()}
         </span>
-        <span class="gene-detail__cat-badge">${gene.category}</span>
+        <span class="gene-detail__cat-badge">${translateGeneCategory(gene.category)}</span>
         <span class="gene-detail__pubs">${gene.publications.toLocaleString()} publications</span>
       </div>
       ${gene.social_tags.length

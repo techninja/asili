@@ -7,6 +7,7 @@ import { loadGeneCatalog } from '#utils/gene-catalog.js';
 import { getActiveId, loadResults } from '#pages/app/results-store.js';
 import * as idb from '/packages/core/src/data-layer/idb.js';
 import { loadProfile } from '#utils/individual-profile.js';
+import { loadGenePack, translateGene } from '#utils/i18n-data.js';
 
 /** Load gene data and cross-reference user variants. */
 export async function initGeneView(host) {
@@ -24,6 +25,10 @@ export async function initGeneView(host) {
   host.gene = gene || {};
 
   if (!gene) return;
+
+  // Apply i18n translations
+  await loadGenePack();
+  translateGene(gene);
 
   // Set page title
   document.title = `Asili | ${gene.emoji || '🧬'} ${gene.symbol} 2014 ${gene.name}`;

@@ -3,7 +3,7 @@
  * @module components/molecules/individual-list/list-actions
  */
 
-import { html, dispatch } from 'hybrids';
+import { html, dispatch, msg } from 'hybrids';
 import { getDataLayer } from '/packages/core/src/data-layer/create.js';
 
 /** @param {object} ind @param {string} expandedId */
@@ -80,7 +80,7 @@ export function deleteArea(ind, confirmId) {
   return html`
     <button
       class="btn btn-ghost btn-sm"
-      title="Rescore"
+      title="${msg`Rescore`}"
       onclick="${(host) => doRescore(host, ind)}"
     >
       <app-icon name="refresh" size="sm"></app-icon>

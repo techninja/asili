@@ -3,7 +3,7 @@
  * @module pages/app/report-sections
  */
 
-import { html } from 'hybrids';
+import { html, msg } from 'hybrids';
 import { results } from './results-store.js';
 import { computeStats, traitTable } from './report-helpers.js';
 // @ts-ignore
@@ -18,9 +18,9 @@ export function summarySection(scored) {
   const s = computeStats(scored);
   return html`
     <div class="report-tab__stats">
-      ${stat('Traits Scored', s.count, 'flask-conical')}
-      ${stat('Avg Coverage', s.avgCov + '%', 'dna')} ${stat('Avg Quality', s.avgAqs, 'sparkles')}
-      ${stat('Data Source', s.source, s.source === 'Imputed' ? 'zap' : 'upload')}
+      ${stat(msg`Traits Scored`, s.count, 'flask-conical')}
+      ${stat(msg`Avg Coverage`, s.avgCov + '%', 'dna')} ${stat(msg`Avg Quality`, s.avgAqs, 'sparkles')}
+      ${stat(msg`Data Source`, s.source === 'Imputed' ? msg`Imputed` : msg`Raw DNA`, s.source === 'Imputed' ? 'zap' : 'upload')}
     </div>
   `;
 }
@@ -117,7 +117,7 @@ export function qualitySection(scored) {
               <div
                 class="report-tab__histogram-bar"
                 style="${{ height: `${(count / maxBin) * 100}%` }}"
-                title="${count} trait${count !== 1 ? 's' : ''} at ${i * 10}-${i * 10 + 9}% coverage"
+                title="${msg`${count} trait${count} at ${i * 10}-${i * 10 + 9}% coverage`}"
               ></div>
               <span class="report-tab__histogram-label">${i * 10}</span>
             </div>

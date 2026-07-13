@@ -4,7 +4,7 @@
  * @module pages/app
  */
 
-import { html, define, router } from 'hybrids';
+import { html, define, router, msg } from 'hybrids';
 // @ts-ignore
 import '#atoms/theme-toggle/theme-toggle.js';
 import '#molecules/upload-zone/upload-zone.js';
@@ -112,7 +112,7 @@ export default define({
                 ? html`<button
                     class="app-header__link ${showPanel ? 'app-header__link--active' : ''}"
                     onclick="${closeOrToggleUpload}"
-                    title="Add individual"
+                    title="${msg`Add individual`}"
                   >
                     <app-icon name="user-plus"></app-icon>
                   </button>`

@@ -3,7 +3,7 @@
  * @module components/organisms/settings-drawer/drawer-sections
  */
 
-import { html } from 'hybrids';
+import { html, msg } from 'hybrids';
 import {
   handleDelete,
   handleRescore,
@@ -30,7 +30,7 @@ export function individualsSection(host) {
         <h3><app-icon name="users"></app-icon> Individuals</h3>
         <button
           class="btn btn-ghost btn-sm"
-          title="Rescore all individuals"
+          title="${msg`Rescore all individuals`}"
           onclick="${() => rescoreAll(host)}"
         >
           <app-icon name="refresh" size="sm"></app-icon>
@@ -56,8 +56,7 @@ export function storageSection(host) {
       <p class="settings-drawer__meta">${host.storageInfo || 'Calculating…'}</p>
       <p class="settings-drawer__note">
         <app-icon name="info" size="sm"></app-icon>
-        Imputed .asili packs are stored on your device's disk via file handles, not in browser
-        storage. Their size depends on your files.
+        Imputed .asili packs are stored on your device's disk via file handles, not in browser storage. Their size depends on your files.
       </p>
     </section>
   `;
