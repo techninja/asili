@@ -3,7 +3,8 @@
  * @module components/organisms/trait-grid/trait-grid-controls
  */
 
-import { html } from 'hybrids';
+import { html, msg } from 'hybrids';
+import { translateCategory } from '#utils/i18n-data.js';
 import { savePrefs, toggleDir, toggleCat, clearFilters } from './grid-prefs.js';
 import { setShowFamily, loadFamilyCache } from './render-card.js';
 
@@ -34,7 +35,7 @@ export function controls(host) {
         <option value="zscore" selected="${host.sortBy === 'zscore'}">|Z-score|</option>
         <option value="scored" selected="${host.sortBy === 'scored'}">Last scored</option>
       </select>
-      <button class="trait-grid__dir" onclick="${toggleDir}" title="Toggle sort direction">
+      <button class="trait-grid__dir" onclick="${toggleDir}" title="${msg`Toggle sort direction`}">
         <app-icon name="${host.sortDir === 'asc' ? 'sort-asc' : 'sort-desc'}"></app-icon>
       </button>
       <label class="trait-grid__switch">
@@ -68,7 +69,7 @@ export function filters(host, cats, hasFilters) {
             class="trait-grid__cat ${host.activeCategories.has(c) ? 'trait-grid__cat--on' : ''}"
             onclick="${(h) => toggleCat(h, c)}"
           >
-            ${c}
+            ${translateCategory(c)}
           </button>
         `,
       )}

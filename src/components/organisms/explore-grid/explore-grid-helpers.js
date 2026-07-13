@@ -4,6 +4,7 @@
  */
 
 import { html } from 'hybrids';
+import { translateGeneCategory } from '#utils/i18n-data.js';
 
 /** Genome-position chromosome offsets (Mbp cumulative). */
 const chrOffsets = {
@@ -70,7 +71,8 @@ function matchesSearch(gene, query) {
   return (
     gene.symbol.toLowerCase().includes(q) ||
     gene.name.toLowerCase().includes(q) ||
-    gene.social_tags.some((t) => t.toLowerCase().includes(q))
+    gene.social_tags.some((t) => t.toLowerCase().includes(q)) ||
+    (gene._social_tags_en && gene._social_tags_en.some((t) => t.toLowerCase().includes(q)))
   );
 }
 
@@ -128,7 +130,7 @@ export function geneCard(gene) {
             </div>`
           : html``}
         <div class="explore-grid__meta">
-          <span class="explore-grid__cat-badge">${gene.category}</span>
+          <span class="explore-grid__cat-badge">${translateGeneCategory(gene.category)}</span>
           <span class="explore-grid__pubs">${gene.publications.toLocaleString()} studies</span>
         </div>
       </div>

@@ -3,8 +3,9 @@
  * @module components/organisms/explore-grid
  */
 
-import { html, define } from 'hybrids';
+import { html, define, msg } from 'hybrids';
 import { getGeneList } from '#utils/gene-catalog.js';
+import { translateGeneCategory } from '#utils/i18n-data.js';
 // @ts-ignore
 import '#atoms/app-icon/app-icon.js';
 // @ts-ignore
@@ -17,7 +18,7 @@ function controls(host) {
       <input
         type="search"
         class="explore-grid__search"
-        placeholder="Search genes (BRCA1, caffeine, dopamine...)"
+        placeholder="${msg`Search genes (BRCA1, APOE, dopamine...)`}"
         value="${host.search}"
         oninput="${(h, e) => {
           h.search = e.target.value;
@@ -29,17 +30,17 @@ function controls(host) {
           h.sortBy = e.target.value;
         }}"
       >
-        <option value="position" selected="${host.sortBy === 'position'}">Position</option>
-        <option value="name" selected="${host.sortBy === 'name'}">Name</option>
-        <option value="publications" selected="${host.sortBy === 'publications'}">Studies</option>
-        <option value="category" selected="${host.sortBy === 'category'}">Category</option>
+        <option value="position" selected="${host.sortBy === 'position'}">${msg`Position`}</option>
+        <option value="name" selected="${host.sortBy === 'name'}">${msg`Name`}</option>
+        <option value="publications" selected="${host.sortBy === 'publications'}">${msg`Studies`}</option>
+        <option value="category" selected="${host.sortBy === 'category'}">${msg`Category`}</option>
       </select>
       <button
         class="explore-grid__dir"
         onclick="${(h) => {
           h.sortDir = h.sortDir === 'asc' ? 'desc' : 'asc';
         }}"
-        title="Toggle sort direction"
+        title="${msg`Toggle sort direction`}"
       >
         <app-icon name="${host.sortDir === 'asc' ? 'sort-asc' : 'sort-desc'}"></app-icon>
       </button>
@@ -68,7 +69,7 @@ function categoryFilters(host, categories) {
               h.activeCategory = h.activeCategory === cat ? '' : cat;
             }}"
           >
-            ${cat}
+            ${translateGeneCategory(cat)}
           </button>
         `,
       )}

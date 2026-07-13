@@ -4,12 +4,17 @@
  */
 
 import { results } from '#pages/app/results-store.js';
-import { CATEGORY_ORDER, resolveCategory } from '#utils/categories.js';
+import { CATEGORY_ORDER, resolveCategory, displayCategory } from '#utils/categories.js';
 import { getShowFamily, hasFamilyScore } from './render-card.js';
 
-/** @param {object} t @returns {string} */
+/** @param {object} t @returns {string} English category key for filtering */
 export function traitCategory(t) {
   return resolveCategory(t);
+}
+
+/** @param {object} t @returns {string} Translated category for display */
+export function traitCategoryDisplay(t) {
+  return displayCategory(t);
 }
 
 /** @param {Array<object>} traits @returns {string[]} */
@@ -31,7 +36,9 @@ export function filterAndSort(traits, opts) {
     const q = search.toLowerCase();
     out = out.filter((t) => {
       if (t.name.toLowerCase().includes(q)) return true;
+      if (t._name_en?.toLowerCase().includes(q)) return true;
       if (t.description?.toLowerCase().includes(q)) return true;
+      if (t._description_en?.toLowerCase().includes(q)) return true;
       if (t.categories?.some((c) => c.toLowerCase().includes(q))) return true;
       if (t.keywords?.some((k) => k.toLowerCase().includes(q))) return true;
       return false;

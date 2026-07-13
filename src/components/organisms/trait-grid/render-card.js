@@ -7,7 +7,7 @@ import { html, router } from 'hybrids';
 import { results, getActiveId } from '#pages/app/results-store.js';
 import * as idb from '/packages/core/src/data-layer/idb.js';
 import { formatTraitValue } from '/packages/core/src/formatter.js';
-import { traitCategory } from './helpers.js';
+import { traitCategoryDisplay } from './helpers.js';
 import TraitDetailView from '#pages/trait-detail/trait-detail-view.js';
 
 let familyCache = {};
@@ -72,7 +72,7 @@ export function renderCard(t, rc, scoring) {
         indEmoji="${activeEmoji}"
         markers="${markersJson}"
         coverage="${Math.round(cov * 100)}"
-        category="${traitCategory(t)}"
+        category="${traitCategoryDisplay(t)}"
       ></trait-card>
     </a>
   `;
