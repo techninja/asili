@@ -4,6 +4,7 @@
  */
 
 import { DATA_BASE } from '#utils/data-url.js';
+import { loadGenePack, translateGene } from '#utils/i18n-data.js';
 
 /** @type {object|null} */
 let cache = null;
@@ -38,10 +39,13 @@ export function loadGeneCatalog() {
 
 /**
  * Get sorted gene list from cached catalog.
+ * Applies i18n translations for non-English users.
  * @returns {Promise<Array<object>>}
  */
 export async function getGeneList() {
   const c = await loadGeneCatalog();
+  await loadGenePack();
+  for (const g of c.genes) translateGene(g);
   return c.genes;
 }
 

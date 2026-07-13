@@ -72,6 +72,20 @@ async function syncSmall() {
   ];
   for (const f of files) await syncFile(f, resolve(DATA_DIR, f));
 
+  console.log('\n🌐 i18n translation packs...');
+  const langManifest = await fetch(`${BASE_URL}/i18n/languages.json`).then((r) =>
+    r.ok ? r.json() : null,
+  );
+  if (langManifest) {
+    await syncFile('i18n/languages.json', resolve(DATA_DIR, 'i18n', 'languages.json'));
+    for (const lang of Object.keys(langManifest.languages)) {
+      for (const tpl of Object.values(langManifest.files)) {
+        const f = tpl.replace('{lang}', lang);
+        await syncFile(`i18n/${f}`, resolve(DATA_DIR, 'i18n', f));
+      }
+    }
+  }
+
   console.log('\n🦆 DuckDB WASM deps...');
   const DEPS_DIR = resolve(ROOT, 'src/deps/duckdb');
   const depFiles = [

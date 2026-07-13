@@ -4,6 +4,7 @@
  */
 
 import { DATA_BASE } from '#utils/data-url.js';
+import { loadTraitPack, translateManifest } from '#utils/i18n-data.js';
 
 /** @type {object|null} */
 let cache = null;
@@ -38,11 +39,15 @@ export function loadManifest(url = `${DATA_BASE}/trait_manifest.json`) {
 
 /**
  * Get sorted trait list from cached manifest.
+ * Applies i18n translations for non-English users.
  * @returns {Promise<Array<object>>}
  */
 export async function getTraitList() {
   const m = await loadManifest();
-  return Object.values(m.traits).sort((a, b) => a.name.localeCompare(b.name));
+  const list = Object.values(m.traits).sort((a, b) => a.name.localeCompare(b.name));
+  await loadTraitPack();
+  translateManifest(list);
+  return list;
 }
 
 /**

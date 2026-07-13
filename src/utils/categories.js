@@ -4,6 +4,8 @@
  * @module utils/categories
  */
 
+import { translateCategory } from '#utils/i18n-data.js';
+
 /** Trait-level category overrides — keyed by trait_id. */
 const TRAIT_CATEGORY = {
   EFO_0004703: 'Reproductive', // age at menarche
@@ -60,7 +62,7 @@ export const CATEGORY_ORDER = [
 ];
 
 /**
- * Resolve the display category for a trait.
+ * Resolve the English category key for a trait.
  * @param {object} t - trait from manifest
  * @returns {string}
  */
@@ -71,6 +73,15 @@ export function resolveCategory(t) {
     if (mapped && mapped !== 'Other') return mapped;
   }
   return CATEGORY_MAP[t.categories?.[0]] || 'Other';
+}
+
+/**
+ * Resolve and translate the category for display.
+ * @param {object} t - trait from manifest
+ * @returns {string}
+ */
+export function displayCategory(t) {
+  return translateCategory(resolveCategory(t));
 }
 
 /**
@@ -92,7 +103,7 @@ export function buildCategorySummary(results, traits) {
     if (r.percentile < 25) cats[cat].low++;
   }
   return CATEGORY_ORDER.filter((c) => cats[c]?.count >= 1).map((c) => ({
-    category: c,
+    category: translateCategory(c),
     avgPercentile: Math.round(cats[c].sum / cats[c].count),
     count: cats[c].count,
     elevated: cats[c].elevated,

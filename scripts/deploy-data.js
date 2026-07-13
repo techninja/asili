@@ -22,6 +22,7 @@ const DATA_DIR = resolve(import.meta.dirname, '../../asili-lab/data_out');
 const MANIFEST = `${DATA_DIR}/trait_manifest.json`;
 const PACKS_DIR = `${DATA_DIR}/packs/asili`;
 const PGS_DETAIL_DIR = `${DATA_DIR}/pgs_detail`;
+const I18N_DIR = `${DATA_DIR}/i18n`;
 const DEPS_DIR = resolve(import.meta.dirname, '../src/deps/duckdb');
 const OG_DIR = resolve(import.meta.dirname, '../dist');
 
@@ -60,6 +61,13 @@ function deploySmall() {
   }
   console.log(`  ✓ ${depFiles.length} dep files`);
 
+  console.log('\n🌐 i18n translation packs...');
+  if (existsSync(I18N_DIR)) {
+    const i18nFiles = readdirSync(I18N_DIR).filter((f) => f.endsWith('.json'));
+    for (const f of i18nFiles) up(`${I18N_DIR}/${f}`, `i18n/${f}`, 'application/json');
+    console.log(`  ✓ ${i18nFiles.length} i18n files`);
+  }
+
   console.log('\n🖼️  OG images...');
   let ogCount = 0;
   for (const sub of ['trait', 'gene']) {
@@ -88,12 +96,14 @@ function deployPacks() {
 async function prompt() {
   const rl = readline.createInterface({ input: process.stdin, output: process.stdout });
   console.log('\n  What to deploy?\n');
-  console.log('    1) small  — manifest, norms, hg19map, gene catalog, pgs_detail, duckdb deps, OG images');
+  console.log(
+    '    1) small  — manifest, norms, hg19map, gene catalog, pgs_detail, duckdb deps, i18n, OG images',
+  );
   console.log('    2) all    — small files + all trait packs');
   console.log('    3) trait  — single trait pack (will prompt for ID)\n');
   const answer = await new Promise((r) => rl.question('  Choice [1]: ', r));
   const map = { 1: 'small', 2: 'all', 3: 'trait', small: 'small', all: 'all', trait: 'trait' };
-  let cmd = map[answer.trim()] || 'small';
+  const cmd = map[answer.trim()] || 'small';
   if (cmd === 'trait') {
     const id = await new Promise((r) => rl.question('  Trait ID: ', r));
     rl.close();
@@ -134,7 +144,9 @@ async function main() {
     process.exit(1);
   }
 
-  console.log(`\n✅ Deploy complete — uploaded: ${state.uploadCount}, skipped: ${state.skipCount} (unchanged)`);
+  console.log(
+    `\n✅ Deploy complete — uploaded: ${state.uploadCount}, skipped: ${state.skipCount} (unchanged)`,
+  );
   saveDeployLog(state.deployed);
 }
 

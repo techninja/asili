@@ -4,6 +4,7 @@
  */
 
 import * as idb from '/packages/core/src/data-layer/idb.js';
+import { msg } from 'hybrids';
 import { getTraitList } from '#utils/manifest.js';
 import { getIdleSession, initSession, scoreAll } from './worker-pool.js';
 import { S, notify, notifyNow, markDone, markError, markAllError } from './queue-state.js';
@@ -28,13 +29,13 @@ export async function scoreIndividual(individualId) {
       await initSession(session);
     }
     if (session.loadedDnaId !== individualId) {
-      S.currentTraitName = 'Loading DNA…';
+      S.currentTraitName = msg`Loading DNA…`;
       S.subProgress = 0;
       notifyNow();
       await loadIndividualDNA(session, individualId, ({ phase, done, total }) => {
         S.subProgress = total > 0 ? done / total : 0;
         if (phase === 'insert') {
-          S.currentTraitName = `Loading DNA… ${((done / total) * 100) | 0}%`;
+          S.currentTraitName = msg`Loading DNA… ${((done / total) * 100) | 0}%`;
         } else {
           S.currentTraitName = `Liftover chr ${done}/${total}…`;
         }
