@@ -7,8 +7,9 @@
 
 /** True when running on a local dev environment. */
 export const isDev =
-  ['localhost', '127.0.0.1', 'chromeo', 'asili.tn42.com'].includes(window.location.hostname) ||
-  window.location.port === '4242';
+  typeof window !== 'undefined' &&
+  (['localhost', '127.0.0.1', 'chromeo', 'asili.tn42.com'].includes(window.location.hostname) ||
+    window.location.port === '4242');
 
 /** Base URL for all data assets (trait packs, norm params, manifest, etc.) */
 export const DATA_BASE = isDev ? '/data' : 'https://data.asili.dev';
