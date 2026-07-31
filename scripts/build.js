@@ -44,14 +44,6 @@ cpSync(resolve(ROOT, 'src'), DIST, {
 console.log('→ Copying packages/ → dist/packages/');
 cpSync(resolve(ROOT, 'packages'), resolve(DIST, 'packages'), { recursive: true });
 
-// Generate trait manifest for OG
-console.log('→ Building trait manifest...');
-try {
-  execSync('node scripts/build-trait-manifest.js', { cwd: ROOT, stdio: 'inherit' });
-} catch {
-  console.warn('⚠ Trait manifest skipped (no source)');
-}
-
 // Fetch gene catalog for OG (local symlink won't exist in CI)
 const GENE_CATALOG_PATH = resolve(ROOT, 'src/data/gene_catalog.json');
 if (!existsSync(GENE_CATALOG_PATH)) {
