@@ -7,8 +7,8 @@
  * Injects a deploy hash into asset links for cache busting.
  */
 
-import { cpSync, mkdirSync, rmSync, existsSync, readFileSync, writeFileSync } from 'node:fs';
-import { resolve, dirname } from 'node:path';
+import { cpSync, mkdirSync, rmSync, existsSync, readFileSync, writeFileSync, readdirSync } from 'node:fs';
+import { resolve, dirname, relative } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { execSync } from 'node:child_process';
 import { randomBytes } from 'node:crypto';
@@ -24,6 +24,34 @@ const DIST = resolve(ROOT, 'dist');
 
 // Generate a short deploy hash
 const HASH = randomBytes(4).toString('hex');
+
+/**
+ * Walk distDir for pre-rendered HTML pages (trait/, gene/) and inject
+ * a <link rel="canonical"> so Google deduplicates the static page vs the SPA shell.
+ * @param {string} distDir
+ * @param {string} baseUrl
+ */
+function injectCanonicals(distDir, baseUrl) {
+  const prefixes = ['trait', 'gene'];
+  let count = 0;
+  for (const prefix of prefixes) {
+    const dir = resolve(distDir, prefix);
+    if (!existsSync(dir)) continue;
+    for (const file of readdirSync(dir)) {
+      if (!file.endsWith('.html')) continue;
+      const slug = file.slice(0, -5);
+      const url = `${baseUrl}/${prefix}/${slug}`;
+      const filePath = resolve(dir, file);
+      let html = readFileSync(filePath, 'utf-8');
+      if (!html.includes('rel="canonical"')) {
+        html = html.replace('</head>', `  <link rel="canonical" href="${url}" />\n  </head>`);
+        writeFileSync(filePath, html);
+        count++;
+      }
+    }
+  }
+  console.log(`  ✓ Injected canonical tags into ${count} pages`);
+}
 
 // Clean
 if (existsSync(DIST)) rmSync(DIST, { recursive: true });
@@ -68,6 +96,8 @@ if (!IS_BETA) {
     buildOG({ projectDir: ROOT, outDir: 'dist', baseUrl: BASE_URL });
     const { buildSitemap } = await import('@techninja/clearstack/lib/build-sitemap.js');
     buildSitemap({ projectDir: ROOT, outDir: 'dist', baseUrl: BASE_URL });
+    // Inject canonical tags into all pre-rendered pages so Google deduplicates correctly
+    injectCanonicals(resolve(DIST), BASE_URL);
   } catch (e) {
     console.warn('⚠ OG generation failed:', e.message);
   }

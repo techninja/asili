@@ -1,2 +1,4 @@
-/* /index.html 200
 /beta / 301
+/trait/* /trait/:splat.html 200
+/gene/* /gene/:splat.html 200
+/* /index.html 200
