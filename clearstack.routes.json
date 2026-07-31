@@ -8,9 +8,9 @@
   "/trait/:slug": {
     "title": "{slug.name}",
     "description": "{slug.description}",
-    "image": "{slug.cover_image.url}",
+    "image": "{slug.image}",
     "ogImage": "https://data.asili.dev/og/trait/{slug.slug}.png",
-    "data": "/tmp/trait_manifest.json:traits",
+    "data": "data/traits-og.json",
     "ogTemplate": "trait"
   },
   "/gene/:symbol": {
