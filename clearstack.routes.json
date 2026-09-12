@@ -2,7 +2,7 @@
   "/": {
     "title": "Asili — Privacy-first polygenic risk scores",
     "description": "Upload your DNA file and explore polygenic risk scores for 64 traits. Everything runs in your browser — we never see your data.",
-    "ogImage": "https://app.asili.dev/og-image.png",
+    "ogImage": "https://app.asili.dev/assets/og-image.png",
     "ogTemplate": "home"
   },
   "/trait/:slug": {
