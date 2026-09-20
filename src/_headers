@@ -5,28 +5,34 @@
 /deps/*
   Cache-Control: public, max-age=31536000, immutable
 
-# App JS/CSS — no-cache so CF edge doesn't serve stale files after deploys
-# Browser and CF both revalidate via ETag on every request (304 when unchanged)
+# App JS/CSS — no-store so CF edge never caches; browser revalidates via ETag
 /pages/*
   Cache-Control: no-cache
+  CDN-Cache-Control: no-store
 
 /components/*
   Cache-Control: no-cache
+  CDN-Cache-Control: no-store
 
 /utils/*
   Cache-Control: no-cache
+  CDN-Cache-Control: no-store
 
 /router/*
   Cache-Control: no-cache
+  CDN-Cache-Control: no-store
 
 /store/*
   Cache-Control: no-cache
+  CDN-Cache-Control: no-store
 
 /styles/*
   Cache-Control: no-cache
+  CDN-Cache-Control: no-store
 
 /locales/*
   Cache-Control: no-cache
+  CDN-Cache-Control: no-store
 
 /icons.json
   Cache-Control: public, max-age=86400
