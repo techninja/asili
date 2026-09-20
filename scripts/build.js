@@ -120,7 +120,7 @@ writeFileSync(indexPath, html);
 
 // Inject critical-path modulepreload hints (vendor first to satisfy importmap, then shallow entry chain)
 console.log('→ Injecting modulepreload hints...');
-const { buildModulePreload } = await import('@techninja/clearstack/lib/build-modulepreload.js');
+const { buildModulePreload } = await import('./build-modulepreload.js');
 buildModulePreload({ projectDir: ROOT, outDir: 'dist' });
 
 // Bundle all CSS @imports into a single flat app.css
