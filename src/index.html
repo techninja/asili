@@ -108,12 +108,42 @@
     <app-router></app-router>
     <script type="module" src="/router/index.js"></script>
     <script>
-      window.addEventListener('unhandledrejection', (e) => {
-        console.error('[asili] Unhandled rejection:', e.reason);
-      });
-      window.addEventListener('error', (e) => {
-        console.error('[asili] Uncaught error:', e.message, e.filename, e.lineno);
-      });
+      function _asiliCrash(msg) {
+        console.error('[asili] Fatal:', msg);
+        const el = document.querySelector('app-router') || document.body;
+        if (el.dataset.crashed) return;
+        el.dataset.crashed = '1';
+        el.innerHTML = `
+          <div style="
+            font-family: system-ui, sans-serif;
+            background: var(--color-surface, #1e293b);
+            color: var(--color-text, #e2e8f0);
+            border: 1px solid var(--color-danger, #ef4444);
+            border-radius: 0.5rem;
+            padding: 2rem;
+            max-width: 36rem;
+            margin: 4rem auto;
+            text-align: center;
+          ">
+            <div style="font-size: 2rem; margin-bottom: 1rem;">⚠️</div>
+            <h2 style="margin: 0 0 0.5rem; font-size: 1.25rem;">Something went wrong</h2>
+            <p style="margin: 0 0 1.5rem; color: var(--color-text-muted, #a8b8cc); font-size: 0.875rem;">
+              Asili failed to load. This is usually caused by a stale cache after a recent update.
+            </p>
+            <button onclick="caches.keys().then(ks=>Promise.all(ks.map(k=>caches.delete(k)))).finally(()=>location.reload(true))" style="
+              background: var(--color-btn-primary-bg, #6366f1);
+              color: #fff;
+              border: none;
+              border-radius: 0.375rem;
+              padding: 0.5rem 1.25rem;
+              font: inherit;
+              cursor: pointer;
+              font-size: 0.875rem;
+            ">Clear cache &amp; reload</button>
+          </div>`;
+      }
+      window.addEventListener('unhandledrejection', (e) => _asiliCrash(e.reason));
+      window.addEventListener('error', (e) => _asiliCrash(e.message));
     </script>
   </body>
 </html>
