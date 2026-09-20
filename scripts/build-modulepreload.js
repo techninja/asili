@@ -16,7 +16,11 @@ import { resolve, dirname, relative, extname } from 'node:path';
 /** Extract the importmap object from an HTML string, or return {}. */
 function parseImportMap(html) {
   const m = html.match(/<script type="importmap">([\s\S]*?)<\/script>/);
-  try { return m ? JSON.parse(m[1]).imports ?? {} : {}; } catch { return {}; }
+  try {
+    return m ? (JSON.parse(m[1]).imports ?? {}) : {};
+  } catch {
+    return {};
+  }
 }
 
 /**
@@ -115,8 +119,9 @@ export function buildModulePreload(opts) {
   const { order, hasBareImport } = crawlModules(srcDir, entry, ignore);
 
   // Vendor files from importmap — preload these first (no bare imports inside them)
-  const vendorPaths = [...new Set(Object.values(importMap))]
-    .filter((v) => v.startsWith('/') && v.includes('.js'));
+  const vendorPaths = [...new Set(Object.values(importMap))].filter(
+    (v) => v.startsWith('/') && v.includes('.js'),
+  );
 
   // App modules safe to preload — exclude any that directly import a bare specifier
   const appPaths = order.filter((m) => !hasBareImport.has(m));
@@ -135,6 +140,8 @@ export function buildModulePreload(opts) {
   writeFileSync(indexPath, html);
 
   const skipped = hasBareImport.size;
-  console.log(`✅ Modulepreload: ${vendorPaths.length} vendor + ${appPaths.length} app modules → dist/index.html (${skipped} skipped — bare imports)`);
+  console.log(
+    `✅ Modulepreload: ${vendorPaths.length} vendor + ${appPaths.length} app modules → dist/index.html (${skipped} skipped — bare imports)`,
+  );
   return { modules: vendorPaths.length + appPaths.length };
 }

@@ -1,5 +1,5 @@
 /**
- * CSS bundler — recursively resolves @import chains and writes a single
+ * CSS bundler - recursively resolves CSS import chains and writes a single
  * flat app.css into the dist output. Replaces the <link> tag in index.html.
  * @module lib/build-css
  */
@@ -8,7 +8,7 @@ import { existsSync, readFileSync, writeFileSync } from 'node:fs';
 import { resolve, dirname } from 'node:path';
 
 /**
- * Recursively inline all @import statements, resolving relative to the
+ * Recursively inline all CSS import statements, resolving relative to the
  * importing file. Each file is included at most once (deduplication).
  * @param {string} filePath  Absolute path to the CSS file
  * @param {Set<string>} seen Already-included paths
