@@ -5,7 +5,7 @@
  */
 
 import { existsSync, readFileSync, writeFileSync } from 'node:fs';
-import { resolve, dirname, relative } from 'node:path';
+import { resolve, dirname } from 'node:path';
 
 /**
  * Recursively inline all @import statements, resolving relative to the
