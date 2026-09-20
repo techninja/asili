@@ -4,14 +4,12 @@
  * Build script for Cloudflare Pages deployment.
  * Copies src/ into a dist/ directory.
  * Runs icon generation first.
- * Injects a deploy hash into asset links for cache busting.
  */
 
 import { cpSync, mkdirSync, rmSync, existsSync, readFileSync, writeFileSync, readdirSync } from 'node:fs';
-import { resolve, dirname, relative } from 'node:path';
+import { resolve, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { execSync } from 'node:child_process';
-import { randomBytes } from 'node:crypto';
 
 const IS_BETA = process.argv.includes('--beta') || process.env.DEPLOY_ENV === 'beta';
 const BASE_URL = IS_BETA ? 'https://beta.asili.dev' : 'https://app.asili.dev';
@@ -21,9 +19,6 @@ const COMMIT_URL = COMMIT_SHA ? `https://github.com/${REPO}/commit/${COMMIT_SHA}
 
 const ROOT = dirname(dirname(fileURLToPath(import.meta.url)));
 const DIST = resolve(ROOT, 'dist');
-
-// Generate a short deploy hash
-const HASH = randomBytes(4).toString('hex');
 
 /**
  * Walk distDir for pre-rendered HTML pages (trait/, gene/) and inject
@@ -106,12 +101,11 @@ if (!IS_BETA) {
 // OG images are pre-generated locally and deployed to R2 via deploy-data.js.
 // CI only needs the HTML pages (meta tags) for social crawlers.
 
-// Inject version + cache-bust AFTER OG generation (which may rewrite index.html)
+// Inject version metadata
 const VERSION = JSON.parse(readFileSync(resolve(ROOT, 'package.json'), 'utf-8')).version;
-console.log(`→ Injecting deploy hash: ${HASH}, version: ${VERSION}`);
+console.log(`→ Injecting version: ${VERSION}`);
 const indexPath = resolve(DIST, 'index.html');
 let html = readFileSync(indexPath, 'utf-8');
-html = html.replace(/(\.css|\.js)"/g, `$1?v=${HASH}"`);
 html = html.replace(
   /<meta name="app-version" content="[^"]*" \/>/,
   `<meta name="app-version" content="${VERSION}" />`,
@@ -127,7 +121,7 @@ writeFileSync(indexPath, html);
 // Inject critical-path modulepreload hints (vendor first to satisfy importmap, then shallow entry chain)
 console.log('→ Injecting modulepreload hints...');
 const { buildModulePreload } = await import('@techninja/clearstack/lib/build-modulepreload.js');
-buildModulePreload({ projectDir: ROOT, outDir: 'dist', hashSuffix: HASH });
+buildModulePreload({ projectDir: ROOT, outDir: 'dist' });
 
 // SPA fallback — copy index.html to 404.html after all mutations
 console.log('→ Creating 404.html for SPA routing');

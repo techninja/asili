@@ -11,24 +11,24 @@
 /logo.svg
   Cache-Control: public, max-age=86400
 
-# Short cache for JS (changes on deploy)
+# JS/CSS — Cloudflare Pages invalidates on deploy; long cache is safe
 /pages/*
-  Cache-Control: public, max-age=300
+  Cache-Control: public, max-age=31536000
 
 /components/*
-  Cache-Control: public, max-age=300
+  Cache-Control: public, max-age=31536000
 
 /utils/*
-  Cache-Control: public, max-age=300
+  Cache-Control: public, max-age=31536000
 
 /router/*
-  Cache-Control: public, max-age=300
+  Cache-Control: public, max-age=31536000
 
 /store/*
-  Cache-Control: public, max-age=300
+  Cache-Control: public, max-age=31536000
 
 /index.html
-  Cache-Control: public, max-age=60
+  Cache-Control: public, max-age=0, must-revalidate
 
 # Security headers for all pages
 /*
