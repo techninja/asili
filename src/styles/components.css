@@ -1,6 +1,15 @@
-/* Component styles aggregator.
-   Add one @import per component as they are created.
-   Loaded once in index.html — all light DOM components inherit these. */
+/* Single CSS entry point — all app styles loaded via one <link> tag.
+   Base styles first, then components in dependency order. */
+
+/* Base */
+@import './reset.css';
+@import './tokens.css';
+@import './shared.css';
+@import './scrollbars.css';
+@import './buttons.css';
+@import './forms.css';
+@import './transitions.css';
+@import './layout.css';
 
 /* Atoms */
 @import '../components/atoms/app-button/app-button.css';
@@ -10,15 +19,16 @@
 @import '../components/atoms/hero-canvas/hero-canvas.css';
 @import '../components/atoms/percentile-bar/percentile-bar.css';
 @import '../components/atoms/confidence-badge/confidence-badge.css';
-
-/* Pages */
-@import '../pages/home/home-view.css';
-@import '../pages/home/home-sections.css';
-@import '../pages/app/view.css';
-@import '../pages/app/upload.css';
-@import '../pages/app/scoring.css';
+@import '../components/atoms/aqs-breakdown/aqs-breakdown.css';
+@import '../components/atoms/score-distribution/score-distribution.css';
+@import '../components/atoms/chr-contribution/chr-contribution.css';
+@import '../components/atoms/chr-coverage/chr-coverage.css';
+@import '../components/atoms/speedometer/speedometer.css';
+@import '../components/atoms/mini-curve/mini-curve.css';
 
 /* Molecules */
+@import '../components/molecules/app-header/app-header.css';
+@import '../components/molecules/app-footer/app-footer.css';
 @import '../components/molecules/upload-zone/upload-zone.css';
 @import '../components/molecules/trait-card/trait-card.css';
 @import '../components/molecules/family-compare/family-compare.css';
@@ -28,18 +38,44 @@
 @import '../components/molecules/accordion-panel/accordion-panel.css';
 @import '../components/molecules/emoji-builder/emoji-builder.css';
 @import '../components/molecules/individual-switcher/individual-switcher.css';
+@import '../components/molecules/individual-setup/individual-setup.css';
+@import '../components/molecules/floating-bar/floating-bar.css';
+@import '../components/molecules/floating-bar/floating-bar-controls.css';
+@import '../components/molecules/floating-bar/floating-bar-detail.css';
+@import '../components/molecules/floating-bar/floating-bar-mobile.css';
 
 /* Organisms */
 @import '../components/organisms/trait-grid/trait-grid.css';
+@import '../components/organisms/trait-grid/trait-grid-switch.css';
+@import '../components/organisms/explore-grid/explore-grid.css';
 @import '../components/organisms/radar-chart/radar-chart.css';
+@import '../components/organisms/scoring-screen/scoring-screen.css';
+@import '../components/organisms/scoring-screen/scoring-helix.css';
+@import '../components/organisms/settings-drawer/settings-drawer.css';
+@import '../components/organisms/settings-drawer/settings-drawer-detail.css';
+@import '../components/organisms/data-table/data-table.css';
+@import '../components/organisms/gene-table/gene-table.css';
 
-/* Pages (additional) */
-@import '../pages/trait-detail/trait-detail-view.css';
-@import '../pages/report/report-view.css';
+/* Pages */
+@import '../pages/home/home-view.css';
+@import '../pages/home/home-sections.css';
+@import '../pages/app/view.css';
+@import '../pages/app/upload.css';
+@import '../pages/app/scoring.css';
 @import '../pages/app/hero.css';
 @import '../pages/app/hero-sections.css';
-@import '../components/atoms/mini-curve/mini-curve.css';
-@import '../components/atoms/chr-coverage/chr-coverage.css';
+@import '../pages/app/tabs.css';
+@import '../pages/app/report.css';
+@import '../pages/app/report-detail.css';
+@import '../pages/app/report-quality.css';
+@import '../pages/app/report-print.css';
+@import '../pages/trait-detail/trait-detail-view.css';
+@import '../pages/trait-detail/trait-detail-helpers.css';
+@import '../pages/trait-detail/trait-detail-hero.css';
+@import '../pages/trait-detail/trait-detail-variants.css';
+@import '../pages/trait-detail/trait-detail-unscored.css';
+@import '../pages/gene-detail/gene-detail-view.css';
+@import '../pages/report/report-view.css';
 
 .demo-badge {
   display: inline-block;
