@@ -7,7 +7,12 @@
 
 import { html, define, router } from 'hybrids';
 
-import '#utils/i18n-init.js';
+// Skip i18n-init on prod — missing-translation warnings are dev/beta noise only.
+// On prod the key itself is the correct English display value, so no entries needed.
+const _isProd =
+  window.location.hostname === 'app.asili.dev' ||
+  new URLSearchParams(window.location.search).has('prod');
+if (!_isProd) await import('#utils/i18n-init.js');
 
 // Load locale translations if browser language matches (must complete before first render)
 const _lang = navigator.language?.slice(0, 2);

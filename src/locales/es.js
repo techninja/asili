@@ -1,12 +1,11 @@
 /**
  * Spanish (es) locale — full translations for Hybrids auto-translate + msg strings.
- * Generated from: npx hybrids extract ./src
  * @module locales/es
  */
 
 import { localize } from 'hybrids';
 
-localize('default', {
+localize('es', {
   // --- dynamic/plural (msg) ---
   '· ${0} failed': { message: '· ${0} fallidos' },
   '· ${0}/s': { message: '· ${0}/s' },
@@ -18,7 +17,7 @@ localize('default', {
   '${0} genes': { message: '${0} genes' },
   '${0} geno · ${1} imp': { message: '${0} geno · ${1} imp' },
   '${0} GWAS${1}${2}': { message: '${0} GWAS${1}${2}' },
-  '${0} imputed file${1} need${2} access': {
+  '${0} imputed file${0} need${0} access': {
     message: {
       one: '${0} archivo imputado necesita acceso',
       other: '${0} archivos imputados necesitan acceso',
@@ -30,7 +29,7 @@ localize('default', {
     message: '${0} puntuados · mostrando ${1} de ${2} rasgos',
   },
   '${0} studies': { message: '${0} estudios' },
-  '${0} trait${1} failed': {
+  '${0} trait${0} failed': {
     message: { one: '${0} rasgo fallido', other: '${0} rasgos fallidos' },
   },
   '${0} traits · ${1} elevated · ${2} low': {
@@ -244,7 +243,9 @@ localize('default', {
   'Report generated locally. Your data never left this device.': {
     message: 'Informe generado localmente. Tus datos nunca salieron de este dispositivo.',
   },
+  Report: { message: 'Informe' },
   Rescore: { message: 'Recalcular' },
+  Table: { message: 'Tabla' },
   'Rescore all individuals': { message: 'Recalcular todos los individuos' },
   'Risk vs Protective': { message: 'Riesgo vs Protector' },
   Save: { message: 'Guardar' },
