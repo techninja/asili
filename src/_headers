@@ -5,32 +5,39 @@
 /deps/*
   Cache-Control: public, max-age=31536000, immutable
 
-# App JS/CSS — no-store so CF edge never caches; browser revalidates via ETag
-/pages/*
+# Source tree paths that Google crawls from GitHub/README links — not real pages
+/components/*
+  X-Robots-Tag: noindex
   Cache-Control: no-cache
   CDN-Cache-Control: no-store
 
-/components/*
+/pages/*
+  X-Robots-Tag: noindex
   Cache-Control: no-cache
   CDN-Cache-Control: no-store
 
 /utils/*
-  Cache-Control: no-cache
-  CDN-Cache-Control: no-store
-
-/router/*
+  X-Robots-Tag: noindex
   Cache-Control: no-cache
   CDN-Cache-Control: no-store
 
 /store/*
+  X-Robots-Tag: noindex
+  Cache-Control: no-cache
+  CDN-Cache-Control: no-store
+
+/router/*
+  X-Robots-Tag: noindex
   Cache-Control: no-cache
   CDN-Cache-Control: no-store
 
 /styles/*
+  X-Robots-Tag: noindex
   Cache-Control: no-cache
   CDN-Cache-Control: no-store
 
 /locales/*
+  X-Robots-Tag: noindex
   Cache-Control: no-cache
   CDN-Cache-Control: no-store
 
