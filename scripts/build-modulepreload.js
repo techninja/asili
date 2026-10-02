@@ -3,10 +3,10 @@
  * <link rel="modulepreload"> tags into index.html so the browser fetches all
  * modules in parallel instead of chaining waterfall requests.
  *
- * Importmap safety: modules that directly import bare specifiers are excluded
- * from preload (the browser can race importmap registration when parsing
- * preloaded modules). Bare specifier targets (vendor files) are preloaded
- * first so they are in the module cache before any dependent module runs.
+ * All app modules are safe to preload: the importmap is an inline <script> in
+ * <head> and is registered before any module script executes. modulepreload
+ * only fetches into the module cache — it does not execute — so there is no
+ * importmap race condition to guard against.
  * @module lib/build-modulepreload
  */
 
@@ -27,16 +27,12 @@ function parseImportMap(html) {
  * @param {string} srcDir
  * @param {string} entryFile
  * @param {string[]} ignoreDirs
- * @returns {{ order: string[], hasBareImport: Set<string> }}
+ * @returns {string[]}
  */
 export function crawlModules(srcDir, entryFile, ignoreDirs = ['vendor', 'deps']) {
   const visited = new Set();
   const order = [];
-  const hasBareImport = new Set();
 
-  /**
-   *
-   */
   function crawl(relPath) {
     if (visited.has(relPath)) return;
     visited.add(relPath);
@@ -51,24 +47,20 @@ export function crawlModules(srcDir, entryFile, ignoreDirs = ['vendor', 'deps'])
     while ((m = importRe.exec(src)) !== null) {
       const spec = m[1];
       if (spec.startsWith('#')) {
-        // #-prefixed aliases are bare specifiers to the browser — mark unsafe to preload
-        hasBareImport.add(relPath);
         const mapped = resolveAlias(spec);
         if (mapped) crawl(mapped);
       } else if (spec.startsWith('./') || spec.startsWith('../')) {
         const abs = resolve(dirname(resolve(srcDir, relPath)), spec);
         const rel = relative(srcDir, abs.endsWith('.js') ? abs : abs + '.js');
         crawl(rel);
-      } else {
-        // Bare specifier — mark this module as unsafe to preload
-        hasBareImport.add(relPath);
       }
+      // bare specifiers (e.g. 'hybrids') resolve via importmap — no crawl needed
     }
     order.push(relPath);
   }
 
   crawl(entryFile);
-  return { order, hasBareImport };
+  return order;
 }
 
 /**
@@ -116,20 +108,17 @@ export function buildModulePreload(opts) {
   const html0 = readFileSync(indexPath, 'utf-8');
   const importMap = parseImportMap(html0);
 
-  const { order, hasBareImport } = crawlModules(srcDir, entry, ignore);
+  const order = crawlModules(srcDir, entry, ignore);
 
-  // Vendor files from importmap — preload these first (no bare imports inside them)
+  // Vendor files from importmap — preload first so they're cached before app modules execute
   const vendorPaths = [...new Set(Object.values(importMap))].filter(
     (v) => v.startsWith('/') && v.includes('.js'),
   );
 
-  // App modules safe to preload — exclude any that directly import a bare specifier
-  const appPaths = order.filter((m) => !hasBareImport.has(m));
-
   const v = hashSuffix ? `?v=${hashSuffix}` : '';
   const tags = [
     ...vendorPaths.map((p) => `  <link rel="modulepreload" href="${p.includes('?') ? p : p + v}">`),
-    ...appPaths.map((m) => `  <link rel="modulepreload" href="/${m}${v}">`),
+    ...order.map((m) => `  <link rel="modulepreload" href="/${m}${v}">`),
   ].join('\n');
 
   let html = html0;
@@ -139,9 +128,8 @@ export function buildModulePreload(opts) {
   html = html.replace('</head>', `${tags}\n</head>`);
   writeFileSync(indexPath, html);
 
-  const skipped = hasBareImport.size;
   console.log(
-    `✅ Modulepreload: ${vendorPaths.length} vendor + ${appPaths.length} app modules → dist/index.html (${skipped} skipped — bare imports)`,
+    `✅ Modulepreload: ${vendorPaths.length} vendor + ${order.length} app modules → dist/index.html`,
   );
-  return { modules: vendorPaths.length + appPaths.length };
+  return { modules: vendorPaths.length + order.length };
 }

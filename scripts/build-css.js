@@ -54,7 +54,13 @@ export function buildCSS(opts) {
   }
 
   const css = inlineImports(entryPath);
-  writeFileSync(outPath, css);
+  const minified = css
+    .replace(/\/\*[^*]*\*+(?:[^/*][^*]*\*+)*\//g, '') // strip comments
+    .replace(/\s*([{}:;,>~+])\s*/g, '$1') // collapse whitespace around syntax
+    .replace(/;}/g, '}') // drop trailing semicolons
+    .replace(/\n+/g, '\n') // collapse blank lines
+    .trim();
+  writeFileSync(outPath, minified);
 
   // Update index.html: swap the entry <link> for the bundled one
   const indexPath = resolve(outDir, 'index.html');
@@ -64,7 +70,7 @@ export function buildCSS(opts) {
     writeFileSync(indexPath, html);
   }
 
-  const bytes = Buffer.byteLength(css);
+  const bytes = Buffer.byteLength(minified);
   console.log(`✅ CSS bundle: ${(bytes / 1024).toFixed(1)} KB → dist/${out}`);
   return { bytes };
 }
