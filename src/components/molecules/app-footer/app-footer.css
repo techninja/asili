@@ -12,7 +12,8 @@
 
   & a {
     color: var(--color-text-muted);
-    text-decoration: none;
+    text-decoration: underline;
+    text-underline-offset: 2px;
 
     &:hover {
       color: var(--color-primary);

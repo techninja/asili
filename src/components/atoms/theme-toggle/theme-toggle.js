@@ -34,7 +34,13 @@ export default define({
         document.documentElement.setAttribute('data-theme', state.theme);
       }
       return html`
-        <button class="btn btn-ghost theme-toggle-btn" onclick="${toggle}">
+        <button
+          class="btn btn-ghost theme-toggle-btn"
+          onclick="${toggle}"
+          aria-label="${store.ready(state) && state.theme === 'dark'
+            ? 'Switch to light mode'
+            : 'Switch to dark mode'}"
+        >
           <app-icon
             name="${store.ready(state) && state.theme === 'dark' ? 'sun' : 'moon'}"
           ></app-icon>

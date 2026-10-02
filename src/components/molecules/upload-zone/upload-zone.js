@@ -100,6 +100,8 @@ export default define({
           type="file"
           accept=".txt,.csv,.tsv,.vcf,.zip,.parquet,.asili"
           class="upload-zone__input"
+          aria-hidden="true"
+          tabindex="-1"
           onchange="${handleInput}"
           onclick="${(host, e) => e.stopPropagation()}"
         />

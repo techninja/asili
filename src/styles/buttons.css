@@ -23,11 +23,11 @@
 }
 
 .btn-primary {
-  background: var(--color-primary);
+  background: var(--color-btn-primary-bg);
   color: var(--color-text-inverse);
 
   &:hover:not(:disabled) {
-    background: var(--color-primary-hover);
+    background: var(--color-btn-primary-hover);
   }
 }
 

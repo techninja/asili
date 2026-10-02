@@ -26,9 +26,12 @@ async function lazyInit(invalidate) {
   _initDone = true;
   const [list] = await Promise.all([
     getTraitList(),
-    idb.openDB().then(() => idb.getAll('individuals')).then((inds) => {
-      for (const ind of inds) indMap.set(ind.id, ind);
-    }),
+    idb
+      .openDB()
+      .then(() => idb.getAll('individuals'))
+      .then((inds) => {
+        for (const ind of inds) indMap.set(ind.id, ind);
+      }),
   ]);
   traitCache = list;
   invalidate();
