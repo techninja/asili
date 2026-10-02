@@ -15,18 +15,24 @@ import { subscribe } from '#utils/queue-state.js';
 
 /** @type {Array<object>} */
 let traitCache = [];
-getTraitList().then((list) => {
-  traitCache = list;
-});
 
 /** @type {Map<string, object>} */
 const indMap = new Map();
-idb
-  .openDB()
-  .then(() => idb.getAll('individuals'))
-  .then((inds) => {
-    for (const ind of inds) indMap.set(ind.id, ind);
-  });
+
+/** Lazy-init: only fetch manifest + IDB when the report tab is first used. */
+let _initDone = false;
+async function lazyInit(invalidate) {
+  if (_initDone) return;
+  _initDone = true;
+  const [list] = await Promise.all([
+    getTraitList(),
+    idb.openDB().then(() => idb.getAll('individuals')).then((inds) => {
+      for (const ind of inds) indMap.set(ind.id, ind);
+    }),
+  ]);
+  traitCache = list;
+  invalidate();
+}
 
 export default define({
   tag: 'report-content',
@@ -35,6 +41,7 @@ export default define({
   _tick: {
     value: 0,
     connect: (host, _key, invalidate) => {
+      lazyInit(invalidate);
       const unsub = subscribe(() => {
         host._tick++;
         invalidate();

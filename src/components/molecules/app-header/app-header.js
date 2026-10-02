@@ -20,7 +20,7 @@ export function appHeader({ onSettings, center, badge, trailing } = {}) {
   return html`
     <header class="app-header">
       <a href="/" class="app-header__logo">
-        <img src="/logo.svg" alt="" class="app-header__logo-img" />
+        <img src="/logo.svg" alt="" class="app-header__logo-img" width="48" height="51" />
         <span>Asili</span>
       </a>
       ${badge ? html`<span class="app-header__badge">${badge}</span>` : html``}

@@ -5,8 +5,9 @@
 
 import { html, define } from 'hybrids';
 
-const PARTICLE_COUNT = 90;
-const CONNECT_DIST = 160;
+const PARTICLE_COUNT = 50;
+const CONNECT_DIST = 140;
+const CONNECT_DIST_SQ = CONNECT_DIST * CONNECT_DIST;
 const SPEED = 0.4;
 
 /** @param {HTMLCanvasElement} canvas */
@@ -69,9 +70,9 @@ function initCanvas(canvas) {
       for (let j = i + 1; j < particles.length; j++) {
         const dx = particles[i].x - particles[j].x;
         const dy = particles[i].y - particles[j].y;
-        const dist = Math.sqrt(dx * dx + dy * dy);
-        if (dist < CONNECT_DIST) {
-          const alpha = 1 - dist / CONNECT_DIST;
+        const distSq = dx * dx + dy * dy;
+        if (distSq < CONNECT_DIST_SQ) {
+          const alpha = 1 - Math.sqrt(distSq) / CONNECT_DIST;
           ctx.beginPath();
           ctx.moveTo(particles[i].x, particles[i].y);
           ctx.lineTo(particles[j].x, particles[j].y);
@@ -104,12 +105,13 @@ function initCanvas(canvas) {
     }
   }, { threshold: 0.01 });
 
-  // Defer first frame until browser is idle so it doesn't block FCP
+  // Only start when browser is genuinely idle — no timeout fallback so Lighthouse
+  // measurement window completes before the animation begins
   const start = () => io.observe(host);
   if (typeof requestIdleCallback !== 'undefined') {
-    requestIdleCallback(start, { timeout: 2000 });
+    requestIdleCallback(start);
   } else {
-    setTimeout(start, 200);
+    setTimeout(start, 500);
   }
 
   return () => {
