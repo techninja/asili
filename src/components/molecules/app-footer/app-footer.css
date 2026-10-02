@@ -1,4 +1,5 @@
 .app-footer {
+  min-height: 3.5rem; /* reserve space to prevent CLS on component upgrade */
   padding: var(--space-lg) var(--space-xl);
   text-align: center;
   font-size: var(--text-sm);

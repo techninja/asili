@@ -12,7 +12,7 @@ const SPEED = 0.4;
 /** @param {HTMLCanvasElement} canvas */
 function initCanvas(canvas) {
   const ctx = canvas.getContext('2d');
-  let w, h, particles, raf;
+  let w, h, particles, raf, started = false;
 
   /**
    *
@@ -89,14 +89,33 @@ function initCanvas(canvas) {
   const host = canvas.closest('hero-canvas');
   resize();
   createParticles();
-  draw();
 
   const ro = new ResizeObserver(resize);
   ro.observe(host);
 
+  // Only run while visible; pause when scrolled out of view
+  const io = new IntersectionObserver((entries) => {
+    if (entries[0].isIntersecting) {
+      if (!started) { started = true; draw(); }
+      else if (!raf) draw();
+    } else {
+      cancelAnimationFrame(raf);
+      raf = null;
+    }
+  }, { threshold: 0.01 });
+
+  // Defer first frame until browser is idle so it doesn't block FCP
+  const start = () => io.observe(host);
+  if (typeof requestIdleCallback !== 'undefined') {
+    requestIdleCallback(start, { timeout: 2000 });
+  } else {
+    setTimeout(start, 200);
+  }
+
   return () => {
     cancelAnimationFrame(raf);
     ro.disconnect();
+    io.disconnect();
   };
 }
 
